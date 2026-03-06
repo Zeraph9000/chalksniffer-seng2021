@@ -153,3 +153,27 @@ type Order = {
   updatedAt?: string;
   xmlUrl?: string;
 };
+
+export type {
+  Period,
+  DocumentReference,
+  Address,
+  Contact,
+  Party,
+  CustomerParty,
+  SupplierParty,
+  TaxCategory,
+  TaxSubtotal,
+  TaxTotal,
+  MonetaryTotal,
+  AllowanceCharge,
+  PaymentMeans,
+  PaymentTerms,
+  Delivery,
+  DeliveryTerms,
+  Price,
+  Item,
+  LineItem,
+  OrderLine,
+  Order,
+};
