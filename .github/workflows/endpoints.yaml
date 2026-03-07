@@ -1,383 +1,1055 @@
+openapi: 3.0.3
+info:
+  title: Chalksniffer API
+  version: 0.1.0
+  description: API for creating, retrieving, exporting, updating, and deleting UBL 2.4 orders.
+
 servers:
   - url: https://idk/
-paths: 
+
+tags:
+  - name: health
+  - name: authentication
+  - name: order
+
+paths:
   /health:
     get:
       tags:
         - health
+      summary: Health check
+      description: Returns the health status of the service.
       responses:
         '200':
-          description: 'OK'
+          description: OK
           content:
             application/json:
               schema:
-                $ref: 'ADD LATER'
-  /auth:
-    /register:
-      post:
-        tags:
-          - authentication
-          - new user
-        responses:
-          '200':
-            description: 'OK'
-            content:
-              application/json:
-                schema:
-                  $ref: 'ADD LATER'
-    /token/refresh:
-      post:
-        description: Invalidates the current API key and returns a new one.
-        tags:
-          - token
-          - refresh
-          - security
-        headers:
-          - in: idk?
-            name: Authorization
-            required: true
-            type: idk
-        responses:
-          '200':
-            description: OK
-            content:
-              application/json:
-                schema:
-                  $ref: ADD LATER
-          '401':
-            description: Unauthorized
-              invalid or missing API key
-            content:
-              application/json:
-                schema:
-                  $ref: ADD LATER
+                $ref: '#/components/schemas/HealthResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/register:
+    post:
+      tags:
+        - authentication
+      summary: Register API key
+      description: Creates a new API key for accessing the service.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/token/refresh:
+    post:
+      tags:
+        - authentication
+      summary: Refresh API key
+      description: Invalidates the current API key and returns a new one.
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyResponse'
+        '401':
+          description: Unauthorized - invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /orders:
     post:
-      description: Creates an order from JSON input. Validates the data, generates UBL 2.4 XML, and stores the order.
       tags:
         - order
-        - seller
-      headers:
-        - in: idk
-          name: Authorization
-          required: true
-          type: idk  
+      summary: Create order
+      description: Creates an order from JSON input. Validates the data, generates UBL 2.4 XML, and stores the order.
+      security:
+        - ApiKeyAuth: []
       requestBody:
+        required: true
         content:
           application/json:
             schema:
-              $ref: ADD LATER
+              $ref: '#/components/schemas/OrderCreateRequest'
       responses:
         '200':
-          description: OK
+          description: OK - created order object with system-generated fields
           content:
             application/json:
               schema:
-                $ref: ADD LATER
+                $ref: '#/components/schemas/Order'
         '400':
-          description: Bad Request
-            missing or invalid fields with per-field error details
+          description: Bad Request - missing or invalid fields with per-field error details
           content:
             application/json:
               schema:
-                $ref: ADD LATER
+                $ref: '#/components/schemas/ValidationErrorResponse'
         '401':
-          description: Unauthorized
-            invalid or missing API key
+          description: Unauthorized - invalid or missing API key
           content:
             application/json:
               schema:
-                $ref: ADD LATER
+                $ref: '#/components/schemas/ErrorResponse'
         '409':
-          description: Conflict
-            an order with the same id already exists
+          description: Conflict - an order with the same id already exists
           content:
             application/json:
               schema:
-                $ref: ADD LATER
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
     get:
-      description: Returns a paginated list of all orders belonging to the authenticated user.
       tags:
         - order
-        - buyer
-      headers:
-        - in: idk
-          name: Authorization
-          required: true
-          type: idk  
-      parameters:    
-        - in:
-          name: id
-          required: false
-          type:
-        - in:
-          name: issueDate
-          required: false
-          type:
-        - in:
-          name: buyerName
-          required: false
-          type:
-        - in:
-          name: sellerName
-          required: false
-          type:
-        - in:
-          name: payableAmount
-          required: false
-          type:
-        - in:
-          name: documentCurrencyCode
-          required: false
-          type:
-        - in:
-          name: createdAt
-          required: false
-          type:
-        - in:
-          name: limit
-          required: false
-          type:
-        - in:
-          name: offset
-          required: false
-          type:
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: ADD LATER
-        '400':
-          description: Bad Request
-            invalid query parameters
-          content:
-            application/json:
-              schema:
-                $ref: ADD LATER
-        '401':
-          description: Unauthorized
-            invalid or missing API key
-          content:
-            application/json:
-              schema:
-                $ref: ADD LATER
-        '403':
-          description: Forbidden
-            API key doesn’t belong to the right user
-          content:
-            application/json:
-              schema:
-                $ref: ADD LATER
-    /csv:
-      get:
-        description: Exports orders as a downloadable CSV file. Supports the same filters as GET /orders. Note that there is no pagination limit on this endpoint and it returns all matching results.
-        tags:
-          - order
-          - csv
-        headers:
-        - in: idk
-          name: Authorization
-          required: true
-          type: idk  
-        parameters:    
-        - in:
-          name: id
-          required: false
-          type:
-        - in:
-          name: issueDate
-          required: false
-          type:
-        - in:
-          name: buyerName
-          required: false
-          type:
-        - in:
-          name: sellerName
-          required: false
-          type:
-        - in:
-          name: payableAmount
-          required: false
-          type:
-        - in:
-          name: documentCurrencyCode
-          required: false
-          type:
-        - in:
-          name: createdAt
-          required: false
-          type:
-        - in:
-          name: limit
-          required: false
-          type:
-        - in:
-          name: offset
-          required: false
-          type:
-        responses:
-          '200':
-            description: OK
-            content:
-              application/json:
-                schema:
-                  $ref: ADD LATER
-          '401':
-            description: Unauthorized
-              invalid or missing API key
-            content:
-              application/json:
-                schema:
-                  $ref: ADD LATER
-          '403':
-            description: Forbidden
-              API key doesn’t belong to the right user
-            content:
-              application/json:
-                schema:
-                  $ref: ADD LATER
-    /id:
-      description: Returns a single order as JSON.
-      tags:
-        - order
-        - id
-      headers:
-        - in: idk
-          name: Authorization
-          required: true
-          type: idk  
+      summary: List orders
+      description: |
+        Returns a paginated list of all orders belonging to the authenticated user.
+        Any order field may be used as a query filter.
+        Pagination defaults: limit=20, offset=0, max limit=500.
+      security:
+        - ApiKeyAuth: []
       parameters:
-        - in: idk
+        - in: query
           name: id
-          required: true
-          type: idk  
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: issueDate
+          required: false
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: buyerName
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: sellerName
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: payableAmount
+          required: false
+          schema:
+            type: number
+        - in: query
+          name: documentCurrencyCode
+          required: false
+          schema:
+            type: string
+            pattern: '^[A-Z]{3}$'
+        - in: query
+          name: createdAt
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 500
+        - in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
       responses:
         '200':
           description: OK
-            full order object as JSON (same structure as POST /orders input, plus system fields)
-          content: 
+          content:
             application/json:
               schema:
-                $ref: ADD LATER
+                $ref: '#/components/schemas/OrderListResponse'
         '400':
-          description: Bad Request
-            order does not exist
+          description: Bad Request - invalid query parameters
           content:
             application/json:
               schema:
-                $ref: ADD LATER
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
-          description: Unauthorized
-            invalid or missing API key
+          description: Unauthorized - invalid or missing API key
           content:
             application/json:
               schema:
-                $ref: ADD LATER
+                $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Forbidden
-            order doesn't belong to the user
+          description: Forbidden - API key does not belong to the right user
           content:
             application/json:
               schema:
-                $ref: ADD LATER
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /orders/csv:
+    get:
+      tags:
+        - order
+      summary: Export orders as CSV
+      description: |
+        Exports orders as a downloadable CSV file.
+        Supports the same filters as GET /orders.
+        If limit is omitted, all matching orders are returned.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: query
+          name: id
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: issueDate
+          required: false
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: buyerName
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: sellerName
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: payableAmount
+          required: false
+          schema:
+            type: number
+        - in: query
+          name: documentCurrencyCode
+          required: false
+          schema:
+            type: string
+            pattern: '^[A-Z]{3}$'
+        - in: query
+          name: createdAt
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+      responses:
+        '200':
+          description: OK
+          content:
+            text/csv:
+              schema:
+                type: string
+        '401':
+          description: Unauthorized - invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - API key does not belong to the right user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /orders/{id}:
+    get:
+      tags:
+        - order
+      summary: Get order by id
+      description: Returns a single order as JSON.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          description: Bad Request - invalid order id is given
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - API key does not belong to the right user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
     put:
-      /id:
-        description: Updates an existing order and regenerates the corresponding UBL 2.4 XML. Only provided fields are updated; omitted fields remain unchanged. Array fields (orderLines, allowanceCharge, additionalDocumentReference) are replaced entirely — to modify a single line item, the consumer must send the full updated array.
-        tags:
-          - order
-          - id
-        headers:
-          - in: idk
-            name: Authorization
-            required: true
-            type: idk  
-        parameters:
-          - in: idk
-            name: id
-            required: true
-            type: idk  
-        requestBody:
+      tags:
+        - order
+      summary: Update order
+      description: |
+        Updates an existing order and regenerates the corresponding UBL 2.4 XML.
+        Only provided fields are updated; omitted fields remain unchanged.
+        Array fields (orderLines, allowanceCharge, additionalDocumentReference)
+        are replaced entirely.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderUpdateRequest'
+      responses:
+        '200':
+          description: OK - updated order object
           content:
             application/json:
               schema:
-                $ref: ADD LATER
-        responses:
-          '200': 
-            description: OK
-              updated order object (same shape as GET /orders/:id)
-            content:
-              application/json:
-                schema:
-                  $ref: ADD LATER
-          '400':
-            description: Bad Request
-              invalid fields with per-field error details (same validation rules as POST /orders), order does not exist
-            content:
-              application/json:
-                schema:
-                  $ref: ADD LATER
-          '401':
-            description: Unauthorized
-              invalid or missing API key
-            content:
-              application/json:
-                schema:
-                  $ref: ADD LATER
-          '403':
-            description: Forbidden
-              order does not belong to the user
-            content:
-              application/json:
-                schema:
-                  $ref: ADD LATER
+                $ref: '#/components/schemas/Order'
+        '400':
+          description: Bad Request - invalid fields or order does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '401':
+          description: Unauthorized - invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - order does not belong to the user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
     delete:
-      /id:
-        description: Deletes an order and its corresponding UBL 2.4 XML.
-        tags:
-          - order
-          - deletion
-        headers:
-          - in: idk
-            name: Authorization
-            required: true
-            type: idk  
-        parameters:
-          - in: idk
-            name: id
-            required: true
-            type: idk  
-        responses:
-          '200':
-            description: OK
-            content:
-              application/json:
-                schema:
-                  $ref: ADD LATER
-          '400':
-            description: Bad Request
-              order does not exist
-            content:
-              application/json:
-                schema:
-                  $ref: ADD LATER
-          '401':
-            description: Unauthorized
-              invalid or missing API key
-            content:
-              application/json:
-                schema:
-                  $ref: ADD LATER
-          '403':
-            description: Forbidden
-              order does not belong to the user
-            content:
-              application/json:
-                schema:
-                  $ref: ADD LATER
+      tags:
+        - order
+      summary: Delete order
+      description: Deletes an order and its corresponding UBL 2.4 XML.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteOrderResponse'
+        '400':
+          description: Bad Request - order does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - order does not belong to the user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
+  /orders/{id}/xml:
+    get:
+      tags:
+        - order
+      summary: Get order XML by id
+      description: Returns the UBL 2.4 XML document for a specific order.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/xml:
+              schema:
+                type: string
+        '400':
+          description: Bad Request - order does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - order does not belong to the user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: Authorization
 
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+        uptime:
+          type: number
+          example: 3600
+        timestamp:
+          type: string
+          format: date-time
+      required:
+        - status
+        - uptime
+        - timestamp
 
+    ApiKeyResponse:
+      type: object
+      properties:
+        apiKey:
+          type: string
+      required:
+        - apiKey
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required:
+        - error
+        - message
+
+    ValidationErrorItem:
+      type: object
+      properties:
+        field:
+          type: string
+        message:
+          type: string
+      required:
+        - field
+        - message
+
+    ValidationErrorResponse:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationErrorItem'
+      required:
+        - errors
+
+    OrderListItem:
+      type: object
+      properties:
+        id:
+          type: string
+        issueDate:
+          type: string
+          format: date
+        buyerName:
+          type: string
+        sellerName:
+          type: string
+        payableAmount:
+          type: number
+        documentCurrencyCode:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - issueDate
+        - buyerName
+        - sellerName
+        - payableAmount
+        - documentCurrencyCode
+        - createdAt
+
+    OrderListResponse:
+      type: object
+      properties:
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderListItem'
+        limit:
+          type: integer
+        offset:
+          type: integer
+        totalOrders:
+          type: integer
+      required:
+        - orders
+        - limit
+        - offset
+        - totalOrders
+
+    DeleteOrderResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
+
+    Period:
+      type: object
+      properties:
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+
+    DocumentReference:
+      type: object
+      properties:
+        id:
+          type: string
+        documentType:
+          type: string
+      required:
+        - id
+
+    Address:
+      type: object
+      properties:
+        streetName:
+          type: string
+        additionalStreetName:
+          type: string
+        buildingNumber:
+          type: string
+        cityName:
+          type: string
+        postalZone:
+          type: string
+        countrySubentity:
+          type: string
+        country:
+          type: string
+          pattern: '^[A-Z]{2}$'
+      required:
+        - streetName
+        - cityName
+        - postalZone
+        - country
+
+    Contact:
+      type: object
+      properties:
+        name:
+          type: string
+        telephone:
+          type: string
+        email:
+          type: string
+          format: email
+
+    Party:
+      type: object
+      properties:
+        partyName:
+          type: string
+        partyIdentification:
+          type: string
+        postalAddress:
+          $ref: '#/components/schemas/Address'
+        contact:
+          $ref: '#/components/schemas/Contact'
+      required:
+        - partyName
+        - postalAddress
+
+    CustomerParty:
+      type: object
+      properties:
+        party:
+          $ref: '#/components/schemas/Party'
+      required:
+        - party
+
+    SupplierParty:
+      type: object
+      properties:
+        party:
+          $ref: '#/components/schemas/Party'
+      required:
+        - party
+
+    TaxCategory:
+      type: object
+      properties:
+        percent:
+          type: number
+          minimum: 0
+        taxScheme:
+          type: string
+      required:
+        - taxScheme
+
+    TaxSubtotal:
+      type: object
+      properties:
+        taxableAmount:
+          type: number
+        taxAmount:
+          type: number
+        taxCategory:
+          $ref: '#/components/schemas/TaxCategory'
+      required:
+        - taxableAmount
+        - taxAmount
+        - taxCategory
+
+    TaxTotal:
+      type: object
+      properties:
+        taxAmount:
+          type: number
+        currencyID:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        taxSubtotal:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaxSubtotal'
+      required:
+        - taxAmount
+        - currencyID
+
+    MonetaryTotal:
+      type: object
+      properties:
+        lineExtensionAmount:
+          type: number
+        taxExclusiveAmount:
+          type: number
+        taxInclusiveAmount:
+          type: number
+        allowanceTotalAmount:
+          type: number
+        chargeTotalAmount:
+          type: number
+        payableAmount:
+          type: number
+
+    AllowanceCharge:
+      type: object
+      properties:
+        chargeIndicator:
+          type: boolean
+        allowanceChargeReasonCode:
+          type: string
+        allowanceChargeReason:
+          type: string
+        amount:
+          type: number
+        currencyID:
+          type: string
+          pattern: '^[A-Z]{3}$'
+      required:
+        - chargeIndicator
+        - amount
+        - currencyID
+
+    PaymentMeans:
+      type: object
+      properties:
+        paymentMeansCode:
+          type: string
+        paymentDueDate:
+          type: string
+          format: date
+        paymentID:
+          type: string
+      required:
+        - paymentMeansCode
+
+    PaymentTerms:
+      type: object
+      properties:
+        note:
+          type: string
+
+    Delivery:
+      type: object
+      properties:
+        deliveryAddress:
+          $ref: '#/components/schemas/Address'
+        requestedDeliveryPeriod:
+          $ref: '#/components/schemas/Period'
+
+    DeliveryTerms:
+      type: object
+      properties:
+        specialTerms:
+          type: string
+
+    Price:
+      type: object
+      properties:
+        priceAmount:
+          type: number
+          minimum: 0
+        currencyID:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        baseQuantity:
+          type: number
+          exclusiveMinimum: 0
+      required:
+        - priceAmount
+        - currencyID
+
+    Item:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        buyersItemIdentification:
+          type: string
+        sellersItemIdentification:
+          type: string
+        standardItemIdentification:
+          type: string
+        classifiedTaxCategory:
+          $ref: '#/components/schemas/TaxCategory'
+      required:
+        - name
+
+    LineItem:
+      type: object
+      properties:
+        id:
+          type: string
+        quantity:
+          type: number
+          exclusiveMinimum: 0
+        unitCode:
+          type: string
+        lineExtensionAmount:
+          type: number
+          readOnly: true
+        price:
+          $ref: '#/components/schemas/Price'
+        item:
+          $ref: '#/components/schemas/Item'
+        delivery:
+          $ref: '#/components/schemas/Delivery'
+      required:
+        - id
+        - quantity
+        - price
+        - item
+
+    OrderLine:
+      type: object
+      properties:
+        lineItem:
+          $ref: '#/components/schemas/LineItem'
+      required:
+        - lineItem
+
+    OrderBase:
+      type: object
+      properties:
+        id:
+          type: string
+        salesOrderId:
+          type: string
+        issueDate:
+          type: string
+          format: date
+        issueTime:
+          type: string
+          pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$'
+        orderTypeCode:
+          type: string
+        note:
+          type: string
+        documentCurrencyCode:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        pricingCurrencyCode:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        taxCurrencyCode:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        customerReference:
+          type: string
+        accountingCostCode:
+          type: string
+        validityPeriod:
+          $ref: '#/components/schemas/Period'
+        quotationDocumentReference:
+          $ref: '#/components/schemas/DocumentReference'
+        orderDocumentReference:
+          $ref: '#/components/schemas/DocumentReference'
+        originatorDocumentReference:
+          $ref: '#/components/schemas/DocumentReference'
+        additionalDocumentReference:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentReference'
+        buyerCustomerParty:
+          $ref: '#/components/schemas/CustomerParty'
+        sellerSupplierParty:
+          $ref: '#/components/schemas/SupplierParty'
+        originatorCustomerParty:
+          $ref: '#/components/schemas/CustomerParty'
+        delivery:
+          $ref: '#/components/schemas/Delivery'
+        deliveryTerms:
+          $ref: '#/components/schemas/DeliveryTerms'
+        paymentMeans:
+          $ref: '#/components/schemas/PaymentMeans'
+        paymentTerms:
+          $ref: '#/components/schemas/PaymentTerms'
+        allowanceCharge:
+          type: array
+          items:
+            $ref: '#/components/schemas/AllowanceCharge'
+        taxTotal:
+          $ref: '#/components/schemas/TaxTotal'
+        anticipatedMonetaryTotal:
+          $ref: '#/components/schemas/MonetaryTotal'
+        orderLines:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/OrderLine'
+      required:
+        - id
+        - issueDate
+        - documentCurrencyCode
+        - buyerCustomerParty
+        - sellerSupplierParty
+        - orderLines
+
+    Order:
+      allOf:
+        - $ref: '#/components/schemas/OrderBase'
+        - type: object
+          properties:
+            createdAt:
+              type: string
+              format: date-time
+              readOnly: true
+            updatedAt:
+              type: string
+              format: date-time
+              readOnly: true
+            xmlUrl:
+              type: string
+              readOnly: true
+
+    OrderCreateRequest:
+      allOf:
+        - $ref: '#/components/schemas/OrderBase'
+
+    OrderUpdateRequest:
+      type: object
+      description: Partial order update payload. Only provided fields are updated.
+      properties:
+        salesOrderId:
+          type: string
+        issueDate:
+          type: string
+          format: date
+        issueTime:
+          type: string
+          pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$'
+        orderTypeCode:
+          type: string
+        note:
+          type: string
+        documentCurrencyCode:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        pricingCurrencyCode:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        taxCurrencyCode:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        customerReference:
+          type: string
+        accountingCostCode:
+          type: string
+        validityPeriod:
+          $ref: '#/components/schemas/Period'
+        quotationDocumentReference:
+          $ref: '#/components/schemas/DocumentReference'
+        orderDocumentReference:
+          $ref: '#/components/schemas/DocumentReference'
+        originatorDocumentReference:
+          $ref: '#/components/schemas/DocumentReference'
+        additionalDocumentReference:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentReference'
+        buyerCustomerParty:
+          $ref: '#/components/schemas/CustomerParty'
+        sellerSupplierParty:
+          $ref: '#/components/schemas/SupplierParty'
+        originatorCustomerParty:
+          $ref: '#/components/schemas/CustomerParty'
+        delivery:
+          $ref: '#/components/schemas/Delivery'
+        deliveryTerms:
+          $ref: '#/components/schemas/DeliveryTerms'
+        paymentMeans:
+          $ref: '#/components/schemas/PaymentMeans'
+        paymentTerms:
+          $ref: '#/components/schemas/PaymentTerms'
+        allowanceCharge:
+          type: array
+          items:
+            $ref: '#/components/schemas/AllowanceCharge'
+        taxTotal:
+          $ref: '#/components/schemas/TaxTotal'
+        anticipatedMonetaryTotal:
+          $ref: '#/components/schemas/MonetaryTotal'
+        orderLines:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/OrderLine'
