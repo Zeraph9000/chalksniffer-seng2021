@@ -1,0 +1,383 @@
+servers:
+  - url: https://idk/
+paths: 
+  /health:
+    get:
+      tags:
+        - health
+      responses:
+        '200':
+          description: 'OK'
+          content:
+            application/json:
+              schema:
+                $ref: 'ADD LATER'
+  /auth:
+    /register:
+      post:
+        tags:
+          - authentication
+          - new user
+        responses:
+          '200':
+            description: 'OK'
+            content:
+              application/json:
+                schema:
+                  $ref: 'ADD LATER'
+    /token/refresh:
+      post:
+        description: Invalidates the current API key and returns a new one.
+        tags:
+          - token
+          - refresh
+          - security
+        headers:
+          - in: idk?
+            name: Authorization
+            required: true
+            type: idk
+        responses:
+          '200':
+            description: OK
+            content:
+              application/json:
+                schema:
+                  $ref: ADD LATER
+          '401':
+            description: Unauthorized
+              invalid or missing API key
+            content:
+              application/json:
+                schema:
+                  $ref: ADD LATER
+  /orders:
+    post:
+      description: Creates an order from JSON input. Validates the data, generates UBL 2.4 XML, and stores the order.
+      tags:
+        - order
+        - seller
+      headers:
+        - in: idk
+          name: Authorization
+          required: true
+          type: idk  
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: ADD LATER
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: ADD LATER
+        '400':
+          description: Bad Request
+            missing or invalid fields with per-field error details
+          content:
+            application/json:
+              schema:
+                $ref: ADD LATER
+        '401':
+          description: Unauthorized
+            invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: ADD LATER
+        '409':
+          description: Conflict
+            an order with the same id already exists
+          content:
+            application/json:
+              schema:
+                $ref: ADD LATER
+    get:
+      description: Returns a paginated list of all orders belonging to the authenticated user.
+      tags:
+        - order
+        - buyer
+      headers:
+        - in: idk
+          name: Authorization
+          required: true
+          type: idk  
+      parameters:    
+        - in:
+          name: id
+          required: false
+          type:
+        - in:
+          name: issueDate
+          required: false
+          type:
+        - in:
+          name: buyerName
+          required: false
+          type:
+        - in:
+          name: sellerName
+          required: false
+          type:
+        - in:
+          name: payableAmount
+          required: false
+          type:
+        - in:
+          name: documentCurrencyCode
+          required: false
+          type:
+        - in:
+          name: createdAt
+          required: false
+          type:
+        - in:
+          name: limit
+          required: false
+          type:
+        - in:
+          name: offset
+          required: false
+          type:
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: ADD LATER
+        '400':
+          description: Bad Request
+            invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: ADD LATER
+        '401':
+          description: Unauthorized
+            invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: ADD LATER
+        '403':
+          description: Forbidden
+            API key doesn’t belong to the right user
+          content:
+            application/json:
+              schema:
+                $ref: ADD LATER
+    /csv:
+      get:
+        description: Exports orders as a downloadable CSV file. Supports the same filters as GET /orders. Note that there is no pagination limit on this endpoint and it returns all matching results.
+        tags:
+          - order
+          - csv
+        headers:
+        - in: idk
+          name: Authorization
+          required: true
+          type: idk  
+        parameters:    
+        - in:
+          name: id
+          required: false
+          type:
+        - in:
+          name: issueDate
+          required: false
+          type:
+        - in:
+          name: buyerName
+          required: false
+          type:
+        - in:
+          name: sellerName
+          required: false
+          type:
+        - in:
+          name: payableAmount
+          required: false
+          type:
+        - in:
+          name: documentCurrencyCode
+          required: false
+          type:
+        - in:
+          name: createdAt
+          required: false
+          type:
+        - in:
+          name: limit
+          required: false
+          type:
+        - in:
+          name: offset
+          required: false
+          type:
+        responses:
+          '200':
+            description: OK
+            content:
+              application/json:
+                schema:
+                  $ref: ADD LATER
+          '401':
+            description: Unauthorized
+              invalid or missing API key
+            content:
+              application/json:
+                schema:
+                  $ref: ADD LATER
+          '403':
+            description: Forbidden
+              API key doesn’t belong to the right user
+            content:
+              application/json:
+                schema:
+                  $ref: ADD LATER
+    /id:
+      description: Returns a single order as JSON.
+      tags:
+        - order
+        - id
+      headers:
+        - in: idk
+          name: Authorization
+          required: true
+          type: idk  
+      parameters:
+        - in: idk
+          name: id
+          required: true
+          type: idk  
+      responses:
+        '200':
+          description: OK
+            full order object as JSON (same structure as POST /orders input, plus system fields)
+          content: 
+            application/json:
+              schema:
+                $ref: ADD LATER
+        '400':
+          description: Bad Request
+            order does not exist
+          content:
+            application/json:
+              schema:
+                $ref: ADD LATER
+        '401':
+          description: Unauthorized
+            invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: ADD LATER
+        '403':
+          description: Forbidden
+            order doesn't belong to the user
+          content:
+            application/json:
+              schema:
+                $ref: ADD LATER
+    put:
+      /id:
+        description: Updates an existing order and regenerates the corresponding UBL 2.4 XML. Only provided fields are updated; omitted fields remain unchanged. Array fields (orderLines, allowanceCharge, additionalDocumentReference) are replaced entirely — to modify a single line item, the consumer must send the full updated array.
+        tags:
+          - order
+          - id
+        headers:
+          - in: idk
+            name: Authorization
+            required: true
+            type: idk  
+        parameters:
+          - in: idk
+            name: id
+            required: true
+            type: idk  
+        requestBody:
+          content:
+            application/json:
+              schema:
+                $ref: ADD LATER
+        responses:
+          '200': 
+            description: OK
+              updated order object (same shape as GET /orders/:id)
+            content:
+              application/json:
+                schema:
+                  $ref: ADD LATER
+          '400':
+            description: Bad Request
+              invalid fields with per-field error details (same validation rules as POST /orders), order does not exist
+            content:
+              application/json:
+                schema:
+                  $ref: ADD LATER
+          '401':
+            description: Unauthorized
+              invalid or missing API key
+            content:
+              application/json:
+                schema:
+                  $ref: ADD LATER
+          '403':
+            description: Forbidden
+              order does not belong to the user
+            content:
+              application/json:
+                schema:
+                  $ref: ADD LATER
+    delete:
+      /id:
+        description: Deletes an order and its corresponding UBL 2.4 XML.
+        tags:
+          - order
+          - deletion
+        headers:
+          - in: idk
+            name: Authorization
+            required: true
+            type: idk  
+        parameters:
+          - in: idk
+            name: id
+            required: true
+            type: idk  
+        responses:
+          '200':
+            description: OK
+            content:
+              application/json:
+                schema:
+                  $ref: ADD LATER
+          '400':
+            description: Bad Request
+              order does not exist
+            content:
+              application/json:
+                schema:
+                  $ref: ADD LATER
+          '401':
+            description: Unauthorized
+              invalid or missing API key
+            content:
+              application/json:
+                schema:
+                  $ref: ADD LATER
+          '403':
+            description: Forbidden
+              order does not belong to the user
+            content:
+              application/json:
+                schema:
+                  $ref: ADD LATER
+
+
+
+
