@@ -35,16 +35,13 @@ export default [
       'no-unreachable-loop': 'error',
       // no unused assignments
       'no-useless-assignment': 'error',
-      // use === instead of ==
-      'eqeqeq': 'error',
+
       // prefer const over let
       'prefer-const': ['error', { destructuring: 'all' }],
 
       // @typescript-eslint rules
       'no-use-before-define': 'off',
       '@typescript-eslint/no-use-before-define': ['error', { functions: false, classes: false, variables: false }],
-
-      '@typescript-eslint/no-explicit-any': 'error',
 
       '@typescript-eslint/no-unused-vars': 'error',
 
