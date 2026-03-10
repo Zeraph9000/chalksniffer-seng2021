@@ -10,15 +10,15 @@ const builder = new XMLBuilder({
 export function buildOrderXml(order: OrderResponse): string {
   const xmlObj = {
     '?xml': { '@_version': '1.0', '@_encoding': 'UTF-8' },
-    Order: {
+    'Order': {
       '@_xmlns': 'urn:oasis:names:specification:ubl:schema:xsd:Order-2',
-      ID: order.id,
-      IssueDate: order.issueDate,
-      DocumentCurrencyCode: order.documentCurrencyCode,
-      BuyerCustomerParty: order.buyerCustomerParty,
-      SellerSupplierParty: order.sellerSupplierParty,
-      OrderLine: order.orderLines,
-      AnticipatedMonetaryTotal: order.anticipatedMonetaryTotal,
+      'ID': order.id,
+      'IssueDate': order.issueDate,
+      'DocumentCurrencyCode': order.documentCurrencyCode,
+      'BuyerCustomerParty': order.buyerCustomerParty,
+      'SellerSupplierParty': order.sellerSupplierParty,
+      'OrderLine': order.orderLines,
+      'AnticipatedMonetaryTotal': order.anticipatedMonetaryTotal,
     },
   };
 
