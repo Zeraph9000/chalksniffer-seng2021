@@ -1,6 +1,9 @@
 import express from 'express';
 import { apiKeyValidation, validateOrder, calculateMonetaryTotal } from './utils/validation';
+import { buildOrderXml } from './utils/xmlBuilder';
 import type { OrderResponse, Order } from './types';
+import OrderModel from './models/order';
+import OrderXml from './models/orderXml';
 
 const app = express();
 app.use(express.json());
@@ -21,8 +24,9 @@ app.post('/orders', async (req, res) => {
     return res.status(400).json({ errors: validation.errors });
   }
 
+  const orderId = crypto.randomUUID();
   const order: OrderResponse = {
-    id: crypto.randomUUID(),
+    id: orderId,
     issueDate: new Date().toISOString().slice(0, 10),
     documentCurrencyCode: req.body.documentCurrencyCode,
     buyerCustomerParty: req.body.buyerCustomerParty,
@@ -30,8 +34,13 @@ app.post('/orders', async (req, res) => {
     orderLines: req.body.orderLines,
     anticipatedMonetaryTotal: calculateMonetaryTotal(req.body),
     createdAt: new Date(),
-    xmlUrl: `/orders/${req.body.id}/xml`
+    xmlUrl: `/orders/${orderId}/xml`
   }
+
+  await OrderModel.create(order);
+
+  const xml = buildOrderXml(order);
+  await OrderXml.create({ orderId: order.id, xml });
 
   return res.status(200).json(order);
 });

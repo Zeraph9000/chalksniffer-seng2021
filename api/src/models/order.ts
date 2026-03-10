@@ -154,6 +154,6 @@ const orderSchema = new mongoose.Schema({
   xmlUrl: String,
 }, { timestamps: true });
 
-const Order = mongoose.model('Order', orderSchema);
+const OrderModel = mongoose.model('Order', orderSchema);
 
-export default Order;
+export default OrderModel;
