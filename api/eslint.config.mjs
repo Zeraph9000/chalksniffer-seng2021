@@ -44,6 +44,7 @@ export default [
       '@typescript-eslint/no-use-before-define': ['error', { functions: false, classes: false, variables: false }],
 
       '@typescript-eslint/no-unused-vars': 'error',
+      '@typescript-eslint/no-explicit-any': 'off',
 
       // stylistic rules
       // enforce semicolon use
