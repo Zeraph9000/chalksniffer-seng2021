@@ -4,7 +4,8 @@ import crypto from 'crypto';
 
 // Validates API key against database
 export async function apiKeyValidation(apiKey: string): Promise<boolean> {
-  const found = await UserMap.exists({ apiKey });
+  const hashedKey = crypto.createHash('sha256').update(apiKey).digest('hex');
+  const found = await UserMap.exists({ apiKey: hashedKey });
   return !!found;
 }
 
@@ -13,12 +14,14 @@ export async function createUser(): Promise<string> {
   const userId = new mongoose.Types.ObjectId().toString();
   const apiKey = crypto.randomBytes(32).toString('hex');
 
-  await UserMap.create({ userId, apiKey });
+  const hashedKey = crypto.createHash('sha256').update(apiKey).digest('hex');
+  await UserMap.create({ userId, apiKey: hashedKey });
   return apiKey;
 }
 
 // Looks up the internal userId for a given API key
 export async function getUserId(apiKey: string): Promise<string | null> {
-  const mapping = await UserMap.findOne({ apiKey });
+  const hashedKey = crypto.createHash('sha256').update(apiKey).digest('hex');
+  const mapping = await UserMap.findOne({ apiKey: hashedKey });
   return mapping?.userId ?? null;
 }
