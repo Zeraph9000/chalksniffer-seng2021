@@ -20,11 +20,6 @@ app.post('/orders', async (req, res) => {
     return res.status(401).json({ error: 'Invalid API key' });
   }
 
-  const validation = validateOrder(req.body);
-  if (!validation.res) {
-    return res.status(400).json({ errors: validation.errors });
-  }
-
   const orderId = crypto.randomUUID();
   const now = new Date();
 
@@ -36,6 +31,11 @@ app.post('/orders', async (req, res) => {
     createdAt: now.toISOString(),
     xmlUrl: `/orders/${orderId}/xml`,
   };
+
+  const validation = validateOrder(fullOrder);
+  if (!validation.res) {
+    return res.status(400).json({ errors: validation.errors });
+  }
 
   const order: OrderResponse = {
     id: orderId,
