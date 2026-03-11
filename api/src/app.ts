@@ -15,8 +15,8 @@ app.get('/health', (req, res) => {
 });
 
 app.post('/orders', async (req, res) => {
-  const auth = req.headers.authorization as string;
-  if (!await apiKeyValidation(auth)) {
+  const auth = req.headers.authorization;
+  if (!auth || !await apiKeyValidation(auth)) {
     return res.status(401).json({ error: 'Invalid API key' });
   }
 
