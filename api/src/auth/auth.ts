@@ -4,7 +4,7 @@ import crypto from 'crypto';
 
 // Validates API key against database
 export async function apiKeyValidation(apiKey: string): Promise<boolean> {
-  const found = await UserMap.findOne({ apiKey });
+  const found = await UserMap.exists({ apiKey });
   return !!found;
 }
 
