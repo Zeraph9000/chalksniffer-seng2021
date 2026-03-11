@@ -5,7 +5,7 @@ import { validateOrder } from './utils/validation';
 import { calculateMonetaryTotal } from './utils/orderCalculations';
 import { buildOrderXml } from './utils/xmlBuilder';
 import { apiKeyValidation } from './auth/auth';
-import { OrderResponse } from './types';
+import { Order, OrderResponse } from './types';
 
 const app = express();
 app.use(express.json());
@@ -26,21 +26,32 @@ app.post('/orders', async (req, res) => {
   }
 
   const orderId = crypto.randomUUID();
+  const now = new Date();
+
+  const fullOrder: Order = {
+    ...req.body,
+    id: orderId,
+    issueDate: req.body.issueDate,
+    anticipatedMonetaryTotal: calculateMonetaryTotal(req.body),
+    createdAt: now.toISOString(),
+    xmlUrl: `/orders/${orderId}/xml`,
+  };
+
   const order: OrderResponse = {
     id: orderId,
-    issueDate: new Date().toISOString().slice(0, 10),
-    documentCurrencyCode: req.body.documentCurrencyCode,
-    buyerCustomerParty: req.body.buyerCustomerParty,
-    sellerSupplierParty: req.body.sellerSupplierParty,
-    orderLines: req.body.orderLines,
-    anticipatedMonetaryTotal: calculateMonetaryTotal(req.body),
-    createdAt: new Date(),
-    xmlUrl: `/orders/${orderId}/xml`
-  }
+    issueDate: fullOrder.issueDate,
+    documentCurrencyCode: fullOrder.documentCurrencyCode,
+    buyerCustomerParty: fullOrder.buyerCustomerParty,
+    sellerSupplierParty: fullOrder.sellerSupplierParty,
+    orderLines: fullOrder.orderLines,
+    anticipatedMonetaryTotal: fullOrder.anticipatedMonetaryTotal!,
+    createdAt: now,
+    xmlUrl: `/orders/${orderId}/xml`,
+  };
 
   await OrderModel.create(order);
 
-  const xml = buildOrderXml(order);
+  const xml = buildOrderXml(fullOrder);
   await OrderXml.create({ orderId: order.id, xml });
 
   return res.status(200).json(order);
