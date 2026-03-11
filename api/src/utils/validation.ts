@@ -10,7 +10,7 @@
 import fs from 'fs';
 import path from 'path';
 import { XMLParser } from 'fast-xml-parser';
-import { Order, Address, Party, DocumentReference, TaxCategory, TaxSubtotal, TaxTotal, AllowanceCharge, PaymentMeans, Delivery, LineItem, Period, MonetaryTotal } from '../types';
+import { Order, Address, Party, DocumentReference, TaxCategory, TaxSubtotal, TaxTotal, AllowanceCharge, PaymentMeans, Delivery, LineItem, Period } from '../types';
 
 // ---------------------------------------------------------------------------
 // Primitive validators (date, time, currency, country)
