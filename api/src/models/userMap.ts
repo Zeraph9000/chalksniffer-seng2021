@@ -1,5 +1,4 @@
 import mongoose from 'mongoose';
-import crypto from 'crypto';
 
 const userMapSchema = new mongoose.Schema({
   userId: { type: String, required: true, unique: true },
@@ -8,6 +7,3 @@ const userMapSchema = new mongoose.Schema({
 });
 
 export const UserMap = mongoose.model('UserMap', userMapSchema);
-
-
-
