@@ -1,4 +1,5 @@
 import express from 'express';
+import { router as authRouter } from './auth/auth';
 import OrderXml from './models/orderXml';
 import OrderModel from './models/order';
 import { validateOrder } from './utils/validation';
@@ -9,6 +10,8 @@ import { Order, OrderResponse } from './types';
 
 const app = express();
 app.use(express.json());
+
+app.use('/auth', authRouter);
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
