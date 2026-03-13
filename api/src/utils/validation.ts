@@ -29,20 +29,14 @@ function timeValidation(time: string): boolean {
 }
 
 // Load ISO reference data once at module load (currency and country codes)
-const xmlData = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'chalksniffer-seng2021', 'currency-codes.xml'), 'utf8');
+const xmlData = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'currency-codes.xml'), 'utf8');
 const parser = new XMLParser();
 const parsed = parser.parse(xmlData);
 const currencyCodes = new Set(parsed.ISO_4217.CcyTbl.CcyNtry.map((item: any) => item.Ccy));
-const countryCodes = new Set(parsed.ISO_3166_1.CountryTbl.Country.map((item: any) => item.ISO));
 
 /** Returns true if the code is a valid ISO 4217 currency code. */
 function currencyValidation(currency: string): boolean {
   return currencyCodes.has(currency);
-}
-
-/** Returns true if the code is a valid ISO 3166-1 country code. */
-function countryValidation(country: string): boolean {
-  return countryCodes.has(country);
 }
 
 // ---------------------------------------------------------------------------
@@ -77,8 +71,6 @@ function validateAddress(address: Address, prefix: string): ValidationError[] {
   if (!address.postalZone) errors.push({ field: `${prefix}.postalZone`, message: 'required' });
   if (!address.country) {
     errors.push({ field: `${prefix}.country`, message: 'required' });
-  } else if (!countryValidation(address.country)) {
-    errors.push({ field: `${prefix}.country`, message: 'must be a valid ISO 3166-1 country code' });
   }
   return errors;
 }
@@ -322,5 +314,5 @@ function validateOrder(order: Order): ValidationResult {
 // Exports
 // ---------------------------------------------------------------------------
 
-export { dateValidation, timeValidation, currencyValidation, countryValidation, validateOrder };
+export { dateValidation, timeValidation, currencyValidation, validateOrder };
 export type { ValidationError };
