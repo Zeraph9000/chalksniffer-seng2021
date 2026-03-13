@@ -39,7 +39,6 @@ function currencyValidation(currency: string): boolean {
   return currencyCodes.has(currency);
 }
 
-
 // ---------------------------------------------------------------------------
 // Validation result types and field-level validators
 // ---------------------------------------------------------------------------
