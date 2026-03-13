@@ -72,8 +72,6 @@ function validateAddress(address: Address, prefix: string): ValidationError[] {
   if (!address.postalZone) errors.push({ field: `${prefix}.postalZone`, message: 'required' });
   if (!address.country) {
     errors.push({ field: `${prefix}.country`, message: 'required' });
-  } else if (!countryValidation(address.country)) {
-    errors.push({ field: `${prefix}.country`, message: 'must be a valid ISO 3166-1 country code' });
   }
   return errors;
 }
@@ -317,5 +315,5 @@ function validateOrder(order: Order): ValidationResult {
 // Exports
 // ---------------------------------------------------------------------------
 
-export { dateValidation, timeValidation, currencyValidation, countryValidation, validateOrder };
+export { dateValidation, timeValidation, currencyValidation, validateOrder };
 export type { ValidationError };
