@@ -8,6 +8,7 @@ const recurringOrderInstanceSchema = new mongoose.Schema({
 
 const recurringOrderSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
+  userId: { type: String, required: true },
   order: { type: orderSchema, required: true },
   frequency: { type: String, enum: ['Daily', 'Weekly', 'Monthly'], required: true },
   startDate: { type: String, required: true },

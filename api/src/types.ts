@@ -123,6 +123,7 @@ type OrderLine = {
 
 type Order = {
   id: string;
+  userId: string;
   salesOrderId?: string;
   issueDate: string;
   issueTime?: string;
@@ -176,6 +177,7 @@ type RecurringOrderInstance = {
 
 type RecurringOrder = {
   id: string;
+  userId: string;
   order: Order;
   frequency: Frequency;
   startDate: string;
