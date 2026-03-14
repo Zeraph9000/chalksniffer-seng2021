@@ -167,6 +167,30 @@ type OrderResponse = {
 }
 
 
+type Frequency = 'Daily' | 'Weekly' | 'Monthly';
+
+type RecurringOrderInstance = {
+  order: Order;
+  scheduledDate: string;
+};
+
+type RecurringOrder = {
+  id: string;
+  order: Order;
+  frequency: Frequency;
+  startDate: string;
+  orderInstances: RecurringOrderInstance[];
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+type RecurringOrderResponse = {
+  id: string;
+  frequency: Frequency;
+  startDate: string;
+  createdAt: Date;
+};
+
 export type {
   Period,
   DocumentReference,
@@ -190,4 +214,8 @@ export type {
   OrderLine,
   Order,
   OrderResponse,
+  Frequency,
+  RecurringOrderInstance,
+  RecurringOrder,
+  RecurringOrderResponse,
 };
