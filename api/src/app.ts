@@ -1,4 +1,7 @@
 import express from 'express';
+import swaggerUi from 'swagger-ui-express';
+import YAML from 'yamljs';
+import path from 'path';
 import { router as authRouter } from './auth/auth';
 import OrderXml from './models/orderXml';
 import OrderModel from './models/order';
@@ -10,6 +13,9 @@ import { Order, OrderResponse } from './types';
 
 const app = express();
 app.use(express.json());
+
+const swaggerDocument = YAML.load(path.join(__dirname, '../../.github/workflows/endpoints.yaml'));
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.use('/auth', authRouter);
 
