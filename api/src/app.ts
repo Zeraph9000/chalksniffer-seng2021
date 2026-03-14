@@ -9,6 +9,7 @@ import { buildOrderXml } from './utils/xmlBuilder';
 import { generateOrderInstances, scheduleCronJob } from './utils/recurringOrderService';
 import { apiKeyValidation } from './auth/auth';
 import { Order, OrderResponse, Frequency, RecurringOrderResponse } from './types';
+import { getUserId } from './auth/auth';
 
 const app = express();
 app.use(express.json());
@@ -20,10 +21,12 @@ app.get('/health', (req, res) => {
 });
 
 app.post('/orders', async (req, res) => {
-  const auth = req.headers.authorization;
-  if (!auth || !await apiKeyValidation(auth)) {
+  const apiKey = req.headers.authorization;
+  if (!apiKey || !await apiKeyValidation(apiKey)) {
     return res.status(401).json({ error: 'Invalid API key' });
   }
+
+  const userId = (await getUserId(apiKey)) as string;
 
   // Recurring order branch
   if (req.body.recurring === true) {
@@ -40,6 +43,7 @@ app.post('/orders', async (req, res) => {
     const templateOrderId = crypto.randomUUID();
     const templateOrder: Order = {
       ...orderBody,
+      userId,
       id: templateOrderId,
       issueDate: orderBody.issueDate || startDate.split('T')[0],
       anticipatedMonetaryTotal: calculateMonetaryTotal(orderBody),
@@ -55,6 +59,7 @@ app.post('/orders', async (req, res) => {
 
     await RecurringOrderModel.create({
       id: recurringOrderId,
+      userId,
       order: templateOrder,
       frequency,
       startDate,
@@ -80,6 +85,7 @@ app.post('/orders', async (req, res) => {
   const fullOrder: Order = {
     ...req.body,
     id: orderId,
+    userId,
     issueDate: req.body.issueDate,
     anticipatedMonetaryTotal: calculateMonetaryTotal(req.body),
     createdAt: now.toISOString(),
@@ -103,10 +109,10 @@ app.post('/orders', async (req, res) => {
     xmlUrl: `/orders/${orderId}/xml`,
   };
 
-  await OrderModel.create(order);
+  await OrderModel.create(fullOrder);
 
   const xml = buildOrderXml(fullOrder);
-  await OrderXml.create({ orderId: order.id, xml });
+  await OrderXml.create({ orderId: fullOrder.id, xml });
 
   return res.status(200).json(order);
 });
