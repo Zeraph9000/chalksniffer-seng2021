@@ -88,7 +88,7 @@ async function executeNextInstance(recurringOrderId: string): Promise<void> {
     // Skip if this instance isn't due yet (re-push it back)
     if (new Date(instance.scheduledDate).getTime() > Date.now()) {
       await RecurringOrderModel.findOneAndUpdate(
-        { 'id': recurringOrderId },
+        { id: recurringOrderId },
         { $push: { orderInstances: { $each: [instance], $position: 0 } } }
       );
       return;
