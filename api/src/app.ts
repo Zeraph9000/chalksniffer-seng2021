@@ -122,21 +122,23 @@ app.put ('/orders/:id', async (req, res) => {
     return res.status(401).json({ error: 'Invalid API key' });
   }
 
-  const id = req.params.id as string;
-
-  const userId = getUserId(apiKey);
-
-  if (await userId !== id) {
-    return res.status(403).json({ error: 'order does not belong to the user' });
-  }
-
   let body = req.body as editOrderFmt;
+
+  const id = req.params.id as string;
 
   let editedOrder = await OrderModel.findOne({ id: id });
 
 
   if (!editedOrder) {
     return res.status(400).json({ error: 'Order does not exist' });
+  }
+
+  const userId = getUserId(apiKey);
+
+  const orderUserId = editedOrder.userId;
+
+  if (await userId !== orderUserId) {
+    return res.status(403).json({ error: 'order does not belong to the user' });
   }
 
   if (body.note) {
@@ -152,12 +154,21 @@ app.put ('/orders/:id', async (req, res) => {
   let editedOrderObject = editedOrder.toObject();
   editedOrderObject.anticipatedMonetaryTotal = calculateMonetaryTotal(editedOrderObject);
 
+  editedOrder.set('anticipatedMonetaryTotal', editedOrderObject.anticipatedMonetaryTotal);
+
   const validation = validateOrder(editedOrderObject);
   if (!validation.res) {
     return res.status(400).json({ errors: validation.errors });
   }
 
   await editedOrder.save();
+
+  const updatedXml = buildOrderXml(editedOrder.toObject());
+  await OrderXml.updateOne(
+    { orderId: editedOrder.id },
+    { xml: updatedXml },
+    { upsert: true }
+  );
   
   return res.status(200).json(editedOrder);
 
