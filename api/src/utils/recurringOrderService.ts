@@ -62,10 +62,10 @@ function generateOrderInstances(
 
 function replenishInstances(
   recurringOrder: any,
-  frequency: Frequency
+  frequency: Frequency,
+  lastScheduledDate: string
 ): RecurringOrderInstance[] {
-  const lastInstance = recurringOrder.orderInstances[recurringOrder.orderInstances.length - 1];
-  const nextStartDate = new Date(lastInstance.scheduledDate);
+  const nextStartDate = new Date(lastScheduledDate);
   advanceDate(nextStartDate, frequency);
 
   const templateOrder = (recurringOrder.order.toJSON ? recurringOrder.order.toJSON() : recurringOrder.order) as Order;
@@ -84,6 +84,16 @@ async function executeNextInstance(recurringOrderId: string): Promise<void> {
 
     const frequency = recurringOrder.frequency as Frequency;
     const instance = recurringOrder.orderInstances[0] as any;
+
+    // Skip if this instance isn't due yet (re-push it back)
+    if (new Date(instance.scheduledDate).getTime() > Date.now()) {
+      await RecurringOrderModel.findOneAndUpdate(
+        { 'id': recurringOrderId },
+        { $push: { orderInstances: { $each: [instance], $position: 0 } } }
+      );
+      return;
+    }
+
     const orderData = (instance.order.toJSON ? instance.order.toJSON() : instance.order) as Order;
 
     const orderId = crypto.randomUUID();
@@ -123,7 +133,7 @@ async function executeNextInstance(recurringOrderId: string): Promise<void> {
     if (recurringOrder.orderInstances.length - 1 === 0) {
       const refreshed = await RecurringOrderModel.findOne({ id: recurringOrderId });
       if (refreshed) {
-        const newInstances = replenishInstances({ ...refreshed.toJSON(), orderInstances: [instance] }, frequency);
+        const newInstances = replenishInstances(refreshed, frequency, instance.scheduledDate);
         refreshed.orderInstances.push(...(newInstances as any));
         await refreshed.save();
       }

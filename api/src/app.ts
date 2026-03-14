@@ -34,7 +34,7 @@ app.post('/orders', async (req, res) => {
       return res.status(400).json({ errors: [{ field: 'frequency', message: 'must be one of: Daily, Weekly, Monthly' }] });
     }
     if (!startDate || isNaN(Date.parse(startDate))) {
-      return res.status(400).json({ errors: [{ field: 'startDate', message: 'required and must be a valid ISO 8601 datetime (e.g. 2026-03-15T09:00:00Z)' }] });
+      return res.status(400).json({ errors: [{ field: 'startDate', message: 'required and must be a valid date string (e.g. 2026-03-15T09:00:00Z or 2026-03-15)' }] });
     }
 
     const templateOrderId = crypto.randomUUID();
