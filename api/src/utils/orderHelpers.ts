@@ -43,22 +43,22 @@ export function calculateMonetaryTotal(order: Order): MonetaryTotal {
 }
 
 export function getPageList(orders: Order[], limit: number): OrderList {
-    const paginatedOrders: OrderPaginated[] = [];
+  const paginatedOrders: OrderPaginated[] = [];
 
-    orders.forEach(o => {
-        const order: OrderPaginated = {
-            id: o.id,
-            buyerName: o.buyerCustomerParty.party.partyName,
-            sellerName: o.sellerSupplierParty.party.partyName,
-            payableAmount: o.anticipatedMonetaryTotal.payableAmount,
-        }
-
-        paginatedOrders.push(order);
-    });
-
-    return {
-        orders: paginatedOrders.slice(0, limit),
-        limit,
-        totalOrders: orders.length
+  orders.forEach((o) => {
+    const order: OrderPaginated = {
+      id: o.id,
+      buyerName: o.buyerCustomerParty.party.partyName,
+      sellerName: o.sellerSupplierParty.party.partyName,
+      payableAmount: o.anticipatedMonetaryTotal.payableAmount,
     };
+
+    paginatedOrders.push(order);
+  });
+
+  return {
+    orders: paginatedOrders.slice(0, limit),
+    limit,
+    totalOrders: orders.length
+  };
 }
