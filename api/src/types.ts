@@ -172,7 +172,6 @@ type Frequency = 'Daily' | 'Weekly' | 'Monthly';
 type RecurringOrderInstance = {
   order: Order;
   scheduledDate: string;
-  executed: boolean;
 };
 
 type RecurringOrder = {
@@ -180,7 +179,6 @@ type RecurringOrder = {
   order: Order;
   frequency: Frequency;
   startDate: string;
-  nextInstanceIndex: number;
   orderInstances: RecurringOrderInstance[];
   createdAt?: string;
   updatedAt?: string;

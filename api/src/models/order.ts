@@ -125,7 +125,7 @@ const orderLineSchema = new mongoose.Schema({
 
 const orderSchema = new mongoose.Schema({
   id: { type: String, required: true },
-  salesOrderId: { type: String, default: undefined },
+  salesOrderId: String,
   issueDate: { type: String, required: true },
   issueTime: String,
   orderTypeCode: String,

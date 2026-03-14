@@ -56,7 +56,6 @@ function generateOrderInstances(
     return {
       order: instanceOrder,
       scheduledDate,
-      executed: false,
     };
   });
 }
@@ -74,86 +73,87 @@ function replenishInstances(
 }
 
 async function executeNextInstance(recurringOrderId: string): Promise<void> {
-  const recurringOrder = await RecurringOrderModel.findOne({ id: recurringOrderId });
-  if (!recurringOrder) return;
+  try {
+    // Atomically pop the first instance to prevent race conditions
+    const recurringOrder = await RecurringOrderModel.findOneAndUpdate(
+      { 'id': recurringOrderId, 'orderInstances.0': { $exists: true } },
+      { $pop: { orderInstances: -1 } },
+      { returnDocument: 'before' }
+    );
+    if (!recurringOrder || recurringOrder.orderInstances.length === 0) return;
 
-  const frequency = recurringOrder.frequency as Frequency;
+    const frequency = recurringOrder.frequency as Frequency;
+    const instance = recurringOrder.orderInstances[0] as any;
+    const orderData = (instance.order.toJSON ? instance.order.toJSON() : instance.order) as Order;
 
-  // Auto-replenish if no instances remain
-  if (recurringOrder.orderInstances.length === 0) {
-    const newInstances = replenishInstances(recurringOrder, frequency);
-    recurringOrder.orderInstances.push(...(newInstances as any));
-    await recurringOrder.save();
+    const orderId = crypto.randomUUID();
+    const xmlUrl = `/orders/${orderId}/xml`;
+    const fullOrder: Order = {
+      ...orderData,
+      id: orderId,
+      issueDate: instance.scheduledDate.split('T')[0],
+      anticipatedMonetaryTotal: calculateMonetaryTotal(orderData),
+      createdAt: new Date().toISOString(),
+      xmlUrl,
+    };
+
+    const validation = validateOrder(fullOrder);
+    if (!validation.res) {
+      console.error(`Recurring order ${recurringOrderId} instance validation failed:`, validation.errors);
+      return;
+    }
+
+    await OrderModel.create({
+      id: fullOrder.id,
+      issueDate: fullOrder.issueDate,
+      documentCurrencyCode: fullOrder.documentCurrencyCode,
+      buyerCustomerParty: fullOrder.buyerCustomerParty,
+      sellerSupplierParty: fullOrder.sellerSupplierParty,
+      orderLines: fullOrder.orderLines,
+      anticipatedMonetaryTotal: fullOrder.anticipatedMonetaryTotal!,
+      createdAt: new Date(),
+      xmlUrl,
+    });
+
+    const xml = buildOrderXml(fullOrder);
+    await OrderXml.create({ orderId: fullOrder.id, xml });
+
+    // Auto-replenish if no instances remain (the pop already removed one, so check remaining count)
+    // orderInstances.length - 1 because we got the 'before' document
+    if (recurringOrder.orderInstances.length - 1 === 0) {
+      const refreshed = await RecurringOrderModel.findOne({ id: recurringOrderId });
+      if (refreshed) {
+        const newInstances = replenishInstances({ ...refreshed.toJSON(), orderInstances: [instance] }, frequency);
+        refreshed.orderInstances.push(...(newInstances as any));
+        await refreshed.save();
+      }
+    }
+
+    console.log(`Executed recurring order instance: ${fullOrder.id} for recurring order ${recurringOrderId}`);
+  } catch (error) {
+    console.error(`Error executing recurring order ${recurringOrderId}:`, error);
   }
-
-  const instance = recurringOrder.orderInstances[0] as any;
-  const orderData = (instance.order.toJSON ? instance.order.toJSON() : instance.order) as Order;
-
-  const orderId = crypto.randomUUID();
-  const xmlUrl = `/orders/${orderId}/xml`;
-  const fullOrder: Order = {
-    ...orderData,
-    id: orderId,
-    issueDate: instance.scheduledDate.split('T')[0],
-    anticipatedMonetaryTotal: calculateMonetaryTotal(orderData),
-    createdAt: new Date().toISOString(),
-    xmlUrl,
-  };
-
-  const validation = validateOrder(fullOrder);
-  if (!validation.res) {
-    console.error(`Recurring order ${recurringOrderId} instance validation failed:`, validation.errors);
-    return;
-  }
-
-  await OrderModel.create({
-    id: fullOrder.id,
-    issueDate: fullOrder.issueDate,
-    documentCurrencyCode: fullOrder.documentCurrencyCode,
-    buyerCustomerParty: fullOrder.buyerCustomerParty,
-    sellerSupplierParty: fullOrder.sellerSupplierParty,
-    orderLines: fullOrder.orderLines,
-    anticipatedMonetaryTotal: fullOrder.anticipatedMonetaryTotal!,
-    createdAt: new Date(),
-    xmlUrl,
-  });
-
-  const xml = buildOrderXml(fullOrder);
-  await OrderXml.create({ orderId: fullOrder.id, xml });
-
-  // Remove the executed instance from the front of the queue
-  recurringOrder.orderInstances.splice(0, 1);
-  recurringOrder.markModified('orderInstances');
-  await recurringOrder.save();
-
-  // Auto-replenish if no instances remain
-  if (recurringOrder.orderInstances.length === 0) {
-    const newInstances = replenishInstances(recurringOrder, frequency);
-    recurringOrder.orderInstances.push(...(newInstances as any));
-    await recurringOrder.save();
-  }
-
-  console.log(`Executed recurring order instance: ${fullOrder.id} for recurring order ${recurringOrderId}`);
 }
 
-function frequencyToCron(frequency: Frequency): string {
+function frequencyToCron(frequency: Frequency, startDate: string): string {
+  const date = new Date(startDate);
   switch (frequency) {
     case 'Daily':
       return '0 0 * * *';
     case 'Weekly':
-      return '0 0 * * 1';
+      return `0 0 * * ${date.getUTCDay()}`;
     case 'Monthly':
-      return '0 0 1 * *';
+      return `0 0 ${date.getUTCDate()} * *`;
   }
 }
 
-function scheduleCronJob(recurringOrderId: string, frequency: Frequency): void {
+function scheduleCronJob(recurringOrderId: string, frequency: Frequency, startDate: string): void {
   const existing = cronJobs.get(recurringOrderId);
   if (existing) {
     existing.stop();
   }
 
-  const cronExpression = frequencyToCron(frequency);
+  const cronExpression = frequencyToCron(frequency, startDate);
   const task = cron.schedule(cronExpression, async () => {
     await executeNextInstance(recurringOrderId);
   });
@@ -164,11 +164,11 @@ function scheduleCronJob(recurringOrderId: string, frequency: Frequency): void {
 
 async function restoreRecurringJobs(): Promise<void> {
   const recurringOrders = await RecurringOrderModel.find({
-    'orderInstances.executed': false,
+    'orderInstances.0': { $exists: true },
   });
 
   for (const ro of recurringOrders) {
-    scheduleCronJob(ro.id, ro.frequency as Frequency);
+    scheduleCronJob(ro.id, ro.frequency as Frequency, ro.startDate);
   }
 
   console.log(`Restored ${recurringOrders.length} recurring order cron jobs`);

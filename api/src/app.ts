@@ -27,7 +27,7 @@ app.post('/orders', async (req, res) => {
 
   // Recurring order branch
   if (req.body.recurring === true) {
-    const { frequency, startDate } = req.body;
+    const { recurring, frequency, startDate, ...orderBody } = req.body;
 
     const validFrequencies: Frequency[] = ['Daily', 'Weekly', 'Monthly'];
     if (!frequency || !validFrequencies.includes(frequency)) {
@@ -39,16 +39,11 @@ app.post('/orders', async (req, res) => {
 
     const templateOrderId = crypto.randomUUID();
     const templateOrder: Order = {
-      ...req.body,
+      ...orderBody,
       id: templateOrderId,
-      issueDate: req.body.issueDate || startDate.split('T')[0],
-      anticipatedMonetaryTotal: calculateMonetaryTotal(req.body),
+      issueDate: orderBody.issueDate || startDate.split('T')[0],
+      anticipatedMonetaryTotal: calculateMonetaryTotal(orderBody),
     };
-
-    // Remove recurring-specific fields from the template
-    delete (templateOrder as any).recurring;
-    delete (templateOrder as any).frequency;
-    delete (templateOrder as any).startDate;
 
     const validation = validateOrder(templateOrder);
     if (!validation.res) {
@@ -66,7 +61,7 @@ app.post('/orders', async (req, res) => {
       orderInstances,
     });
 
-    scheduleCronJob(recurringOrderId, frequency);
+    scheduleCronJob(recurringOrderId, frequency, startDate);
 
     const response: RecurringOrderResponse = {
       id: recurringOrderId,
