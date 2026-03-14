@@ -154,6 +154,19 @@ type Order = {
   xmlUrl?: string;
 };
 
+type OrderResponse = {
+  id: string;
+  issueDate: string;
+  documentCurrencyCode: string;
+  buyerCustomerParty: CustomerParty;
+  sellerSupplierParty: SupplierParty;
+  orderLines: OrderLine[];
+  anticipatedMonetaryTotal: MonetaryTotal;
+  createdAt: Date;
+  xmlUrl: string;
+}
+
+
 export type {
   Period,
   DocumentReference,
@@ -176,4 +189,5 @@ export type {
   LineItem,
   OrderLine,
   Order,
+  OrderResponse,
 };
