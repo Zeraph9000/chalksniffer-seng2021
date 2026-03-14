@@ -57,12 +57,12 @@ type TaxTotal = {
 };
 
 type MonetaryTotal = {
-  lineExtensionAmount?: number;
-  taxExclusiveAmount?: number;
-  taxInclusiveAmount?: number;
-  allowanceTotalAmount?: number;
-  chargeTotalAmount?: number;
-  payableAmount?: number;
+  lineExtensionAmount: number;
+  taxExclusiveAmount: number;
+  taxInclusiveAmount: number;
+  allowanceTotalAmount: number;
+  chargeTotalAmount: number;
+  payableAmount: number;
 };
 
 type AllowanceCharge = {
@@ -147,7 +147,7 @@ type Order = {
   paymentTerms?: PaymentTerms;
   allowanceCharge?: AllowanceCharge[];
   taxTotal?: TaxTotal;
-  anticipatedMonetaryTotal?: MonetaryTotal;
+  anticipatedMonetaryTotal: MonetaryTotal;
   orderLines: OrderLine[];
   createdAt?: string;
   updatedAt?: string;
@@ -166,6 +166,25 @@ type OrderResponse = {
   xmlUrl: string;
 }
 
+type OrderPaginated = {
+    id: string;
+    buyerName: string;
+    sellerName: string;
+    payableAmount: number;
+}
+
+type OrderFilter = {
+    id?: string;
+    buyerName?: string;
+    sellerName?: string;
+    payableAmount?: number;
+}
+
+type OrderList = {
+    orders: OrderPaginated[];
+    limit: number;
+    totalOrders: number;
+}
 
 export type {
   Period,
@@ -190,4 +209,7 @@ export type {
   OrderLine,
   Order,
   OrderResponse,
+  OrderPaginated,
+  OrderFilter,
+  OrderList,
 };

@@ -3,10 +3,10 @@ import { router as authRouter } from './auth/auth';
 import OrderXml from './models/orderXml';
 import OrderModel from './models/order';
 import { validateOrder } from './utils/validation';
-import { calculateMonetaryTotal } from './utils/orderCalculations';
+import { calculateMonetaryTotal, getPageList } from './utils/orderHelpers';
 import { buildOrderXml } from './utils/xmlBuilder';
 import { apiKeyValidation } from './auth/auth';
-import { Order, OrderResponse } from './types';
+import { Order, OrderResponse, OrderList, OrderFilter } from './types';
 
 const app = express();
 app.use(express.json());
@@ -58,6 +58,23 @@ app.post('/orders', async (req, res) => {
   await OrderXml.create({ orderId: order.id, xml });
 
   return res.status(200).json(order);
+});
+
+app.get('/orders', async (req, res) => {
+  const auth = req.headers.authorization;
+  if (!auth || !await apiKeyValidation(auth)) {
+    return res.status(401).json({ error: 'Invalid API key' });
+  }
+
+  const { limit, ...filterBody } = req.body;
+  const filter: OrderFilter = Object.fromEntries(
+  Object.entries(filterBody as Partial<OrderFilter>)
+    .filter(([, v]) => v !== undefined));
+
+  const ordersFound = await OrderModel.find(filter) as Order[];
+  const orders = getPageList(ordersFound, parseInt(limit));
+
+  return res.status(200).json(orders);
 });
 
 export default app;

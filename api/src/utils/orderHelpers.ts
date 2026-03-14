@@ -1,4 +1,5 @@
-import { Order, MonetaryTotal } from '../types';
+import { Order, MonetaryTotal, OrderPaginated, OrderList, OrderFilter } from '../types';
+import OrderModel from '../models/order';
 
 export function calculateMonetaryTotal(order: Order): MonetaryTotal {
   // Sum of quantity × priceAmount for each line item
@@ -40,4 +41,25 @@ export function calculateMonetaryTotal(order: Order): MonetaryTotal {
     chargeTotalAmount,
     payableAmount,
   };
+}
+
+export function getPageList(orders: Order[], limit: number): OrderList {
+    const paginatedOrders: OrderPaginated[] = [];
+
+    orders.forEach(o => {
+        const order: OrderPaginated = {
+            id: o.id,
+            buyerName: o.buyerCustomerParty.party.partyName,
+            sellerName: o.sellerSupplierParty.party.partyName,
+            payableAmount: o.anticipatedMonetaryTotal.payableAmount,
+        }
+
+        paginatedOrders.push(order);
+    });
+
+    return {
+        orders: paginatedOrders.slice(0, limit),
+        limit,
+        totalOrders: orders.length
+    };
 }
