@@ -61,15 +61,13 @@ app.post('/orders', async (req, res) => {
 });
 
 app.put ('/orders/:id', async (req, res) => {
-  const auth = req.headers.authorization;
+  const apiKey = getApiKeyFromAuthorizationHeader(req) as string;
 
-  if (!auth || !await apiKeyValidation(auth)) {
+  if (!apiKey || !await apiKeyValidation(apiKey)) {
     return res.status(401).json({ error: 'Invalid API key' });
   }
 
   const id = req.params.id as string;
-
-  const apiKey = getApiKeyFromAuthorizationHeader(req) as string;
 
   const userId = getUserId(apiKey);
 
@@ -107,8 +105,6 @@ app.put ('/orders/:id', async (req, res) => {
   await editedOrder.save();
   
   return res.status(200).json(editedOrder);
-
-
 
 });
 

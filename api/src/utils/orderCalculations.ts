@@ -41,7 +41,3 @@ export function calculateMonetaryTotal(order: Order): MonetaryTotal {
     payableAmount,
   };
 }
-
-function editOrder(auth: string | undefined, id: string, order: Order) {
-  
-}
