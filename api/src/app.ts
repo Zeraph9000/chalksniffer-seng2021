@@ -26,7 +26,7 @@ app.post('/orders', async (req, res) => {
     return res.status(401).json({ error: 'Invalid API key' });
   }
 
-  const userId = await getUserId(apiKey) as string;
+  const userId = (await getUserId(apiKey)) as string;
 
   // Recurring order branch
   if (req.body.recurring === true) {
