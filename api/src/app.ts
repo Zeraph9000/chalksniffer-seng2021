@@ -60,4 +60,18 @@ app.post('/orders', async (req, res) => {
   return res.status(200).json(order);
 });
 
+app.get('/orders/:id', async (req, res) => {
+  const auth = req.headers.authorization;
+  if (!auth || !await apiKeyValidation(auth)) {
+    return res.status(401).json({ error: 'Invalid API key' });
+  }
+
+  const id = req.params.id;
+  const order = await OrderModel.findOne({ id });
+  if (order) {
+    return res.status(200).json(order);
+  }
+  return res.status(400).json({ error: 'Invalid Order Id given' });
+});
+
 export default app;
