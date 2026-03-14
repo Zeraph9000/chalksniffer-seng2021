@@ -166,6 +166,27 @@ type OrderResponse = {
   xmlUrl: string;
 }
 
+type editOrderFmt = {
+  note: string,
+  delivery: {
+    requestedDeliveryPeriod: {
+      startDate: string,
+      endDate: string
+    }
+  },
+  orderLines: [
+    {
+      lineItem: {
+        id: string,
+        quantity: number,
+        unitCode: string,
+        price: { priceAmount: number, currencyID: string },
+        item: { name: string, sellersItemIdentification: string }
+      }
+    }
+  ]
+}
+
 
 export type {
   Period,
@@ -190,4 +211,5 @@ export type {
   OrderLine,
   Order,
   OrderResponse,
+  editOrderFmt
 };

@@ -6,7 +6,7 @@ import { validateOrder } from './utils/validation';
 import { calculateMonetaryTotal } from './utils/orderCalculations';
 import { buildOrderXml } from './utils/xmlBuilder';
 import { apiKeyValidation } from './auth/auth';
-import { Order, OrderResponse } from './types';
+import { editOrderFmt, Order, OrderResponse } from './types';
 
 const app = express();
 app.use(express.json());
@@ -63,27 +63,6 @@ app.post('/orders', async (req, res) => {
 app.put ('/orders/:id', (req, res) => {
   const auth = req.headers.authorization;
   const id = req.params.id;
-  let body = req.body as {
-  note: string,
-  delivery: {
-    requestedDeliveryPeriod: {
-      startDate: string,
-      endDate: string
-    }
-  },
-  orderLines: [
-    {
-      lineItem: {
-        id: string,
-        quantity: number,
-        unitCode: string,
-        price: { priceAmount: number, currencyID: string },
-        item: { name: string, sellersItemIdentification: string }
-      }
-    }
-  ]
-}
-
-})
+  let body = req.body as editOrderFmt;
 
 export default app;
