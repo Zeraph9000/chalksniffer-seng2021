@@ -1,12 +1,13 @@
 import express from 'express';
-import { router as authRouter } from './auth/auth';
+import { router as authRouter, getUserId, apiKeyValidation, getApiKeyFromAuthorizationHeader } from './auth/auth';
 import OrderXml from './models/orderXml';
 import OrderModel from './models/order';
 import { validateOrder, type ValidationResult } from './utils/validation';
 import { calculateMonetaryTotal } from './utils/orderCalculations';
 import { buildOrderXml } from './utils/xmlBuilder';
-import { apiKeyValidation, getApiKeyFromAuthorizationHeader, getUserId } from './auth/auth';
-import { editOrderFmt, Order, OrderResponse } from './types';
+import { editOrderFmt, Order, OrderResponse, Frequency, RecurringOrderResponse } from './types';
+import RecurringOrderModel from './models/recurringOrder';
+import { generateOrderInstances, scheduleCronJob } from './utils/recurringOrderService';
 
 const app = express();
 app.use(express.json());
@@ -18,17 +19,71 @@ app.get('/health', (req, res) => {
 });
 
 app.post('/orders', async (req, res) => {
-  const auth = req.headers.authorization;
-  if (!auth || !await apiKeyValidation(auth)) {
+  const apiKey = req.headers.authorization;
+  if (!apiKey || !await apiKeyValidation(apiKey)) {
     return res.status(401).json({ error: 'Invalid API key' });
   }
 
+  const userId = (await getUserId(apiKey)) as string;
+
+  // Recurring order branch
+  if (req.body.recurring === true) {
+    const { recurring, frequency, startDate, ...orderBody } = req.body;
+
+    const validFrequencies: Frequency[] = ['Daily', 'Weekly', 'Monthly'];
+    if (!frequency || !validFrequencies.includes(frequency)) {
+      return res.status(400).json({ errors: [{ field: 'frequency', message: 'must be one of: Daily, Weekly, Monthly' }] });
+    }
+    if (!startDate || isNaN(Date.parse(startDate))) {
+      return res.status(400).json({ errors: [{ field: 'startDate', message: 'required and must be a valid date string (e.g. 2026-03-15T09:00:00Z or 2026-03-15)' }] });
+    }
+
+    const templateOrderId = crypto.randomUUID();
+    const templateOrder: Order = {
+      ...orderBody,
+      userId,
+      id: templateOrderId,
+      issueDate: orderBody.issueDate || startDate.split('T')[0],
+      anticipatedMonetaryTotal: calculateMonetaryTotal(orderBody),
+    };
+
+    const validation = validateOrder(templateOrder);
+    if (!validation.res) {
+      return res.status(400).json({ errors: validation.errors });
+    }
+
+    const recurringOrderId = crypto.randomUUID();
+    const orderInstances = generateOrderInstances(templateOrder, startDate, frequency);
+
+    await RecurringOrderModel.create({
+      id: recurringOrderId,
+      userId,
+      order: templateOrder,
+      frequency,
+      startDate,
+      orderInstances,
+    });
+
+    scheduleCronJob(recurringOrderId, frequency, startDate);
+
+    const response: RecurringOrderResponse = {
+      id: recurringOrderId,
+      frequency,
+      startDate,
+      createdAt: new Date(),
+    };
+
+    return res.status(200).json(response);
+  }
+
+  // Existing non-recurring order path
   const orderId = crypto.randomUUID();
   const now = new Date();
 
   const fullOrder: Order = {
     ...req.body,
     id: orderId,
+    userId,
     issueDate: req.body.issueDate,
     anticipatedMonetaryTotal: calculateMonetaryTotal(req.body),
     createdAt: now.toISOString(),
@@ -52,10 +107,10 @@ app.post('/orders', async (req, res) => {
     xmlUrl: `/orders/${orderId}/xml`,
   };
 
-  await OrderModel.create(order);
+  await OrderModel.create(fullOrder);
 
   const xml = buildOrderXml(fullOrder);
-  await OrderXml.create({ orderId: order.id, xml });
+  await OrderXml.create({ orderId: fullOrder.id, xml });
 
   return res.status(200).json(order);
 });

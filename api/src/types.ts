@@ -123,7 +123,8 @@ type OrderLine = {
 
 type Order = {
   id: string;
-  salesOrderId?: string | null;
+  userId: string;
+  salesOrderId?: string;
   issueDate: string;
   issueTime?: string | null;
   orderTypeCode?: string | null;
@@ -173,6 +174,31 @@ type editOrderFmt = {
 }
 
 
+type Frequency = 'Daily' | 'Weekly' | 'Monthly';
+
+type RecurringOrderInstance = {
+  order: Order;
+  scheduledDate: string;
+};
+
+type RecurringOrder = {
+  id: string;
+  userId: string;
+  order: Order;
+  frequency: Frequency;
+  startDate: string;
+  orderInstances: RecurringOrderInstance[];
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+type RecurringOrderResponse = {
+  id: string;
+  frequency: Frequency;
+  startDate: string;
+  createdAt: Date;
+};
+
 export type {
   Period,
   DocumentReference,
@@ -196,5 +222,9 @@ export type {
   OrderLine,
   Order,
   OrderResponse,
-  editOrderFmt
+  editOrderFmt,
+  Frequency,
+  RecurringOrderInstance,
+  RecurringOrder,
+  RecurringOrderResponse,
 };

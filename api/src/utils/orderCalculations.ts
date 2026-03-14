@@ -1,4 +1,4 @@
-import { Order, MonetaryTotal, editOrderFmt } from '../types';
+import { Order, MonetaryTotal } from '../types';
 
 export function calculateMonetaryTotal(order: Order): MonetaryTotal {
   // Sum of quantity × priceAmount for each line item
