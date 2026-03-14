@@ -7,10 +7,12 @@ import { calculateMonetaryTotal, getPageList } from './utils/orderHelpers';
 import { buildOrderXml } from './utils/xmlBuilder';
 import { apiKeyValidation } from './auth/auth';
 import { Order, OrderResponse, OrderList, OrderFilter } from './types';
+import exportCSV from 'export-to-csv';
 
 const app = express();
-app.use(express.json());
+const csvConfig = exportCSV.mkConfig({ useKeysAsHeaders: true, fieldSeparator: ',' });
 
+app.use(express.json());
 app.use('/auth', authRouter);
 
 app.get('/health', (req, res) => {
@@ -75,6 +77,26 @@ app.get('/orders', async (req, res) => {
   const orders = getPageList(ordersFound, parseInt(limit));
 
   return res.status(200).json(orders);
+});
+
+app.get('/orders/csv', async (req, res) => {
+  const auth = req.headers.authorization;
+  if (!auth || !await apiKeyValidation(auth)) {
+    return res.status(401).json({ error: 'Invalid API key' });
+  }
+
+  const { limit, ...filterBody } = req.body;
+  const filter: OrderFilter = Object.fromEntries(
+  Object.entries(filterBody as Partial<OrderFilter>)
+    .filter(([, v]) => v !== undefined));
+
+  const ordersFound = await OrderModel.find(filter) as Order[];
+  const orderPages = getPageList(ordersFound, parseInt(limit)).orders;
+  if (orderPages.length == 0) return res.status(200);
+
+  const csv = exportCSV.generateCsv(csvConfig)(orderPages);
+
+  return res.status(200).send(csv);
 });
 
 export default app;
