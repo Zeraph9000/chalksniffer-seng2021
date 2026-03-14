@@ -42,6 +42,6 @@ export function calculateMonetaryTotal(order: Order): MonetaryTotal {
   };
 }
 
-function editOrder(auth: string | undefined, id: string, body: editOrderFmt) {
-
+function editOrder(auth: string | undefined, id: string, order: Order) {
+  
 }
