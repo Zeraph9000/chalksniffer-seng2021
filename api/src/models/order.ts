@@ -125,7 +125,7 @@ const orderLineSchema = new mongoose.Schema({
 
 const orderSchema = new mongoose.Schema({
   id: { type: String, required: true },
-  salesOrderId: String,
+  salesOrderId: { type: String, default: undefined },
   issueDate: { type: String, required: true },
   issueTime: String,
   orderTypeCode: String,
@@ -156,4 +156,5 @@ const orderSchema = new mongoose.Schema({
 
 const OrderModel = mongoose.model('Order', orderSchema);
 
+export { orderSchema };
 export default OrderModel;

@@ -2,11 +2,13 @@ import express from 'express';
 import { router as authRouter } from './auth/auth';
 import OrderXml from './models/orderXml';
 import OrderModel from './models/order';
+import RecurringOrderModel from './models/recurringOrder';
 import { validateOrder } from './utils/validation';
 import { calculateMonetaryTotal } from './utils/orderCalculations';
 import { buildOrderXml } from './utils/xmlBuilder';
+import { generateOrderInstances, scheduleCronJob } from './utils/recurringOrderService';
 import { apiKeyValidation } from './auth/auth';
-import { Order, OrderResponse } from './types';
+import { Order, OrderResponse, Frequency, RecurringOrderResponse } from './types';
 
 const app = express();
 app.use(express.json());
@@ -23,6 +25,60 @@ app.post('/orders', async (req, res) => {
     return res.status(401).json({ error: 'Invalid API key' });
   }
 
+  // Recurring order branch
+  if (req.body.recurring === true) {
+    const { frequency, startDate } = req.body;
+
+    const validFrequencies: Frequency[] = ['Daily', 'Weekly', 'Monthly'];
+    if (!frequency || !validFrequencies.includes(frequency)) {
+      return res.status(400).json({ errors: [{ field: 'frequency', message: 'must be one of: Daily, Weekly, Monthly' }] });
+    }
+    if (!startDate || isNaN(Date.parse(startDate))) {
+      return res.status(400).json({ errors: [{ field: 'startDate', message: 'required and must be a valid ISO 8601 datetime (e.g. 2026-03-15T09:00:00Z)' }] });
+    }
+
+    const templateOrderId = crypto.randomUUID();
+    const templateOrder: Order = {
+      ...req.body,
+      id: templateOrderId,
+      issueDate: req.body.issueDate || startDate.split('T')[0],
+      anticipatedMonetaryTotal: calculateMonetaryTotal(req.body),
+    };
+
+    // Remove recurring-specific fields from the template
+    delete (templateOrder as any).recurring;
+    delete (templateOrder as any).frequency;
+    delete (templateOrder as any).startDate;
+
+    const validation = validateOrder(templateOrder);
+    if (!validation.res) {
+      return res.status(400).json({ errors: validation.errors });
+    }
+
+    const recurringOrderId = crypto.randomUUID();
+    const orderInstances = generateOrderInstances(templateOrder, startDate, frequency);
+
+    await RecurringOrderModel.create({
+      id: recurringOrderId,
+      order: templateOrder,
+      frequency,
+      startDate,
+      orderInstances,
+    });
+
+    scheduleCronJob(recurringOrderId, frequency);
+
+    const response: RecurringOrderResponse = {
+      id: recurringOrderId,
+      frequency,
+      startDate,
+      createdAt: new Date(),
+    };
+
+    return res.status(200).json(response);
+  }
+
+  // Existing non-recurring order path
   const orderId = crypto.randomUUID();
   const now = new Date();
 
