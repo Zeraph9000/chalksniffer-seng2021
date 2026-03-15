@@ -1,4 +1,7 @@
 import express from 'express';
+import swaggerUi from 'swagger-ui-express';
+import YAML from 'yamljs';
+import path from 'path';
 import { router as authRouter, getUserId, apiKeyValidation, getApiKeyFromAuthorizationHeader } from './auth/auth';
 import OrderXml from './models/orderXml';
 import OrderModel from './models/order';
@@ -12,6 +15,9 @@ import { generateOrderInstances, scheduleCronJob } from './utils/recurringOrderS
 import { json2csv } from 'json-2-csv';
 
 const app = express();
+
+const swaggerDocument = YAML.load(path.join(__dirname, '../endpoints.yaml'));
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.use(express.json());
 app.use('/auth', authRouter);
