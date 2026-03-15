@@ -1,13 +1,15 @@
+import { afterEach, beforeEach, describe, expect, test } from '@jest/globals';
 import request from 'supertest';
-import mongoose from 'mongoose';
 import app from '../src/app';
-import './setup';
-
-beforeEach(async () => {
-  await mongoose.connection.dropDatabase();
-});
+import {
+  clearOrderTestData,
+} from './helpers/orderTestHelpers';
 
 describe('POST /auth/register', () => {
+  beforeEach(async () => {
+    await clearOrderTestData;
+  });
+
   describe('successful registration [status:200]', () => {
     test('returns 200 with an apiKey [status:200]', async () => {
       const res = await request(app).post('/auth/register');

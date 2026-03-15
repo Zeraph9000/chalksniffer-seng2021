@@ -1,34 +1,34 @@
 type Period = {
-  startDate?: string;
-  endDate?: string;
+  startDate?: string | null;
+  endDate?: string | null;
 };
 
 type DocumentReference = {
   id: string;
-  documentType?: string;
+  documentType?: string | null;
 };
 
 type Address = {
   streetName: string;
-  additionalStreetName?: string;
-  buildingNumber?: string;
+  additionalStreetName?: string | null;
+  buildingNumber?: string | null;
   cityName: string;
   postalZone: string;
-  countrySubentity?: string;
+  countrySubentity?: string | null;
   country: string;
 };
 
 type Contact = {
-  name?: string;
-  telephone?: string;
-  email?: string;
+  name?: string | null;
+  telephone?: string | null;
+  email?: string | null;
 };
 
 type Party = {
   partyName: string;
-  partyIdentification?: string;
+  partyIdentification?: string | null;
   postalAddress: Address;
-  contact?: Contact;
+  contact?: Contact | null;
 };
 
 type CustomerParty = {
@@ -40,7 +40,7 @@ type SupplierParty = {
 };
 
 type TaxCategory = {
-  percent?: number;
+  percent?: number | null;
   taxScheme: string;
 };
 
@@ -53,68 +53,68 @@ type TaxSubtotal = {
 type TaxTotal = {
   taxAmount: number;
   currencyID: string;
-  taxSubtotal?: TaxSubtotal[];
+  taxSubtotal?: TaxSubtotal[] | null;
 };
 
 type MonetaryTotal = {
-  lineExtensionAmount?: number;
-  taxExclusiveAmount?: number;
-  taxInclusiveAmount?: number;
-  allowanceTotalAmount?: number;
-  chargeTotalAmount?: number;
-  payableAmount?: number;
+  lineExtensionAmount?: number | null;
+  taxExclusiveAmount?: number | null;
+  taxInclusiveAmount?: number | null;
+  allowanceTotalAmount?: number | null;
+  chargeTotalAmount?: number | null;
+  payableAmount?: number | null;
 };
 
 type AllowanceCharge = {
   chargeIndicator: boolean;
-  allowanceChargeReasonCode?: string;
-  allowanceChargeReason?: string;
+  allowanceChargeReasonCode?: string | null;
+  allowanceChargeReason?: string | null;
   amount: number;
   currencyID: string;
 };
 
 type PaymentMeans = {
   paymentMeansCode: string;
-  paymentDueDate?: string;
-  paymentID?: string;
+  paymentDueDate?: string | null;
+  paymentID?: string | null;
 };
 
 type PaymentTerms = {
-  note?: string;
+  note?: string | null;
 };
 
 type Delivery = {
-  deliveryAddress?: Address;
-  requestedDeliveryPeriod?: Period;
+  deliveryAddress?: Address | null;
+  requestedDeliveryPeriod?: Period | null;
 };
 
 type DeliveryTerms = {
-  specialTerms?: string;
+  specialTerms?: string | null;
 };
 
 type Price = {
   priceAmount: number;
   currencyID: string;
-  baseQuantity?: number;
+  baseQuantity?: number | null;
 };
 
 type Item = {
   name: string;
-  description?: string;
-  buyersItemIdentification?: string;
-  sellersItemIdentification?: string;
-  standardItemIdentification?: string;
-  classifiedTaxCategory?: TaxCategory;
+  description?: string | null;
+  buyersItemIdentification?: string | null;
+  sellersItemIdentification?: string | null;
+  standardItemIdentification?: string | null;
+  classifiedTaxCategory?: TaxCategory | null;
 };
 
 type LineItem = {
   id: string;
   quantity: number;
-  unitCode?: string;
-  lineExtensionAmount?: number;
+  unitCode?: string | null;
+  lineExtensionAmount?: number | null;
   price: Price;
   item: Item;
-  delivery?: Delivery;
+  delivery?: Delivery | null;
 };
 
 type OrderLine = {
@@ -123,35 +123,36 @@ type OrderLine = {
 
 type Order = {
   id: string;
+  userId: string;
   salesOrderId?: string;
   issueDate: string;
-  issueTime?: string;
-  orderTypeCode?: string;
-  note?: string;
+  issueTime?: string | null;
+  orderTypeCode?: string | null;
+  note?: string | null;
   documentCurrencyCode: string;
-  pricingCurrencyCode?: string;
-  taxCurrencyCode?: string;
-  customerReference?: string;
-  accountingCostCode?: string;
-  validityPeriod?: Period;
-  quotationDocumentReference?: DocumentReference;
-  orderDocumentReference?: DocumentReference;
-  originatorDocumentReference?: DocumentReference;
-  additionalDocumentReference?: DocumentReference[];
+  pricingCurrencyCode?: string | null;
+  taxCurrencyCode?: string | null;
+  customerReference?: string | null;
+  accountingCostCode?: string | null;
+  validityPeriod?: Period | null;
+  quotationDocumentReference?: DocumentReference | null;
+  orderDocumentReference?: DocumentReference | null;
+  originatorDocumentReference?: DocumentReference | null;
+  additionalDocumentReference?: DocumentReference[] | null;
   buyerCustomerParty: CustomerParty;
   sellerSupplierParty: SupplierParty;
-  originatorCustomerParty?: CustomerParty;
-  delivery?: Delivery;
-  deliveryTerms?: DeliveryTerms;
-  paymentMeans?: PaymentMeans;
-  paymentTerms?: PaymentTerms;
-  allowanceCharge?: AllowanceCharge[];
-  taxTotal?: TaxTotal;
-  anticipatedMonetaryTotal?: MonetaryTotal;
+  originatorCustomerParty?: CustomerParty | null;
+  delivery?: Delivery | null;
+  deliveryTerms?: DeliveryTerms | null;
+  paymentMeans?: PaymentMeans | null;
+  paymentTerms?: PaymentTerms | null;
+  allowanceCharge?: AllowanceCharge[] | null;
+  taxTotal?: TaxTotal | null;
+  anticipatedMonetaryTotal?: MonetaryTotal | null;
   orderLines: OrderLine[];
-  createdAt?: string;
-  updatedAt?: string;
-  xmlUrl?: string;
+  createdAt?: string | Date | null;
+  updatedAt?: string | Date | null;
+  xmlUrl?: string | null;
 };
 
 type OrderResponse = {
@@ -164,8 +165,71 @@ type OrderResponse = {
   anticipatedMonetaryTotal: MonetaryTotal;
   createdAt: Date;
   xmlUrl: string;
+};
+
+type editOrderFmt = {
+  note?: string | null;
+  delivery?: Delivery | null;
+  orderLines?: OrderLine[] | null;
+};
+
+type Frequency = 'Daily' | 'Weekly' | 'Monthly';
+
+type RecurringOrderInstance = {
+  order: Order;
+  scheduledDate: string;
+};
+
+type RecurringOrder = {
+  id: string;
+  userId: string;
+  order: Order;
+  frequency: Frequency;
+  startDate: string;
+  orderInstances: RecurringOrderInstance[];
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+type RecurringOrderResponse = {
+  id: string;
+  frequency: Frequency;
+  startDate: string;
+  createdAt: Date;
+};
+
+type OrderPaginated = {
+  id: string;
+  issueDate: string;
+  buyerName: string;
+  sellerName: string;
+  payableAmount: number | string;
+  documentCurrencyCode: string;
+  createdAt: string;
 }
 
+type OrderFilter = {
+  userId?: string | null;
+  id?: string;
+  issueDate?: string;
+  buyerName?: string;
+  sellerName?: string;
+  payableAmount?: number;
+  documentCurrencyCode?: string;
+  createdAt?: string;
+}
+
+type OrderList = {
+  orders: OrderPaginated[];
+  limit: number;
+  totalOrders: number;
+}
+
+type PaginationParams = {
+  limit: number;
+  offset: number;
+  filter?: OrderFilter;
+};
 
 export type {
   Period,
@@ -190,4 +254,13 @@ export type {
   OrderLine,
   Order,
   OrderResponse,
+  editOrderFmt,
+  Frequency,
+  RecurringOrderInstance,
+  RecurringOrder,
+  RecurringOrderResponse,
+  OrderPaginated,
+  OrderFilter,
+  OrderList,
+  PaginationParams,
 };
