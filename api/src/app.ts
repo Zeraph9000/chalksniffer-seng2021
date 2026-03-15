@@ -3,16 +3,15 @@ import { router as authRouter, getUserId, apiKeyValidation, getApiKeyFromAuthori
 import OrderXml from './models/orderXml';
 import OrderModel from './models/order';
 import { validateOrder } from './utils/validation';
-import { calculateMonetaryTotal, getOrderPages } from './utils/orderHelpers';
+import { calculateMonetaryTotal, getOrderPages, parsePagedQuery } from './utils/orderHelpers';
 import { buildOrderXml } from './utils/xmlBuilder';
 import { getOrderXmlResponse } from './utils/getOrderXml';
 import { editOrderFmt, Order, OrderResponse, Frequency, RecurringOrderResponse, OrderFilter } from './types';
 import RecurringOrderModel from './models/recurringOrder';
 import { generateOrderInstances, scheduleCronJob } from './utils/recurringOrderService';
-import exportCSV from 'export-to-csv';
+import { json2csv } from 'json-2-csv';
 
 const app = express();
-const csvConfig = exportCSV.mkConfig({ useKeysAsHeaders: true, fieldSeparator: ',' });
 
 app.use(express.json());
 app.use('/auth', authRouter);
@@ -199,13 +198,16 @@ app.get('/orders', async (req, res) => {
   }
 
   const userId = await getUserId(apiKey);
-  const { limit, offset, ...queryFilter } = req.query;
-  const filter: OrderFilter = { userId, ...queryFilter };
+  const q = parsePagedQuery(req.query, userId as string);
 
-  const ordersFound = await OrderModel.find(filter)
-    .skip(parseInt(offset as string))
+  if ('error' in q) {
+    return res.status(400).json(q);
+  }
+
+  const ordersFound = await OrderModel.find(q.filter as OrderFilter)
+    .skip(q.offset as number)
     .lean();
-  const orders = getOrderPages(ordersFound, parseInt(limit as string));
+  const orders = getOrderPages(ordersFound, q.limit as number);
 
   return res.status(200).json(orders);
 });
@@ -217,16 +219,19 @@ app.get('/orders/csv', async (req, res) => {
   }
 
   const userId = await getUserId(apiKey);
-  const { limit, offset, ...queryFilter } = req.query;
-  const filter: OrderFilter = { userId, ...queryFilter };
+  const q = parsePagedQuery(req.query, userId as string);
 
-  const ordersFound = await OrderModel.find(filter)
-    .skip(parseInt(offset as string))
+  if ('error' in q) {
+    return res.status(400).json(q);
+  }
+
+  const ordersFound = await OrderModel.find(q.filter as OrderFilter)
+    .skip(q.offset as number)
     .lean();
-  const orders = getOrderPages(ordersFound, parseInt(limit as string));
+  const orders = getOrderPages(ordersFound, q.limit as number);
 
   if (orders.orders.length === 0) return res.status(200).send('');
-  const csv = exportCSV.generateCsv(csvConfig)(orders.orders);
+  const csv = await json2csv(orders.orders);
 
   return res.status(200).send(csv);
 });

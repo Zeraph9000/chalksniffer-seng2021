@@ -1,4 +1,4 @@
-import { Order, MonetaryTotal, OrderPaginated, OrderList } from '../types';
+import { Order, MonetaryTotal, OrderPaginated, OrderList, PaginationParams, OrderFilter } from '../types';
 
 export function calculateMonetaryTotal(order: Order): MonetaryTotal {
   // Sum of quantity × priceAmount for each line item
@@ -62,4 +62,17 @@ export function getOrderPages(ordersFound: Order[], limit: number): OrderList {
     limit,
     totalOrders: pagedOrders.length
   };
+}
+
+export function parsePagedQuery(query: Record<string, unknown>, userId: string): PaginationParams | { error: string } {
+  const { limit, offset, ...queryFilter } = query;
+
+  const lim = parseInt(limit as string);
+  if (lim < 1 || lim > 500) return { error: 'Limit must be between 1 and 500 inclusive' };
+  const offs = parseInt(offset as string);
+  if (offs < 0) return { error: 'Offset must be greater than or equal to 0' };
+
+  const qfilter: OrderFilter = { userId, ...queryFilter };
+
+  return { limit: lim, offset: offs, filter: qfilter };
 }
