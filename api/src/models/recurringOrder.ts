@@ -1,12 +1,13 @@
 import mongoose from 'mongoose';
+import type { RecurringOrder, RecurringOrderInstance } from '../types';
 import { orderSchema } from './order';
 
-const recurringOrderInstanceSchema = new mongoose.Schema({
+const recurringOrderInstanceSchema = new mongoose.Schema<RecurringOrderInstance>({
   order: { type: orderSchema, required: true },
   scheduledDate: { type: String, required: true },
 }, { _id: false });
 
-const recurringOrderSchema = new mongoose.Schema({
+const recurringOrderSchema = new mongoose.Schema<RecurringOrder>({
   id: { type: String, required: true, unique: true },
   userId: { type: String, required: true },
   order: { type: orderSchema, required: true },
@@ -15,6 +16,6 @@ const recurringOrderSchema = new mongoose.Schema({
   orderInstances: { type: [recurringOrderInstanceSchema], required: true },
 }, { timestamps: true });
 
-const RecurringOrderModel = mongoose.model('RecurringOrder', recurringOrderSchema);
+const RecurringOrderModel = mongoose.model<RecurringOrder>('RecurringOrder', recurringOrderSchema);
 
 export default RecurringOrderModel;

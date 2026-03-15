@@ -288,7 +288,7 @@ function validateOrder(order: Order): ValidationResult {
   }
 
   // Document references: quotation, order, originator, and additional references
-  const namedDocRefs: [string, DocumentReference | undefined][] = [
+  const namedDocRefs: [string, DocumentReference | null | undefined][] = [
     ['quotationDocumentReference', order.quotationDocumentReference],
     ['orderDocumentReference', order.orderDocumentReference],
     ['originatorDocumentReference', order.originatorDocumentReference],
@@ -315,4 +315,4 @@ function validateOrder(order: Order): ValidationResult {
 // ---------------------------------------------------------------------------
 
 export { dateValidation, timeValidation, currencyValidation, validateOrder };
-export type { ValidationError };
+export type { ValidationError, ValidationResult };
