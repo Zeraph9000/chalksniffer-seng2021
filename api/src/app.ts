@@ -130,7 +130,7 @@ app.post('/orders', async (req, res) => {
   return res.status(200).json(order);
 });
 
-app.put ('/orders/:id', async (req, res) => {
+app.put('/orders/:id', async (req, res) => {
   const apiKey = getApiKeyFromAuthorizationHeader(req) as string;
 
   if (!apiKey || !await apiKeyValidation(apiKey)) {
@@ -190,7 +190,7 @@ app.put ('/orders/:id', async (req, res) => {
   return res.status(200).json(editedOrder);
 });
 
-app.get ('/orders/:id/xml', async (req, res) => {
+app.get('/orders/:id/xml', async (req, res) => {
   const result = await getOrderXmlResponse(
     getApiKeyFromAuthorizationHeader(req) as string | undefined,
     req.params.id as string
@@ -258,6 +258,26 @@ app.post('/orders/recurring', async (_req: Request, res: Response) => {
   } catch {
     res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'Failed to process recurring orders' });
   }
+});
+
+app.get('/orders/:id', async (req, res) => {
+  const apiKey = getApiKeyFromAuthorizationHeader(req) as string;
+  if (!apiKey || !await apiKeyValidation(apiKey)) {
+    return res.status(401).json({ error: 'Invalid API key' });
+  }
+
+  const id = req.params.id as string;
+  const userId = await getUserId(apiKey);
+  if (!userId) {
+    return res.status(403).json({ error: 'API key does not belong to user' });
+  }
+
+  const foundOrder = await OrderModel.findOne({ id, userId });
+  if (!foundOrder) {
+    return res.status(400).json({ error: `User does not own an order with the ID ${id}` });
+  }
+
+  return res.status(200).json(foundOrder);
 });
 
 export default app;
