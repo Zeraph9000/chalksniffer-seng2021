@@ -5,7 +5,7 @@ import crypto from 'crypto';
 
 export const router = Router();
 
-function getApiKeyFromAuthorizationHeader(req: Request): string | null {
+export function getApiKeyFromAuthorizationHeader(req: Request): string | null {
   const header = req.header('Authorization');
   if (!header) return null;
 
