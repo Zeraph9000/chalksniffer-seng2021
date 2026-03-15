@@ -6,6 +6,9 @@ info:
 
 servers:
   - url: https://chalksniffer.com
+    description: main production
+  - url: http://localhost:8080
+    description: local testing
 
 tags:
   - name: health
