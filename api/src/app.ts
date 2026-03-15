@@ -10,6 +10,7 @@ import { editOrderFmt, Order, OrderResponse, Frequency, RecurringOrderResponse, 
 import RecurringOrderModel from './models/recurringOrder';
 import { generateOrderInstances, scheduleCronJob } from './utils/recurringOrderService';
 import { json2csv } from 'json-2-csv';
+import { json } from 'node:stream/consumers';
 
 const app = express();
 
@@ -234,6 +235,52 @@ app.get('/orders/csv', async (req, res) => {
   const csv = await json2csv(orders.orders);
 
   return res.status(200).send(csv);
+});
+
+app.get('/order/recommend', async (req, res) => {
+  const apiKey = getApiKeyFromAuthorizationHeader(req) as string;
+
+  if (!apiKey || !await apiKeyValidation(apiKey)) {
+    return res.status(401).json({ error: 'Invalid API key' });
+  }
+
+  const userId = getUserId(apiKey);
+
+  const ordersMongoose = await OrderModel.find({ userId: userId });
+  let orders = [];
+  for (const o of ordersMongoose) {
+    orders.push(o.toObject());
+  }
+
+  for (const o of orders) {
+    orders.map
+  }
+
+  const freq = new Map<string, number>();
+
+  for (const o of orders) {
+    const key = JSON.stringify(o);
+    freq.set(key, (freq.get(key) ?? 0) + 1);
+  }
+
+  let mostFreqKey: string | null = null;
+  let mostFreqCount = 0;
+  for (const [k, count] of freq) {
+    if (count > mostFreqCount) {
+      mostFreqCount = count;
+      mostFreqKey = k;
+    }
+  }
+
+  if (!mostFreqKey) {
+    return res.status(400).json({ error: 'No Orders Found' });
+  }
+
+  const mostFreq: Order = JSON.parse(mostFreqKey);
+
+  return res.status(200).json(mostFreq);
+
+
 });
 
 export default app;
