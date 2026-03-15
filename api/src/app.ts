@@ -3,15 +3,18 @@ import { router as authRouter, getUserId, apiKeyValidation, getApiKeyFromAuthori
 import OrderXml from './models/orderXml';
 import OrderModel from './models/order';
 import { validateOrder } from './utils/validation';
-import { calculateMonetaryTotal } from './utils/orderCalculations';
+import { calculateMonetaryTotal, getOrderPages } from './utils/orderHelpers';
 import { buildOrderXml } from './utils/xmlBuilder';
-import { editOrderFmt, Order, OrderResponse, Frequency, RecurringOrderResponse } from './types';
+import { getOrderXmlResponse } from './utils/getOrderXml';
+import { editOrderFmt, Order, OrderResponse, Frequency, RecurringOrderResponse, OrderFilter } from './types';
 import RecurringOrderModel from './models/recurringOrder';
 import { generateOrderInstances, scheduleCronJob } from './utils/recurringOrderService';
+import exportCSV from 'export-to-csv';
 
 const app = express();
-app.use(express.json());
+const csvConfig = exportCSV.mkConfig({ useKeysAsHeaders: true, fieldSeparator: ',' });
 
+app.use(express.json());
 app.use('/auth', authRouter);
 
 app.get('/health', (req, res) => {
@@ -132,7 +135,10 @@ app.put ('/orders/:id', async (req, res) => {
     return res.status(400).json({ error: 'Order does not exist' });
   }
 
-  const userId = getUserId(apiKey);
+  const userId = await getUserId(apiKey);
+  if (!userId) {
+    return res.status(401).json({ error: 'Invalid API key' });
+  }
 
   const orderUserId = editedOrder.userId;
 
@@ -170,6 +176,59 @@ app.put ('/orders/:id', async (req, res) => {
   );
 
   return res.status(200).json(editedOrder);
+});
+
+app.get ('/orders/:id/xml', async (req, res) => {
+  const result = await getOrderXmlResponse(
+    getApiKeyFromAuthorizationHeader(req) as string | undefined,
+    req.params.id as string
+  );
+
+  if (result.status !== 200) {
+    return res.status(result.status).json(result.body);
+  }
+
+  res.set('Content-Type', 'application/xml');
+  return res.status(200).send(result.xml);
+});
+
+app.get('/orders', async (req, res) => {
+  const apiKey = getApiKeyFromAuthorizationHeader(req) as string;
+  if (!apiKey || !await apiKeyValidation(apiKey)) {
+    return res.status(401).json({ error: 'Invalid API key' });
+  }
+
+  const userId = await getUserId(apiKey);
+  const { limit, offset } = req.body;
+  const filter: OrderFilter = { userId, ...req.query };
+
+  const ordersFound = await OrderModel.find(filter)
+    .skip(parseInt(offset))
+    .lean();
+  const orders = getOrderPages(ordersFound, parseInt(limit));
+
+  return res.status(200).json(orders);
+});
+
+app.get('/orders/csv', async (req, res) => {
+  const apiKey = getApiKeyFromAuthorizationHeader(req) as string;
+  if (!apiKey || !await apiKeyValidation(apiKey)) {
+    return res.status(401).json({ error: 'Invalid API key' });
+  }
+
+  const userId = await getUserId(apiKey);
+  const { limit, offset } = req.body;
+  const filter: OrderFilter = { userId, ...req.query };
+
+  const ordersFound = await OrderModel.find(filter)
+    .skip(parseInt(offset))
+    .lean();
+  const orders = getOrderPages(ordersFound, parseInt(limit));
+  if (orders.length == 0) return res.status(200);
+
+  const csv = exportCSV.generateCsv(csvConfig)(orders);
+
+  return res.status(200).send(csv);
 });
 
 export default app;
