@@ -1,18 +1,25 @@
 import crypto from 'crypto';
-import request from 'supertest';
-import app from '../src/app';
-import { UserMap } from '../src/models/userMap';
-import type { Order,  } from '../src/types';
 import { expect } from '@jest/globals';
+import request from 'supertest';
+import app from '../../src/app';
+import OrderModel from '../../src/models/order';
+import OrderXml from '../../src/models/orderXml';
+import { UserMap } from '../../src/models/userMap';
+import type { Order } from '../../src/types';
 
-const VALID_API_KEY = 'test-api-key';
+export const VALID_API_KEY = 'test-api-key';
+export const VALID_USER_ID = 'test-user';
+export const OTHER_API_KEY = 'other-api-key';
+export const OTHER_USER_ID = 'other-user';
 
-type OrderPayload = Omit<
+type CreateOrderPayload = Omit<
   Order,
   'id' | 'userId' | 'anticipatedMonetaryTotal' | 'createdAt' | 'updatedAt' | 'xmlUrl'
 >;
 
-export function buildValidOrderPayload(): OrderPayload {
+export function buildValidOrderPayload(
+  overrides: Partial<CreateOrderPayload> = {}
+): CreateOrderPayload {
   return {
     issueDate: '2026-03-15',
     documentCurrencyCode: 'USD',
@@ -55,7 +62,16 @@ export function buildValidOrderPayload(): OrderPayload {
         },
       },
     ],
+    ...overrides,
   };
+}
+
+export async function clearOrderTestData(): Promise<void> {
+  await Promise.all([
+    OrderModel.deleteMany({}),
+    OrderXml.deleteMany({}),
+    UserMap.deleteMany({}),
+  ]);
 }
 
 export async function createUserMap(apiKey: string, userId: string): Promise<void> {
@@ -63,12 +79,19 @@ export async function createUserMap(apiKey: string, userId: string): Promise<voi
   await UserMap.create({ userId, apiKey: hashedKey });
 }
 
-export async function createOrder(apiKey = VALID_API_KEY, orderPayload: OrderPayload) {
+export async function seedDefaultUserMap(): Promise<void> {
+  await createUserMap(VALID_API_KEY, VALID_USER_ID);
+}
+
+export async function createOrder(
+  apiKey: string,
+  overrides: Partial<CreateOrderPayload> = {}
+): Promise<string> {
   const res = await request(app)
     .post('/orders')
     .set('Authorization', apiKey)
-    .send(orderPayload);
+    .send(buildValidOrderPayload(overrides));
 
-  expect(res.status).toBe(200);
+  expect(res.status).toStrictEqual(200);
   return res.body.id as string;
 }

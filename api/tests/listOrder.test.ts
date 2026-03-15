@@ -1,23 +1,25 @@
+import { afterEach, beforeEach, describe, expect, test } from '@jest/globals';
 import request from 'supertest';
 import app from '../src/app';
-import { UserMap } from '../src/models/userMap';
-import { createUserMap, createOrder, buildValidOrderPayload } from '../tests/testHelpers';
-import { afterEach, beforeEach, describe, expect, test } from '@jest/globals';
-import OrderModel from '../src/models/order';
 import OrderXml from '../src/models/orderXml';
-
-const VALID_API_KEY = 'test-api-key';
-const VALID_USER_ID = 'test-user';
-const OTHER_API_KEY = 'other-api-key';
-const OTHER_USER_ID = 'other-user';
+import {
+  clearOrderTestData,
+  createOrder,
+  createUserMap,
+  OTHER_API_KEY,
+  OTHER_USER_ID,
+  seedDefaultUserMap,
+  VALID_API_KEY,
+} from './helpers/orderTestHelpers';
 
 describe('/orders (GET)', () => {
   beforeEach(async () => {
-    await OrderModel.deleteMany({});
-    await OrderXml.deleteMany({});
-    await UserMap.deleteMany({});
+    await clearOrderTestData();
+    await seedDefaultUserMap();
+  });
 
-    await createUserMap(VALID_API_KEY, VALID_USER_ID);
+  afterEach(async () => {
+    await clearOrderTestData();
   });
 
   test('responds 401 when no Authorization header is provided', async () => {
@@ -28,10 +30,9 @@ describe('/orders (GET)', () => {
     expect(res.status).toBe(401);
   });
 
-  test('responds 200 and returns paginated orders for the authenticated user', async () => {
-    const payload = buildValidOrderPayload();
-    const orderId = await createOrder(VALID_API_KEY, payload);
-    await createOrder(VALID_API_KEY, payload);
+  test('responds 200 and returns limited paginated orders for the authenticated user', async () => {
+    const orderId = await createOrder(VALID_API_KEY);
+    await createOrder(VALID_API_KEY);
 
     const res = await request(app)
       .get('/orders')
@@ -57,11 +58,10 @@ describe('/orders (GET)', () => {
   });
 
   test('responds 200 and filters by order id and excludes other users', async () => {
-    const payload = buildValidOrderPayload();
-    const orderId = await createOrder(VALID_API_KEY, payload);
+    const orderId = await createOrder(VALID_API_KEY);
 
     await createUserMap(OTHER_API_KEY, OTHER_USER_ID);
-    await createOrder(OTHER_API_KEY, payload);
+    await createOrder(OTHER_API_KEY);
 
     const res = await request(app)
       .get('/orders')
