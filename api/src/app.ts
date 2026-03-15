@@ -20,7 +20,13 @@ const yamlPath = process.env.VERCEL
   ? path.join(process.cwd(), 'api/endpoints.yaml')
   : path.join(__dirname, '../endpoints.yaml');
 const swaggerDocument = YAML.load(yamlPath);
-app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+const swaggerUiDistPath = require('swagger-ui-dist').getAbsoluteFSPath();
+const swaggerUiOptions = {
+  explorer: true,
+  customCss: '.swagger-ui .opblock .opblock-summary-path-description-wrapper { align-items: center; display: flex; flex-wrap: wrap; gap: 0 10px; padding: 0 10px; width: 100%; }',
+  customCssUrl: 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.0.0/swagger-ui.min.css',
+};
+app.use('/docs', express.static(swaggerUiDistPath, { index: false }), swaggerUi.serve, swaggerUi.setup(swaggerDocument, swaggerUiOptions));
 
 app.use(express.json());
 app.use('/auth', authRouter);
