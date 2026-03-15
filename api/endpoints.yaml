@@ -5,7 +5,7 @@ info:
   description: API for creating, retrieving, exporting, updating, and deleting UBL 2.4 orders.
 
 servers:
-  - url: https://chalksniffer.au/docs
+  - url: https://chalksniffer.com
 
 tags:
   - name: health
@@ -222,7 +222,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-                
+
   /orders/recurring:
     post:
       tags:
