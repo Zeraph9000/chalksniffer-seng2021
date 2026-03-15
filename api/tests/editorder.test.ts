@@ -9,11 +9,16 @@ import type { Order } from '../src/types';
 
 const VALID_API_KEY = 'test-api-key';
 const VALID_USER_ID = 'test-user';
+const OTHER_API_KEY = 'other-api-key';
+const OTHER_USER_ID = 'other-user';
 
-function buildValidOrder(overrides: Partial<Order> = {}): Order {
+type CreateOrderPayload = Omit<
+  Order,
+  'id' | 'userId' | 'anticipatedMonetaryTotal' | 'createdAt' | 'updatedAt' | 'xmlUrl'
+>;
+
+function buildValidOrderPayload(overrides: Partial<CreateOrderPayload> = {}): CreateOrderPayload {
   return {
-    id: 'order-default',
-    userId: VALID_USER_ID,
     issueDate: '2026-03-15',
     documentCurrencyCode: 'USD',
     buyerCustomerParty: {
@@ -55,18 +60,23 @@ function buildValidOrder(overrides: Partial<Order> = {}): Order {
         },
       },
     ],
-    anticipatedMonetaryTotal: {
-      lineExtensionAmount: 20,
-      taxExclusiveAmount: 20,
-      taxInclusiveAmount: 20,
-      allowanceTotalAmount: 0,
-      chargeTotalAmount: 0,
-      payableAmount: 20,
-    },
-    createdAt: new Date().toISOString(),
-    xmlUrl: '/orders/order-default/xml',
     ...overrides,
   };
+}
+
+async function createUserMap(apiKey: string, userId: string): Promise<void> {
+  const hashedKey = crypto.createHash('sha256').update(apiKey).digest('hex');
+  await UserMap.create({ userId, apiKey: hashedKey });
+}
+
+async function createOrder(apiKey = VALID_API_KEY, overrides: Partial<CreateOrderPayload> = {}) {
+  const res = await request(app)
+    .post('/orders')
+    .set('Authorization', apiKey)
+    .send(buildValidOrderPayload(overrides));
+
+  expect(res.status).toBe(200);
+  return res.body.id as string;
 }
 
 describe('/orders/:id (PUT)', () => {
@@ -75,11 +85,7 @@ describe('/orders/:id (PUT)', () => {
     await OrderXml.deleteMany({});
     await UserMap.deleteMany({});
 
-    const hashedKey = crypto.createHash('sha256').update(VALID_API_KEY).digest('hex');
-    await UserMap.create({
-      userId: VALID_USER_ID,
-      apiKey: hashedKey,
-    });
+    await createUserMap(VALID_API_KEY, VALID_USER_ID);
   });
 
   afterEach(async () => {
@@ -112,14 +118,11 @@ describe('/orders/:id (PUT)', () => {
   });
 
   test('responds 403 when the order exists but belongs to another user', async () => {
-    const order = await OrderModel.create(buildValidOrder({
-      id: 'order-1',
-      userId: 'other-user',
-      xmlUrl: '/orders/order-1/xml',
-    }));
+    await createUserMap(OTHER_API_KEY, OTHER_USER_ID);
+    const orderId = await createOrder(OTHER_API_KEY);
 
     const res = await request(app)
-      .put(`/orders/${order.id}`)
+      .put(`/orders/${orderId}`)
       .set('Authorization', VALID_API_KEY)
       .send({ note: 'updated-note' });
 
@@ -127,13 +130,10 @@ describe('/orders/:id (PUT)', () => {
   });
 
   test('responds 200 and returns the updated order when request is valid', async () => {
-    const order = await OrderModel.create(buildValidOrder({
-      id: 'order-2',
-      xmlUrl: '/orders/order-2/xml',
-    }));
+    const orderId = await createOrder();
 
     const res = await request(app)
-      .put(`/orders/${order.id}`)
+      .put(`/orders/${orderId}`)
       .set('Authorization', VALID_API_KEY)
       .send({ note: 'updated-note' });
 
@@ -142,21 +142,16 @@ describe('/orders/:id (PUT)', () => {
   });
 
   test('persists updated XML for the order after a successful update', async () => {
-    const order = await OrderModel.create(buildValidOrder({
-      id: 'order-3',
-      xmlUrl: '/orders/order-3/xml',
-    }));
-
-    await OrderXml.create({ orderId: order.id, xml: '<old/>' });
+    const orderId = await createOrder();
 
     const res = await request(app)
-      .put(`/orders/${order.id}`)
+      .put(`/orders/${orderId}`)
       .set('Authorization', VALID_API_KEY)
       .send({ note: 'updated-note' });
 
     expect(res.status).toBe(200);
 
-    const storedXml = await OrderXml.findOne({ orderId: order.id });
+    const storedXml = await OrderXml.findOne({ orderId });
     expect(storedXml).toBeTruthy();
     expect(storedXml?.xml).toContain('<Order');
   });
