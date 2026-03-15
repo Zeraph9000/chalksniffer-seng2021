@@ -45,7 +45,7 @@ describe('/orders/:id/xml (GET)', () => {
   });
 
   test('should return 400 when the order exists but no XML record is stored for it', async () => {
-    const orderId = await createOrder();
+    const orderId = await createOrder(VALID_API_KEY);
     await OrderXml.deleteOne({ orderId });
 
     const res = await request(app)
@@ -68,7 +68,7 @@ describe('/orders/:id/xml (GET)', () => {
   });
 
   test('should return 200 and the stored XML when the request is valid', async () => {
-    const orderId = await createOrder();
+    const orderId = await createOrder(VALID_API_KEY);
     const storedXml = await OrderXml.findOne({ orderId });
 
     const res = await request(app)

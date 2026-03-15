@@ -58,7 +58,7 @@ describe('/orders/:id (PUT)', () => {
   });
 
   test('should return 200 and the updated order when the request is valid', async () => {
-    const orderId = await createOrder();
+    const orderId = await createOrder(VALID_API_KEY);
 
     const res = await request(app)
       .put(`/orders/${orderId}`)
@@ -70,7 +70,7 @@ describe('/orders/:id (PUT)', () => {
   });
 
   test('should persist updated XML when the request is valid', async () => {
-    const orderId = await createOrder();
+    const orderId = await createOrder(VALID_API_KEY);
 
     const res = await request(app)
       .put(`/orders/${orderId}`)

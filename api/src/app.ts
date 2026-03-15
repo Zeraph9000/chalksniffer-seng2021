@@ -3,10 +3,10 @@ import { router as authRouter, getUserId, apiKeyValidation, getApiKeyFromAuthori
 import OrderXml from './models/orderXml';
 import OrderModel from './models/order';
 import { validateOrder } from './utils/validation';
-import { calculateMonetaryTotal } from './utils/orderCalculations';
+import { calculateMonetaryTotal, getOrderPages } from './utils/orderHelpers';
 import { buildOrderXml } from './utils/xmlBuilder';
 import { getOrderXmlResponse } from './utils/getOrderXml';
-import { editOrderFmt, Order, OrderResponse, Frequency, RecurringOrderResponse } from './types';
+import { editOrderFmt, Order, OrderResponse, Frequency, RecurringOrderResponse, OrderFilter } from './types';
 import RecurringOrderModel from './models/recurringOrder';
 import { generateOrderInstances, scheduleCronJob } from './utils/recurringOrderService';
 
@@ -133,7 +133,10 @@ app.put ('/orders/:id', async (req, res) => {
     return res.status(400).json({ error: 'Order does not exist' });
   }
 
-  const userId = getUserId(apiKey);
+  const userId = await getUserId(apiKey);
+  if (!userId) {
+    return res.status(401).json({ error: 'Invalid API key' });
+  }
 
   const orderUserId = editedOrder.userId;
 
@@ -185,6 +188,24 @@ app.get ('/orders/:id/xml', async (req, res) => {
 
   res.set('Content-Type', 'application/xml');
   return res.status(200).send(result.xml);
+});
+
+app.get('/orders', async (req, res) => {
+  const apiKey = getApiKeyFromAuthorizationHeader(req) as string;
+  if (!apiKey || !await apiKeyValidation(apiKey)) {
+    return res.status(401).json({ error: 'Invalid API key' });
+  }
+
+  const userId = await getUserId(apiKey);
+  const { limit, offset } = req.body;
+  const filter: OrderFilter = { userId, ...req.query };
+
+  const ordersFound = await OrderModel.find(filter)
+    .skip(parseInt(offset))
+    .lean();
+  const orders = getOrderPages(ordersFound, parseInt(limit));
+
+  return res.status(200).json(orders);
 });
 
 export default app;

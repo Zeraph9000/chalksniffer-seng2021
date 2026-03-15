@@ -84,7 +84,7 @@ export async function seedDefaultUserMap(): Promise<void> {
 }
 
 export async function createOrder(
-  apiKey = VALID_API_KEY,
+  apiKey: string,
   overrides: Partial<CreateOrderPayload> = {}
 ): Promise<string> {
   const res = await request(app)
