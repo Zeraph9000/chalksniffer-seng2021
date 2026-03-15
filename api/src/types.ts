@@ -1,3 +1,12 @@
+/**
+ * This contains the typescript types
+ */
+
+export type ErrorObject = {
+  error: string,
+  message: string
+}
+
 type Period = {
   startDate?: string | null;
   endDate?: string | null;

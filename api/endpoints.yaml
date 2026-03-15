@@ -223,6 +223,38 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /orders/recurring:
+    post:
+      tags:
+        - order
+      summary: Process recurring orders
+      description: Processes all due recurring orders by creating the next scheduled order instance for each. Intended to be called by a scheduled cron job.
+      responses:
+        '200':
+          description: all due recurring orders processed
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: a recurring order instance failed validation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INVALID_ORDER_DATA
+                message: Validation failed for recurring
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: Cant connect 
+
   /orders/csv:
     get:
       tags:
