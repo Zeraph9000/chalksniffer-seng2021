@@ -29,7 +29,7 @@ describe('/orders/csv (GET)', () => {
         .get('/orders/csv')
         .query({ limit: 3, offset: 0 });
 
-      expect(res.status).toBe(401);
+      expect(res.status).toStrictEqual(401);
     });
 
     test('responds 400 when invalid limit', async () => {
@@ -41,7 +41,7 @@ describe('/orders/csv (GET)', () => {
         .set('Authorization', VALID_API_KEY)
         .query({ limit: 0, offset: 0 });
 
-      expect(res.status).toBe(400);
+      expect(res.status).toStrictEqual(400);
     });
 
     test('responds 400 when invalid offset', async () => {
@@ -53,7 +53,7 @@ describe('/orders/csv (GET)', () => {
         .set('Authorization', VALID_API_KEY)
         .query({ limit: 1, offset: -1 });
 
-      expect(res.status).toBe(400);
+      expect(res.status).toStrictEqual(400);
     });
   });
 
@@ -66,13 +66,13 @@ describe('/orders/csv (GET)', () => {
       .set('Authorization', VALID_API_KEY)
       .query({ limit: 1, offset: 0 });
 
-    expect(res.status).toBe(200);
+    expect(res.status).toStrictEqual(200);
     const records: OrderPaginated[] = parse(res.text, { columns: true });
-    expect(records[0].id).toBe(orderId);
-    expect(records[0].buyerName).toBe('Buyer Pty Ltd');
-    expect(records[0].sellerName).toBe('Seller Pty Ltd');
-    expect(records[0].payableAmount).toBe('20');
-    expect(records[0].documentCurrencyCode).toBe('USD');
+    expect(records[0].id).toStrictEqual(orderId);
+    expect(records[0].buyerName).toStrictEqual('Buyer Pty Ltd');
+    expect(records[0].sellerName).toStrictEqual('Seller Pty Ltd');
+    expect(records[0].payableAmount).toStrictEqual('20');
+    expect(records[0].documentCurrencyCode).toStrictEqual('USD');
   });
 
   test('responds 200 and returns a csv excluding other users', async () => {
@@ -86,12 +86,12 @@ describe('/orders/csv (GET)', () => {
       .set('Authorization', VALID_API_KEY)
       .query({ limit: 10, offset: 0, id: orderId });
 
-    expect(res.status).toBe(200);
+    expect(res.status).toStrictEqual(200);
     const records: OrderPaginated[] = parse(res.text, { columns: true });
-    expect(records[0].id).toBe(orderId);
-    expect(records[0].buyerName).toBe('Buyer Pty Ltd');
-    expect(records[0].sellerName).toBe('Seller Pty Ltd');
-    expect(records[0].payableAmount).toBe('20');
-    expect(records[0].documentCurrencyCode).toBe('USD');
+    expect(records[0].id).toStrictEqual(orderId);
+    expect(records[0].buyerName).toStrictEqual('Buyer Pty Ltd');
+    expect(records[0].sellerName).toStrictEqual('Seller Pty Ltd');
+    expect(records[0].payableAmount).toStrictEqual('20');
+    expect(records[0].documentCurrencyCode).toStrictEqual('USD');
   });
 });
