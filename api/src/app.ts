@@ -252,14 +252,13 @@ app.get('/order/recommend', async (req, res) => {
     orders.push(o.toObject());
   }
 
-  for (const o of orders) {
-    orders.map
-  }
+  const normalizedKeys = orders.map(o => {
+    const items = o.orderLines?.map(line => `${line.lineItem.item.name}:${line.lineItem.quantity}`).sort() || [];
+    return items.join('|'); 
+  });
 
   const freq = new Map<string, number>();
-
-  for (const o of orders) {
-    const key = JSON.stringify(o);
+  for (const key of normalizedKeys) {
     freq.set(key, (freq.get(key) ?? 0) + 1);
   }
 
@@ -272,15 +271,16 @@ app.get('/order/recommend', async (req, res) => {
     }
   }
 
-  if (!mostFreqKey) {
-    return res.status(400).json({ error: 'No Orders Found' });
+  if (!mostFreqKey || mostFreqCount < 2) { 
+    return res.status(400).json({ error: 'No frequent orders found' });
   }
 
-  const mostFreq: Order = JSON.parse(mostFreqKey);
+  const mostFreqOrder = orders.find(o => {
+    const items = o.orderLines?.map(line => `${line.lineItem.item.name}:${line.lineItem.quantity}`).sort() || [];
+    return items.join('|') === mostFreqKey;
+  });
 
-  return res.status(200).json(mostFreq);
-
-
+  return res.status(200).json(mostFreqOrder);
 });
 
 export default app;
