@@ -3,9 +3,9 @@ import { router as authRouter, getUserId, apiKeyValidation, getApiKeyFromAuthori
 import OrderXml from './models/orderXml';
 import OrderModel from './models/order';
 import { validateOrder } from './utils/validation';
-import { calculateMonetaryTotal } from './utils/orderCalculations';
+import { calculateMonetaryTotal, getOrderPages } from './utils/orderHelpers';
 import { buildOrderXml } from './utils/xmlBuilder';
-import { editOrderFmt, Order, OrderResponse, Frequency, RecurringOrderResponse } from './types';
+import { editOrderFmt, Order, OrderResponse, Frequency, RecurringOrderResponse, OrderFilter } from './types';
 import RecurringOrderModel from './models/recurringOrder';
 import { generateOrderInstances, scheduleCronJob } from './utils/recurringOrderService';
 
@@ -170,6 +170,24 @@ app.put ('/orders/:id', async (req, res) => {
   );
 
   return res.status(200).json(editedOrder);
+});
+
+app.get('/orders', async (req, res) => {
+  const apiKey = getApiKeyFromAuthorizationHeader(req) as string;
+  if (!apiKey || !await apiKeyValidation(apiKey)) {
+    return res.status(401).json({ error: 'Invalid API key' });
+  }
+
+  const userId = getUserId(apiKey);
+  const { limit, offset } = req.body;
+  const filter: OrderFilter = { userId, ...req.query };
+
+  const ordersFound = await OrderModel.find(filter)
+    .skip(parseInt(offset))
+    .lean();
+  const orders = getOrderPages(ordersFound, parseInt(limit));
+
+  return res.status(200).json(orders);
 });
 
 export default app;

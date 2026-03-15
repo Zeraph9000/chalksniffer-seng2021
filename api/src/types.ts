@@ -198,6 +198,33 @@ type RecurringOrderResponse = {
   createdAt: Date;
 };
 
+type OrderPaginated = {
+  id: string;
+  issueDate: string;
+  buyerName: string;
+  sellerName: string;
+  payableAmount: number;
+  documentCurrencyCode: string;
+  createdAt: string | Date | null | undefined;
+}
+
+type OrderFilter = {
+  userId?: Promise<string | null>;
+  id?: string;
+  issueDate?: string;
+  buyerName?: string;
+  sellerName?: string;
+  payableAmount?: number;
+  documentCurrencyCode?: string;
+  createdAt?: string;
+}
+
+type OrderList = {
+  orders: OrderPaginated[];
+  limit: number;
+  totalOrders: number;
+}
+
 export type {
   Period,
   DocumentReference,
@@ -226,4 +253,7 @@ export type {
   RecurringOrderInstance,
   RecurringOrder,
   RecurringOrderResponse,
+  OrderPaginated,
+  OrderFilter,
+  OrderList,
 };
