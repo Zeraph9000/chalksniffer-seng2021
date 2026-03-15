@@ -5,6 +5,7 @@ import OrderModel from './models/order';
 import { validateOrder } from './utils/validation';
 import { calculateMonetaryTotal } from './utils/orderCalculations';
 import { buildOrderXml } from './utils/xmlBuilder';
+import { getOrderXmlResponse } from './utils/getOrderXml';
 import { editOrderFmt, Order, OrderResponse, Frequency, RecurringOrderResponse } from './types';
 import RecurringOrderModel from './models/recurringOrder';
 import { generateOrderInstances, scheduleCronJob } from './utils/recurringOrderService';
@@ -170,6 +171,20 @@ app.put ('/orders/:id', async (req, res) => {
   );
 
   return res.status(200).json(editedOrder);
+});
+
+app.get ('/orders/:id/xml', async (req, res) => {
+  const result = await getOrderXmlResponse(
+    getApiKeyFromAuthorizationHeader(req) as string | undefined,
+    req.params.id as string
+  );
+
+  if (result.status !== 200) {
+    return res.status(result.status).json(result.body);
+  }
+
+  res.set('Content-Type', 'application/xml');
+  return res.status(200).send(result.xml);
 });
 
 export default app;
