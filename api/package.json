@@ -1,12 +1,12 @@
 {
   "name": "api",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "index.ts",
   "directories": {
     "test": "tests"
   },
   "scripts": {
-    "start": "ts-node src/index.ts",
+    "start": "nodemon --exec ts-node src/index.ts",
     "dev": "nodemon --exec ts-node src/index.ts",
     "test": "jest tests/ --passWithNoTests",
     "lint": "eslint src/**/*.ts",
