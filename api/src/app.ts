@@ -2,7 +2,7 @@ import express from 'express';
 import { router as authRouter, getUserId, apiKeyValidation, getApiKeyFromAuthorizationHeader } from './auth/auth';
 import OrderXml from './models/orderXml';
 import OrderModel from './models/order';
-import { validateOrder, type ValidationResult } from './utils/validation';
+import { validateOrder } from './utils/validation';
 import { calculateMonetaryTotal } from './utils/orderCalculations';
 import { buildOrderXml } from './utils/xmlBuilder';
 import { editOrderFmt, Order, OrderResponse, Frequency, RecurringOrderResponse } from './types';
@@ -28,7 +28,7 @@ app.post('/orders', async (req, res) => {
 
   // Recurring order branch
   if (req.body.recurring === true) {
-    const { recurring, frequency, startDate, ...orderBody } = req.body;
+    const { frequency, startDate, ...orderBody } = req.body;
 
     const validFrequencies: Frequency[] = ['Daily', 'Weekly', 'Monthly'];
     if (!frequency || !validFrequencies.includes(frequency)) {
@@ -122,12 +122,11 @@ app.put ('/orders/:id', async (req, res) => {
     return res.status(401).json({ error: 'Invalid API key' });
   }
 
-  let body = req.body as editOrderFmt;
+  const body = req.body as editOrderFmt;
 
   const id = req.params.id as string;
 
-  let editedOrder = await OrderModel.findOne({ id: id });
-
+  const editedOrder = await OrderModel.findOne({ id: id });
 
   if (!editedOrder) {
     return res.status(400).json({ error: 'Order does not exist' });
@@ -151,7 +150,7 @@ app.put ('/orders/:id', async (req, res) => {
     editedOrder.set('orderLines', body.orderLines);
   }
 
-  let editedOrderObject = editedOrder.toObject();
+  const editedOrderObject = editedOrder.toObject();
   editedOrderObject.anticipatedMonetaryTotal = calculateMonetaryTotal(editedOrderObject);
 
   editedOrder.set('anticipatedMonetaryTotal', editedOrderObject.anticipatedMonetaryTotal);
@@ -169,9 +168,8 @@ app.put ('/orders/:id', async (req, res) => {
     { xml: updatedXml },
     { upsert: true }
   );
-  
-  return res.status(200).json(editedOrder);
 
+  return res.status(200).json(editedOrder);
 });
 
 export default app;

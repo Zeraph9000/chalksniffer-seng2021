@@ -165,14 +165,13 @@ type OrderResponse = {
   anticipatedMonetaryTotal: MonetaryTotal;
   createdAt: Date;
   xmlUrl: string;
-}
+};
 
 type editOrderFmt = {
   note?: string | null;
   delivery?: Delivery | null;
   orderLines?: OrderLine[] | null;
-}
-
+};
 
 type Frequency = 'Daily' | 'Weekly' | 'Monthly';
 

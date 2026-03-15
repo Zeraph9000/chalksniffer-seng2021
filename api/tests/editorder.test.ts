@@ -1,13 +1,14 @@
 import crypto from 'crypto';
-import request from "supertest";
-import app from "../src/app";
-import OrderModel from "../src/models/order";
-import OrderXml from "../src/models/orderXml";
+import { afterEach, beforeEach, describe, expect, test } from '@jest/globals';
+import request from 'supertest';
+import app from '../src/app';
+import OrderModel from '../src/models/order';
+import OrderXml from '../src/models/orderXml';
 import { UserMap } from '../src/models/userMap';
 import type { Order } from '../src/types';
 
-const VALID_API_KEY = "test-api-key";
-const VALID_USER_ID = "test-user";
+const VALID_API_KEY = 'test-api-key';
+const VALID_USER_ID = 'test-user';
 
 function buildValidOrder(overrides: Partial<Order> = {}): Order {
   return {
@@ -88,7 +89,7 @@ describe('/orders/:id (PUT)', () => {
   });
 
   test('responds 401 when no Authorization header is provided', async () => {
-    const res = await request(app).put('/orders/any-id').send({ note: "x" });
+    const res = await request(app).put('/orders/any-id').send({ note: 'x' });
     expect(res.status).toBe(401);
   });
 
@@ -96,7 +97,7 @@ describe('/orders/:id (PUT)', () => {
     const res = await request(app)
       .put('/orders/any-id')
       .set('Authorization', 'invalid-key')
-      .send({ note: "x" });
+      .send({ note: 'x' });
     expect(res.status).toBe(401);
   });
 
@@ -104,7 +105,7 @@ describe('/orders/:id (PUT)', () => {
     const res = await request(app)
       .put('/orders/nonexistent')
       .set('Authorization', VALID_API_KEY)
-      .send({ note: "x" });
+      .send({ note: 'x' });
 
     expect(res.status).toBe(400);
     expect(res.body.error?.toString()).toContain('Order does not exist');
@@ -120,7 +121,7 @@ describe('/orders/:id (PUT)', () => {
     const res = await request(app)
       .put(`/orders/${order.id}`)
       .set('Authorization', VALID_API_KEY)
-      .send({ note: "updated-note" });
+      .send({ note: 'updated-note' });
 
     expect(res.status).toBe(403);
   });
@@ -134,10 +135,10 @@ describe('/orders/:id (PUT)', () => {
     const res = await request(app)
       .put(`/orders/${order.id}`)
       .set('Authorization', VALID_API_KEY)
-      .send({ note: "updated-note" });
+      .send({ note: 'updated-note' });
 
     expect(res.status).toBe(200);
-    expect(res.body.note).toBe("updated-note");
+    expect(res.body.note).toBe('updated-note');
   });
 
   test('persists updated XML for the order after a successful update', async () => {
@@ -146,17 +147,17 @@ describe('/orders/:id (PUT)', () => {
       xmlUrl: '/orders/order-3/xml',
     }));
 
-    await OrderXml.create({ orderId: order.id, xml: "<old/>" });
+    await OrderXml.create({ orderId: order.id, xml: '<old/>' });
 
     const res = await request(app)
       .put(`/orders/${order.id}`)
       .set('Authorization', VALID_API_KEY)
-      .send({ note: "updated-note" });
+      .send({ note: 'updated-note' });
 
     expect(res.status).toBe(200);
 
     const storedXml = await OrderXml.findOne({ orderId: order.id });
     expect(storedXml).toBeTruthy();
-    expect(storedXml?.xml).toContain("<Order");
+    expect(storedXml?.xml).toContain('<Order');
   });
 });
