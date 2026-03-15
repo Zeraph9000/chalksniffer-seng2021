@@ -137,7 +137,7 @@ app.put ('/orders/:id', async (req, res) => {
   const orderUserId = editedOrder.userId;
 
   if (await userId !== orderUserId) {
-    return res.status(403).json({ error: 'order does not belong to the user' });
+    return res.status(403).json({ error: 'user does not own requested order' });
   }
 
   if (body.note) {
