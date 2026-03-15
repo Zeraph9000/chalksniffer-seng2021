@@ -1,4 +1,5 @@
 import express, { Request, Response } from 'express';
+import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import path from 'path';
@@ -15,6 +16,7 @@ import { generateOrderInstances, processAllRecurringOrders } from './orders/recu
 import { json2csv } from 'json-2-csv';
 
 const app = express();
+app.use(cors());
 
 const yamlPath = process.env.VERCEL
   ? path.join(process.cwd(), 'api/endpoints.yaml')
