@@ -129,3 +129,16 @@ export async function createOrder(
   expect(res.status).toStrictEqual(200);
   return res.body.id as string;
 }
+
+export async function createGetOrder(
+  apiKey: string,
+  overrides: Partial<CreateOrderPayload> = {}
+): Promise<Order> {
+  const res = await request(app)
+    .post('/orders')
+    .set('Authorization', apiKey)
+    .send(buildValidOrderPayload(overrides));
+
+  expect(res.status).toStrictEqual(200);
+  return res.body as Order;
+}
