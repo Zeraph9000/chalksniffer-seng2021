@@ -209,7 +209,7 @@ type OrderPaginated = {
 }
 
 type OrderFilter = {
-  userId?: Promise<string | null>;
+  userId?: string | null;
   id?: string;
   issueDate?: string;
   buyerName?: string;

@@ -132,7 +132,10 @@ app.put ('/orders/:id', async (req, res) => {
     return res.status(400).json({ error: 'Order does not exist' });
   }
 
-  const userId = getUserId(apiKey);
+  const userId = await getUserId(apiKey);
+  if (!userId) {
+    return res.status(401).json({ error: 'Invalid API key' });
+  }
 
   const orderUserId = editedOrder.userId;
 
@@ -178,7 +181,7 @@ app.get('/orders', async (req, res) => {
     return res.status(401).json({ error: 'Invalid API key' });
   }
 
-  const userId = getUserId(apiKey);
+  const userId = await getUserId(apiKey);
   const { limit, offset } = req.body;
   const filter: OrderFilter = { userId, ...req.query };
 

@@ -42,10 +42,10 @@ export function calculateMonetaryTotal(order: Order): MonetaryTotal {
   };
 }
 
-export function getOrderPages(orders: Order[], limit: number): OrderList {
+export function getOrderPages(ordersFound: Order[], limit: number): OrderList {
   const pagedOrders: OrderPaginated[] = [];
 
-  orders.forEach(o => {
+  ordersFound.forEach(o => {
     pagedOrders.push({
       id: o.id,
       issueDate: o.issueDate,
@@ -60,6 +60,6 @@ export function getOrderPages(orders: Order[], limit: number): OrderList {
   return {
     orders: pagedOrders.slice(0, limit),
     limit,
-    totalOrders: orders.length
+    totalOrders: pagedOrders.length
   };
 }
