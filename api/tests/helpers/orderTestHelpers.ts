@@ -4,6 +4,7 @@ import request from 'supertest';
 import app from '../../src/app';
 import OrderModel from '../../src/models/order';
 import OrderXml from '../../src/models/orderXml';
+import RecurringOrderModel from '../../src/models/recurringOrder';
 import { UserMap } from '../../src/models/userMap';
 import type { Order } from '../../src/types';
 
@@ -71,7 +72,40 @@ export async function clearOrderTestData(): Promise<void> {
     OrderModel.deleteMany({}),
     OrderXml.deleteMany({}),
     UserMap.deleteMany({}),
+    RecurringOrderModel.deleteMany({}),
   ]);
+}
+
+export async function seedInvalidRecurringOrder(): Promise<void> {
+  await RecurringOrderModel.create({
+    id: crypto.randomUUID(),
+    userId: VALID_USER_ID,
+    order: {
+      id: crypto.randomUUID(),
+      userId: VALID_USER_ID,
+      issueDate: '2024-01-01',
+      documentCurrencyCode: 'INVALID',
+      buyerCustomerParty: { party: { partyName: 'Buyer', postalAddress: { streetName: '1 St', cityName: 'Sydney', postalZone: '2000', country: 'AU' } } },
+      sellerSupplierParty: { party: { partyName: 'Seller', postalAddress: { streetName: '2 St', cityName: 'Melbourne', postalZone: '3000', country: 'AU' } } },
+      orderLines: [{ lineItem: { id: 'line-1', quantity: 1, price: { priceAmount: 10, currencyID: 'INVALID' }, item: { name: 'Bad Item' } } }],
+    },
+    frequency: 'Daily',
+    startDate: '2024-01-01',
+    orderInstances: [
+      {
+        scheduledDate: '2024-01-01T00:00:00.000Z',
+        order: {
+          id: crypto.randomUUID(),
+          userId: VALID_USER_ID,
+          issueDate: '2024-01-01',
+          documentCurrencyCode: 'INVALID',
+          buyerCustomerParty: { party: { partyName: 'Buyer', postalAddress: { streetName: '1 St', cityName: 'Sydney', postalZone: '2000', country: 'AU' } } },
+          sellerSupplierParty: { party: { partyName: 'Seller', postalAddress: { streetName: '2 St', cityName: 'Melbourne', postalZone: '3000', country: 'AU' } } },
+          orderLines: [{ lineItem: { id: 'line-1', quantity: 1, price: { priceAmount: 10, currencyID: 'INVALID' }, item: { name: 'Bad Item' } } }],
+        },
+      },
+    ],
+  });
 }
 
 export async function createUserMap(apiKey: string, userId: string): Promise<void> {

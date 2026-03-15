@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import path from 'path';
@@ -11,13 +11,22 @@ import { buildOrderXml } from './utils/xmlBuilder';
 import { getOrderXmlResponse } from './utils/getOrderXml';
 import { editOrderFmt, Order, OrderResponse, Frequency, RecurringOrderResponse, OrderFilter } from './types';
 import RecurringOrderModel from './models/recurringOrder';
-import { generateOrderInstances, scheduleCronJob } from './utils/recurringOrderService';
+import { generateOrderInstances, processAllRecurringOrders } from './orders/recurringOrderService';
 import { json2csv } from 'json-2-csv';
 
 const app = express();
 
-const swaggerDocument = YAML.load(path.join(__dirname, '../endpoints.yaml'));
-app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+const yamlPath = process.env.VERCEL
+  ? path.join(process.cwd(), 'api/endpoints.yaml')
+  : path.join(__dirname, '../endpoints.yaml');
+const swaggerDocument = YAML.load(yamlPath);
+const swaggerUiDistPath = require('swagger-ui-dist').getAbsoluteFSPath();
+const swaggerUiOptions = {
+  explorer: true,
+  customCss: '.swagger-ui .opblock .opblock-summary-path-description-wrapper { align-items: center; display: flex; flex-wrap: wrap; gap: 0 10px; padding: 0 10px; width: 100%; }',
+  customCssUrl: 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.0.0/swagger-ui.min.css',
+};
+app.use('/docs', express.static(swaggerUiDistPath, { index: false }), swaggerUi.serve, swaggerUi.setup(swaggerDocument, swaggerUiOptions));
 
 app.use(express.json());
 app.use('/auth', authRouter);
@@ -71,8 +80,6 @@ app.post('/orders', async (req, res) => {
       startDate,
       orderInstances,
     });
-
-    scheduleCronJob(recurringOrderId, frequency, startDate);
 
     const response: RecurringOrderResponse = {
       id: recurringOrderId,
@@ -240,6 +247,17 @@ app.get('/orders/csv', async (req, res) => {
   const csv = await json2csv(orders.orders);
 
   return res.status(200).send(csv);
+});
+
+app.post('/orders/recurring', async (_req: Request, res: Response) => {
+  try {
+    const result = await processAllRecurringOrders();
+    if (result) return res.status(400).json(result);
+    
+    res.status(200).json({});
+  } catch {
+    res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'Failed to process recurring orders' });
+  }
 });
 
 app.get('/orders/:id', async (req, res) => {
