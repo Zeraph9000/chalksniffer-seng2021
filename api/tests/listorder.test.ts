@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from '@jest/globals';
 import request from 'supertest';
 import app from '../src/app';
-import OrderXml from '../src/models/orderXml';
 import {
   clearOrderTestData,
   createOrder,
@@ -22,12 +21,38 @@ describe('/orders (GET)', () => {
     await clearOrderTestData();
   });
 
-  test('responds 401 when no Authorization header is provided', async () => {
-    const res = await request(app)
-      .get('/orders')
-      .send({ limit: 3, offset: 0 });
+  describe('Error codes testing', () => {
+    test('responds 401 when no Authorization header is provided', async () => {
+      const res = await request(app)
+        .get('/orders')
+        .query({ limit: 3, offset: 0 });
 
-    expect(res.status).toBe(401);
+      expect(res.status).toBe(401);
+    });
+
+    test('responds 400 when invalid limit', async () => {
+      const orderId = await createOrder(VALID_API_KEY);
+      await createOrder(VALID_API_KEY);
+
+      const res = await request(app)
+        .get('/orders')
+        .set('Authorization', VALID_API_KEY)
+        .query({ limit: 0, offset: 0 });
+
+      expect(res.status).toBe(400);
+    });
+
+    test('responds 400 when invalid offset', async () => {
+      const orderId = await createOrder(VALID_API_KEY);
+      await createOrder(VALID_API_KEY);
+
+      const res = await request(app)
+        .get('/orders')
+        .set('Authorization', VALID_API_KEY)
+        .query({ limit: 1, offset: -1 });
+
+      expect(res.status).toBe(400);
+    });
   });
 
   test('responds 200 and returns limited paginated orders for the authenticated user', async () => {
@@ -37,7 +62,7 @@ describe('/orders (GET)', () => {
     const res = await request(app)
       .get('/orders')
       .set('Authorization', VALID_API_KEY)
-      .send({ limit: 1, offset: 0 });
+      .query({ limit: 1, offset: 0 });
 
     expect(res.status).toBe(200);
     expect(res.body).toStrictEqual({
@@ -66,8 +91,7 @@ describe('/orders (GET)', () => {
     const res = await request(app)
       .get('/orders')
       .set('Authorization', VALID_API_KEY)
-      .query({ id: orderId })
-      .send({ limit: 10, offset: 0 });
+      .query({ limit: 10, offset: 0, id: orderId });
 
     expect(res.status).toBe(200);
     expect(res.body).toStrictEqual({

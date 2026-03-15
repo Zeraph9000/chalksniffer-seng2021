@@ -3,7 +3,8 @@
  *
  * Validates order documents against format and business rules:
  * - Date/time formats (YYYY-MM-DD, HH:MM:SS)
- * - ISO 4217 currency codes and ISO 3166-1 country codes (from reference XML)
+ * - ISO 4217 currency codes
+ * - Search limit and offset values
  * - Required fields and nested structures (parties, line items, tax, delivery, etc.)
  */
 

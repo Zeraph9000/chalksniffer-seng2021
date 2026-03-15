@@ -203,9 +203,9 @@ type OrderPaginated = {
   issueDate: string;
   buyerName: string;
   sellerName: string;
-  payableAmount: number;
+  payableAmount: number | string;
   documentCurrencyCode: string;
-  createdAt: string | Date | null | undefined;
+  createdAt: string;
 }
 
 type OrderFilter = {
@@ -224,6 +224,12 @@ type OrderList = {
   limit: number;
   totalOrders: number;
 }
+
+type PaginationParams = {
+  limit: number;
+  offset: number;
+  filter?: OrderFilter;
+};
 
 export type {
   Period,
@@ -256,4 +262,5 @@ export type {
   OrderPaginated,
   OrderFilter,
   OrderList,
+  PaginationParams,
 };
