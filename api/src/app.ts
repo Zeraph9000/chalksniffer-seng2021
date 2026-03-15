@@ -5,6 +5,7 @@ import OrderModel from './models/order';
 import { validateOrder } from './utils/validation';
 import { calculateMonetaryTotal } from './utils/orderCalculations';
 import { buildOrderXml } from './utils/xmlBuilder';
+import { getOrderXmlResponse } from './utils/getOrderXml';
 import { editOrderFmt, Order, OrderResponse, Frequency, RecurringOrderResponse } from './types';
 import RecurringOrderModel from './models/recurringOrder';
 import { generateOrderInstances, scheduleCronJob } from './utils/recurringOrderService';
@@ -173,37 +174,17 @@ app.put ('/orders/:id', async (req, res) => {
 });
 
 app.get ('/orders/:id/xml', async (req, res) => {
-  const apiKey = getApiKeyFromAuthorizationHeader(req) as string;
+  const result = await getOrderXmlResponse(
+    getApiKeyFromAuthorizationHeader(req) as string | undefined,
+    req.params.id as string
+  );
 
-  if (!apiKey || !await apiKeyValidation(apiKey)) {
-    return res.status(401).json({ error: 'Invalid API key' });
-  }
-
-  const id = req.params.id as string;
-
-  const Order = await OrderModel.findOne({ id: id });
-
-  if (!Order) {
-    return res.status(400).json({ error: 'Order does not exist' });
-  }
-
-  const userId = getUserId(apiKey);
-
-  const orderUserId = Order.userId;
-
-  if (await userId !== orderUserId) {
-    return res.status(403).json({ error: 'user does not own requested order' });
-  }
-
-  const orderXml = await OrderXml.findOne({ orderId: id });
-
-  if (!orderXml) {
-    return res.status(400).json({ error: 'Order does not exist' });
+  if (result.status !== 200) {
+    return res.status(result.status).json(result.body);
   }
 
   res.set('Content-Type', 'application/xml');
-  return res.status(200).send(orderXml.xml);
-
+  return res.status(200).send(result.xml);
 });
 
 export default app;
