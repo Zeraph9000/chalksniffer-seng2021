@@ -202,7 +202,7 @@ app.get ('/orders/:id/xml', async (req, res) => {
   }
 
   res.set('Content-Type', 'application/xml');
-  return res.status(200).send(orderXml);
+  return res.status(200).send(orderXml.xml);
 
 });
 
