@@ -53,7 +53,7 @@ export function getOrderPages(ordersFound: Order[], limit: number): OrderList {
       sellerName: o.sellerSupplierParty.party.partyName,
       payableAmount: calculateMonetaryTotal(o).payableAmount ?? 0,
       documentCurrencyCode: o.documentCurrencyCode,
-      createdAt: o.createdAt,
+      createdAt: o.createdAt as string,
     });
   });
 

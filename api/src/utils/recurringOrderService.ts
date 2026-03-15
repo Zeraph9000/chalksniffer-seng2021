@@ -3,7 +3,7 @@ import RecurringOrderModel from '../models/recurringOrder';
 import OrderModel from '../models/order';
 import OrderXml from '../models/orderXml';
 import { validateOrder } from './validation';
-import { calculateMonetaryTotal } from './orderCalculations';
+import { calculateMonetaryTotal } from './orderHelpers';
 import { buildOrderXml } from './xmlBuilder';
 import { Frequency, Order, RecurringOrderInstance } from '../types';
 

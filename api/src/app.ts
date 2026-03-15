@@ -199,13 +199,13 @@ app.get('/orders', async (req, res) => {
   }
 
   const userId = await getUserId(apiKey);
-  const { limit, offset } = req.body;
-  const filter: OrderFilter = { userId, ...req.query };
+  const { limit, offset, ...queryFilter } = req.query;
+  const filter: OrderFilter = { userId, ...queryFilter };
 
   const ordersFound = await OrderModel.find(filter)
-    .skip(parseInt(offset))
+    .skip(parseInt(offset as string))
     .lean();
-  const orders = getOrderPages(ordersFound, parseInt(limit));
+  const orders = getOrderPages(ordersFound, parseInt(limit as string));
 
   return res.status(200).json(orders);
 });
@@ -217,16 +217,16 @@ app.get('/orders/csv', async (req, res) => {
   }
 
   const userId = await getUserId(apiKey);
-  const { limit, offset } = req.body;
-  const filter: OrderFilter = { userId, ...req.query };
+  const { limit, offset, ...queryFilter } = req.query;
+  const filter: OrderFilter = { userId, ...queryFilter };
 
   const ordersFound = await OrderModel.find(filter)
-    .skip(parseInt(offset))
+    .skip(parseInt(offset as string))
     .lean();
-  const orders = getOrderPages(ordersFound, parseInt(limit));
-  if (orders.length == 0) return res.status(200);
+  const orders = getOrderPages(ordersFound, parseInt(limit as string));
 
-  const csv = exportCSV.generateCsv(csvConfig)(orders);
+  if (orders.orders.length === 0) return res.status(200).send('');
+  const csv = exportCSV.generateCsv(csvConfig)(orders.orders);
 
   return res.status(200).send(csv);
 });

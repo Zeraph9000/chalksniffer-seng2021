@@ -205,7 +205,7 @@ type OrderPaginated = {
   sellerName: string;
   payableAmount: number;
   documentCurrencyCode: string;
-  createdAt: string | Date | null | undefined;
+  createdAt: string;
 }
 
 type OrderFilter = {
