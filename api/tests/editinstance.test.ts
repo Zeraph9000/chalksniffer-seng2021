@@ -27,7 +27,7 @@ async function createRecurringOrder(apiKey: string): Promise<string> {
   return res.body.id as string;
 }
 
-describe('/orders/recurring/:id/instance/:position (PUT)', () => {
+describe('/orders/instance/:id (PUT)', () => {
   beforeEach(async () => {
     await clearOrderTestData();
     await seedDefaultUserMap();
@@ -87,32 +87,8 @@ describe('/orders/recurring/:id/instance/:position (PUT)', () => {
     });
   });
 
-  describe('invalid position', () => {
-    test('should return 400 when position is out of bounds', async () => {
-      const recurringOrderId = await createRecurringOrder(VALID_API_KEY);
-
-      const res = await request(app)
-        .put(`/orders/recurring/${recurringOrderId}/instance/999`)
-        .set('Authorization', VALID_API_KEY)
-        .send({ note: 'test' });
-      expect(res.status).toStrictEqual(400);
-      expect(res.body.error).toContain('Invalid position');
-    });
-
-    test('should return 400 when position is not an integer', async () => {
-      const recurringOrderId = await createRecurringOrder(VALID_API_KEY);
-
-      const res = await request(app)
-        .put(`/orders/recurring/${recurringOrderId}/instance/abc`)
-        .set('Authorization', VALID_API_KEY)
-        .send({ note: 'test' });
-      expect(res.status).toStrictEqual(400);
-      expect(res.body.error).toContain('Invalid position');
-    });
-  });
-
   describe('successful edits', () => {
-    test('should return 200 and update note on instance at position 0', async () => {
+    test('should return 200 and update note on next instance', async () => {
       const recurringOrderId = await createRecurringOrder(VALID_API_KEY);
 
       const res = await request(app)
@@ -124,7 +100,7 @@ describe('/orders/recurring/:id/instance/:position (PUT)', () => {
       expect(res.body.order.note).toStrictEqual('Updated note');
     });
 
-    test('should return 200 and update orderLines on instance at position 0', async () => {
+    test('should return 200 and update orderLines on next instance', async () => {
       const recurringOrderId = await createRecurringOrder(VALID_API_KEY);
       const newOrderLines = [
         {
@@ -149,7 +125,7 @@ describe('/orders/recurring/:id/instance/:position (PUT)', () => {
       expect(res.body.order.anticipatedMonetaryTotal.payableAmount).toStrictEqual(100);
     });
 
-    test('should return 200 and update delivery on instance at position 0', async () => {
+    test('should return 200 and update delivery on next instance', async () => {
       const recurringOrderId = await createRecurringOrder(VALID_API_KEY);
       const newDelivery = {
         deliveryAddress: {
@@ -169,7 +145,7 @@ describe('/orders/recurring/:id/instance/:position (PUT)', () => {
       expect(res.body.order.delivery.deliveryAddress.cityName).toStrictEqual('Brisbane');
     });
 
-    test('should only modify the targeted instance, leaving others unchanged', async () => {
+    test('should only modify the first instance, leaving others unchanged', async () => {
       const recurringOrderId = await createRecurringOrder(VALID_API_KEY);
 
       const before = await RecurringOrderModel.findOne({ id: recurringOrderId });

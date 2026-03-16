@@ -4,14 +4,17 @@ import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import path from 'path';
 import { router as authRouter, getUserId, apiKeyValidation } from './auth/auth';
+import OrderModel from './models/order';
 import { parsePagedQuery } from './utils/orderHelpers';
 import { getOrderXmlResponse } from './utils/getOrderXml';
 import { editOrderFmt } from './types';
 import { handleError } from './utils/httpErrors';
-import RecurringOrderModel from './models/recurringOrder';
 import { deleteOrder, createOrder, updateOrder, listOrders, getOrderFromIds, getOrderCSV } from './orders/orderService';
 import { editRecurringOrder, createRecurringOrder, deleteRecurringOrder, editInstance, getRecurringOrder, getRecurringOrderInstance, generateOrderInstances, processAllRecurringOrders } from './orders/recurringOrderService';
 import { getApiKeyFromAuthorizationHeader, getUserIdFromApiKey } from './utils/serverHelpers';
+import { json2csv } from 'json-2-csv';
+import { json } from 'node:stream/consumers';
+import RecurringOrderModel from './models/recurringOrder';
 
 const app = express();
 app.use(cors());
@@ -265,6 +268,53 @@ app.put('/orders/recurring/:id/instance/:position', async (req, res) => {
 
   const result = await editInstance(req.params.id, userId, Number(req.params.position), req.body);
   return res.status(result.status).json(result.body);
+});
+
+app.get('/order/recommend', async (req, res) => {
+  const apiKey = getApiKeyFromAuthorizationHeader(req) as string;
+
+  if (!apiKey || !await apiKeyValidation(apiKey)) {
+    return res.status(401).json({ error: 'Invalid API key' });
+  }
+
+  const userId = await getUserId(apiKey);
+
+  const ordersMongoose = await OrderModel.find({ userId: userId });
+
+  let orders = [];
+  for (const o of ordersMongoose) {
+    orders.push(o.toObject());
+  }
+
+  const normalizedKeys = orders.map(o => {
+    const items = o.orderLines?.map(line => `${line.lineItem.item.name}:${line.lineItem.quantity}`).sort() || [];
+    return items.join('|'); 
+  });
+
+  const freq = new Map<string, number>();
+  for (const key of normalizedKeys) {
+    freq.set(key, (freq.get(key) ?? 0) + 1);
+  }
+
+  let mostFreqKey: string | null = null;
+  let mostFreqCount = 0;
+  for (const [k, count] of freq) {
+    if (count > mostFreqCount) {
+      mostFreqCount = count;
+      mostFreqKey = k;
+    }
+  }
+
+  if (!mostFreqKey || mostFreqCount < 2) { 
+    return res.status(400).json({ error: 'No frequent orders found' });
+  }
+
+  const mostFreqOrder = orders.find(o => {
+    const items = o.orderLines?.map(line => `${line.lineItem.item.name}:${line.lineItem.quantity}`).sort() || [];
+    return items.join('|') === mostFreqKey;
+  });
+
+  return res.status(200).json(mostFreqOrder);
 });
 
 export default app;
