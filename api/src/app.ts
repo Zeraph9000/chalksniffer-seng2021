@@ -305,4 +305,26 @@ app.delete('/orders/:id', async (req, res) => {
   return res.status(200).json({ message: `Order ${id} deleted successfully` });
 });
 
+app.delete('/orders/instance/:id', async (req, res) => {
+  const apiKey = getApiKeyFromAuthorizationHeader(req) as string | undefined;
+  if (!apiKey || !await apiKeyValidation(apiKey)) {
+    return res.status(401).json({ error: 'Invalid API key' });
+  }
+
+  const id = req.params.id as string;
+  const userId = await getUserId(apiKey);
+  if (!userId) {
+    return res.status(403).json({ error: 'API key does not belong to user' });
+  }
+
+  const recurringOrder = await RecurringOrderModel.findOne({ id, userId });
+  if (!recurringOrder) {
+    return res.status(400).json({ error: `User does not own a recurring order with the ID ${id}` });
+  }
+
+  await RecurringOrderModel.deleteOne({ id, userId });
+
+  return res.status(200).json({ message: `Recurring order ${id} deleted successfully` });
+});
+
 export default app;
