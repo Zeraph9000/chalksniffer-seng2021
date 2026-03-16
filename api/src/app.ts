@@ -244,9 +244,10 @@ app.get('/order/recommend', async (req, res) => {
     return res.status(401).json({ error: 'Invalid API key' });
   }
 
-  const userId = getUserId(apiKey);
+  const userId = await getUserId(apiKey);
 
   const ordersMongoose = await OrderModel.find({ userId: userId });
+
   let orders = [];
   for (const o of ordersMongoose) {
     orders.push(o.toObject());
