@@ -5,7 +5,13 @@ info:
   description: API for creating, retrieving, exporting, updating, and deleting UBL 2.4 orders.
 
 servers:
-  - url: https://idk/
+  - url: https://www.chalksniffer.com
+    description: main production
+  - url: http://localhost:8080
+    description: local testing
+
+security:
+  - ApiKeyAuth: []
 
 tags:
   - name: health
@@ -15,6 +21,7 @@ tags:
 paths:
   /health:
     get:
+      security: []
       tags:
         - health
       summary: Health check
@@ -32,9 +39,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: Cant connect 
 
   /auth/register:
     post:
+      security: []
       tags:
         - authentication
       summary: Register API key
@@ -52,6 +63,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: Cant connect 
 
   /auth/token/refresh:
     post:
@@ -74,12 +88,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Invalid api key is given 
         '500':
           description: Internal Server Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: Cant connect 
 
   /orders:
     post:
@@ -95,6 +115,35 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/OrderCreateRequest'
+            example:
+              issueDate: "2026-03-16"
+              documentCurrencyCode: "AUD"
+              buyerCustomerParty:
+                party:
+                  partyName: "Buyer Co"
+                  postalAddress:
+                    streetName: "123 Buyer St"
+                    cityName: "Sydney"
+                    postalZone: "2000"
+                    country: "AU"
+              sellerSupplierParty:
+                party:
+                  partyName: "Seller Co"
+                  postalAddress:
+                    streetName: "456 Seller Ave"
+                    cityName: "Melbourne"
+                    postalZone: "3000"
+                    country: "AU"
+              orderLines:
+                - lineItem:
+                    id: "1"
+                    quantity: 2
+                    lineExtensionAmount: 100.00
+                    item:
+                      name: "Widget"
+                    price:
+                      priceAmount: 50.00
+                      currencyID: "AUD"
       responses:
         '200':
           description: OK - created order object with system-generated fields
@@ -114,6 +163,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Invalid api key is given
         '409':
           description: Conflict - an order with the same id already exists
           content:
@@ -126,6 +178,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: Cant connect 
 
     get:
       tags:
@@ -170,6 +225,7 @@ paths:
           schema:
             type: string
             pattern: '^[A-Z]{3}$'
+          example: AUD
         - in: query
           name: createdAt
           required: false
@@ -210,18 +266,60 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Invalid api key is given
         '403':
           description: Forbidden - API key does not belong to the right user
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: FORBIDDEN
+                message: API key does not belong to the user
         '500':
           description: Internal Server Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: Cant connect
+
+  /orders/recurring:
+    post:
+      security: []
+      tags:
+        - order
+      summary: Process recurring orders
+      description: Processes all due recurring orders by creating the next scheduled order instance for each. Intended to be called by a scheduled cron job.
+      responses:
+        '200':
+          description: all due recurring orders processed
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: a recurring order instance failed validation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INVALID_ORDER_DATA
+                message: Validation failed for recurring
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: Cant connect 
 
   /orders/csv:
     get:
@@ -267,6 +365,7 @@ paths:
           schema:
             type: string
             pattern: '^[A-Z]{3}$'
+          example: AUD
         - in: query
           name: createdAt
           required: false
@@ -299,18 +398,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Invalid api key is given
         '403':
           description: Forbidden - API key does not belong to the right user
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: FORBIDDEN
+                message: API key does not belong to the user
         '500':
           description: Internal Server Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: Cant connect
 
   /orders/{id}:
     get:
@@ -345,18 +453,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Invalid api key is given
         '403':
           description: Forbidden - API key does not belong to the right user
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: FORBIDDEN
+                message: API key does not belong to the user
         '500':
           description: Internal Server Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: Cant connect
 
     put:
       tags:
@@ -400,18 +517,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Invalid api key is given
         '403':
           description: Forbidden - order does not belong to the user
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: FORBIDDEN
+                message: Order does not belong to the user
         '500':
           description: Internal Server Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: Cant connect
 
     delete:
       tags:
@@ -445,14 +571,154 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Invalid api key is given
         '403':
           description: Forbidden - order does not belong to the user
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: FORBIDDEN
+                message: Order does not belong to the user
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: Cant connect
+
+  /order/instance/{id}:
+    put:
+      tags:
+        - order
+      summary: Edit next instance of a recurring order
+      description: |
+        Edits the next scheduled instance of a recurring order (the first element in orderInstances).
+        Editable fields: note, delivery, orderLines. Optionally set updateTemplate to true
+        to also apply the changes to the template order for future instances.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: The recurring order ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                note:
+                  type: string
+                delivery:
+                  $ref: '#/components/schemas/Delivery'
+                orderLines:
+                  type: array
+                  minItems: 1
+                  items:
+                    $ref: '#/components/schemas/OrderLine'
+                updateTemplate:
+                  type: boolean
+                  default: false
+                  description: When true, also updates the recurring order template
+      responses:
+        '200':
+          description: OK - updated instance
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  order:
+                    $ref: '#/components/schemas/Order'
+                  scheduledDate:
+                    type: string
+                    format: date-time
+        '400':
+          description: Bad Request - recurring order not found, no pending instances, or validation failure
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+                  - $ref: '#/components/schemas/ValidationErrorResponse'
+        '401':
+          description: Unauthorized - invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - recurring order does not belong to the user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: FORBIDDEN
+                message: API key does not belong to the user
+        '409':
+          description: Conflict — the recurring order was modified concurrently. Retry the request.
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /orders/{id}/instances/{position}:
+    delete:
+      tags:
+        - order
+      summary: Delete a single recurring order instance
+      description: Deletes a single instance from a recurring order by its 0-based array position.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: The recurring order ID
+          schema:
+            type: string
+        - in: path
+          name: position
+          required: true
+          description: The 0-based index of the instance to delete
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteOrderResponse'
+        '400':
+          description: Bad Request - recurring order or instance not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - API key does not belong to the right user
           content:
             application/json:
               schema:
@@ -478,7 +744,47 @@ paths:
           content:
             application/xml:
               schema:
-                type: string
+                type: object
+                xml:
+                  name: Order
+                  namespace: urn:oasis:names:specification:ubl:schema:xsd:Order-2
+              example:
+                ID: 0a1e7853-b2bc-401b-88be-acf7a6566c99
+                IssueDate: "2026-03-16"
+                DocumentCurrencyCode: AUD
+                BuyerCustomerParty:
+                  party:
+                    partyName: Buyer Co
+                    postalAddress:
+                      streetName: 123 Buyer St
+                      cityName: Sydney
+                      postalZone: "2000"
+                      country: AU
+                SellerSupplierParty:
+                  party:
+                    partyName: Seller Co
+                    postalAddress:
+                      streetName: 456 Seller Ave
+                      cityName: Melbourne
+                      postalZone: "3000"
+                      country: AU
+                AnticipatedMonetaryTotal:
+                  lineExtensionAmount: 100
+                  taxExclusiveAmount: 100
+                  taxInclusiveAmount: 100
+                  allowanceTotalAmount: 0
+                  chargeTotalAmount: 0
+                  payableAmount: 100
+                OrderLine:
+                  lineItem:
+                    id: "1"
+                    quantity: 2
+                    lineExtensionAmount: 100
+                    item:
+                      name: Widget
+                    price:
+                      priceAmount: 50
+                      currencyID: AUD
         '400':
           description: Bad Request - order does not exist
           content:
@@ -491,18 +797,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Invalid api key is given
         '403':
           description: Forbidden - order does not belong to the user
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: FORBIDDEN
+                message: API key does not belong to the user
         '500':
           description: Internal Server Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: Cant connect
 
 components:
   securitySchemes:
@@ -518,16 +833,8 @@ components:
         status:
           type: string
           example: ok
-        uptime:
-          type: number
-          example: 3600
-        timestamp:
-          type: string
-          format: date-time
       required:
         - status
-        - uptime
-        - timestamp
 
     ApiKeyResponse:
       type: object
@@ -586,6 +893,7 @@ components:
         documentCurrencyCode:
           type: string
           pattern: '^[A-Z]{3}$'
+          example: AUD
         createdAt:
           type: string
           format: date-time
@@ -663,6 +971,7 @@ components:
         country:
           type: string
           pattern: '^[A-Z]{2}$'
+          example: AU
       required:
         - streetName
         - cityName
@@ -744,6 +1053,7 @@ components:
         currencyID:
           type: string
           pattern: '^[A-Z]{3}$'
+          example: AUD
         taxSubtotal:
           type: array
           items:
@@ -782,6 +1092,7 @@ components:
         currencyID:
           type: string
           pattern: '^[A-Z]{3}$'
+          example: AUD
       required:
         - chargeIndicator
         - amount
@@ -829,6 +1140,7 @@ components:
         currencyID:
           type: string
           pattern: '^[A-Z]{3}$'
+          example: AUD
         baseQuantity:
           type: number
           exclusiveMinimum: 0
@@ -862,6 +1174,7 @@ components:
         quantity:
           type: number
           exclusiveMinimum: 0
+          example: 2
         unitCode:
           type: string
         lineExtensionAmount:
@@ -907,12 +1220,15 @@ components:
         documentCurrencyCode:
           type: string
           pattern: '^[A-Z]{3}$'
+          example: AUD
         pricingCurrencyCode:
           type: string
           pattern: '^[A-Z]{3}$'
+          example: AUD
         taxCurrencyCode:
           type: string
           pattern: '^[A-Z]{3}$'
+          example: AUD
         customerReference:
           type: string
         accountingCostCode:
@@ -987,13 +1303,10 @@ components:
 
     OrderUpdateRequest:
       type: object
-      description: Partial order update payload. Only provided fields are updated.
+      description: Partial order update payload. Only provided fields are updated. Identity fields (buyerCustomerParty, sellerSupplierParty, issueDate, documentCurrencyCode) cannot be changed after creation.
       properties:
         salesOrderId:
           type: string
-        issueDate:
-          type: string
-          format: date
         issueTime:
           type: string
           pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$'
@@ -1001,15 +1314,6 @@ components:
           type: string
         note:
           type: string
-        documentCurrencyCode:
-          type: string
-          pattern: '^[A-Z]{3}$'
-        pricingCurrencyCode:
-          type: string
-          pattern: '^[A-Z]{3}$'
-        taxCurrencyCode:
-          type: string
-          pattern: '^[A-Z]{3}$'
         customerReference:
           type: string
         accountingCostCode:
@@ -1026,10 +1330,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DocumentReference'
-        buyerCustomerParty:
-          $ref: '#/components/schemas/CustomerParty'
-        sellerSupplierParty:
-          $ref: '#/components/schemas/SupplierParty'
         originatorCustomerParty:
           $ref: '#/components/schemas/CustomerParty'
         delivery:
@@ -1046,8 +1346,6 @@ components:
             $ref: '#/components/schemas/AllowanceCharge'
         taxTotal:
           $ref: '#/components/schemas/TaxTotal'
-        anticipatedMonetaryTotal:
-          $ref: '#/components/schemas/MonetaryTotal'
         orderLines:
           type: array
           minItems: 1

@@ -3,7 +3,8 @@
  *
  * Validates order documents against format and business rules:
  * - Date/time formats (YYYY-MM-DD, HH:MM:SS)
- * - ISO 4217 currency codes and ISO 3166-1 country codes (from reference XML)
+ * - ISO 4217 currency codes
+ * - Search limit and offset values
  * - Required fields and nested structures (parties, line items, tax, delivery, etc.)
  */
 
@@ -288,7 +289,7 @@ function validateOrder(order: Order): ValidationResult {
   }
 
   // Document references: quotation, order, originator, and additional references
-  const namedDocRefs: [string, DocumentReference | undefined][] = [
+  const namedDocRefs: [string, DocumentReference | null | undefined][] = [
     ['quotationDocumentReference', order.quotationDocumentReference],
     ['orderDocumentReference', order.orderDocumentReference],
     ['originatorDocumentReference', order.originatorDocumentReference],
@@ -315,4 +316,4 @@ function validateOrder(order: Order): ValidationResult {
 // ---------------------------------------------------------------------------
 
 export { dateValidation, timeValidation, currencyValidation, validateOrder };
-export type { ValidationError };
+export type { ValidationError, ValidationResult };
