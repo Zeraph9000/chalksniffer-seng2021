@@ -72,6 +72,20 @@ export function replenishInstances(
   return generateOrderInstances(templateOrder, toISOString(nextStartDate), frequency);
 }
 
+export async function deleteRecurringOrder(userId: string, id: string): Promise<{ message: string } | ErrorObject> {
+  const recurringOrder = await RecurringOrderModel.findOne({ id });
+  if (!recurringOrder) {
+    return { error: 'INVALID_RECURRING_ORDER_ID', message: `Recurring order with ID ${id} does not exist` };
+  }
+
+  if (userId !== recurringOrder.userId) {
+    return { error: 'FORBIDDEN', message: 'User does not own requested recurring order' };
+  }
+
+  await RecurringOrderModel.deleteOne({ id });
+  return { message: `Recurring order ${id} deleted successfully` };
+}
+
 async function executeNextInstance(recurringOrderId: string): Promise<ErrorObject | void> {
   // Atomically pop the first instance to prevent race conditions
   const recurringOrder = await RecurringOrderModel.findOneAndUpdate(

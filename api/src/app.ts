@@ -14,7 +14,7 @@ import { editOrderFmt, Order, OrderResponse, Frequency, RecurringOrderResponse, 
 import { handleError } from './utils/httpErrors';
 import RecurringOrderModel from './models/recurringOrder';
 import { deleteOrder, getOrderFromIds, getOrderCSV, listOrders } from './orders/orderService';
-import { editNextInstance, generateOrderInstances, processAllRecurringOrders } from './orders/recurringOrderService';
+import { deleteRecurringOrder, editNextInstance, generateOrderInstances, processAllRecurringOrders } from './orders/recurringOrderService';
 import { getApiKeyFromAuthorizationHeader, getUserIdFromApiKey } from './utils/serverHelpers';
 
 const app = express();
@@ -283,7 +283,7 @@ app.delete('/orders/:id', async (req: Request, res: Response) => {
   }
 });
 
-app.delete('/orders/:id/instances/:position', async (req, res) => {
+app.delete('/orders/recurring/:id/instance/:position', async (req, res) => {
   const apiKey = getApiKeyFromAuthorizationHeader(req) as string | undefined;
   if (!apiKey || !await apiKeyValidation(apiKey)) {
     return res.status(401).json({ error: 'Invalid API key' });
@@ -313,6 +313,22 @@ app.delete('/orders/:id/instances/:position', async (req, res) => {
   await recurringOrder.save();
 
   return res.status(200).json({ message: `Instance at position ${position} deleted from recurring order ${id}` });
+});
+
+app.delete('/orders/recurring/:id', async (req: Request, res: Response) => {
+  const id = req.params.id as string;
+
+  try {
+    const authResult = await getUserIdFromApiKey(req);
+    if ('error' in authResult) return handleError(res, authResult);
+
+    const result = await deleteRecurringOrder(authResult.userId, id);
+    if ('error' in result) return handleError(res, result);
+
+    return res.status(200).json(result);
+  } catch {
+    res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'An unexpected error occurred' });
+  }
 });
 
 app.put('/orders/instance/:id', async (req, res) => {
