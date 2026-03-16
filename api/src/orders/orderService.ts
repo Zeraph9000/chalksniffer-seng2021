@@ -1,18 +1,10 @@
 import OrderModel from '../models/order';
 import OrderXml from '../models/orderXml';
-import { ErrorObject, Order, OrderFilter, OrderList } from '../types';
-import { getOrderPages } from '../utils/orderHelpers';
+import { validateOrder, ValidationError } from '../utils/validation';
+import { calculateMonetaryTotal, getOrderPages } from '../utils/orderHelpers';
+import { buildOrderXml } from '../utils/xmlBuilder';
+import { ErrorObject, editOrderFmt, Order, OrderResponse, OrderFilter, OrderList } from '../types';
 import { json2csv } from 'json-2-csv';
-
-export async function deleteOrder(userId: string, id: string): Promise<{ message: string } | ErrorObject> {
-  const getRes = await getOrderFromIds(userId, id);
-  if ('error' in getRes) return getRes;
-
-  await OrderXml.deleteOne({ orderId: id });
-  await OrderModel.deleteOne({ id, userId });
-
-  return { message: `Order ${id} deleted successfully` };
-}
 
 // Return the order based on ID and userId
 export async function getOrder(userId: string, id: string): Promise<Order> {
@@ -45,4 +37,81 @@ export async function getOrderCSV(filter: OrderFilter | undefined,
   if (orders.orders.length === 0) return '';
   const csv = await json2csv(orders.orders);
   return csv;
+}
+
+// Delete the order based on the id given
+export async function deleteOrder(userId: string, id: string): Promise<{ message: string } | ErrorObject> {
+  const getRes = await getOrderFromIds(userId, id);
+  if ('error' in getRes) return getRes;
+
+  await OrderXml.deleteOne({ orderId: id });
+  await OrderModel.deleteOne({ id, userId });
+
+  return { message: `Order ${id} deleted successfully` };
+}
+
+// Update the order based on the id given
+export async function updateOrder(userId: string, id: string, body: editOrderFmt): Promise<object | ErrorObject | { errors: ValidationError[] | [{ field: string; message: string }] }> {
+  const order = await OrderModel.findOne({ id });
+  if (!order) return { errors: [{ field: 'id', message: `Order with ID ${id} does not exist` }] };
+  if (order.userId !== userId) return { error: 'FORBIDDEN', message: 'User does not own requested order' };
+
+  const updatableFields = [
+    'salesOrderId', 'issueTime', 'orderTypeCode', 'note', 'customerReference',
+    'accountingCostCode', 'validityPeriod', 'quotationDocumentReference',
+    'orderDocumentReference', 'originatorDocumentReference', 'additionalDocumentReference',
+    'originatorCustomerParty', 'delivery', 'deliveryTerms', 'paymentMeans',
+    'paymentTerms', 'allowanceCharge', 'taxTotal', 'orderLines',
+  ] as const;
+
+  for (const field of updatableFields) {
+    if (body[field] != null) order.set(field, body[field]);
+  }
+
+  const orderObject = order.toObject();
+  orderObject.anticipatedMonetaryTotal = calculateMonetaryTotal(orderObject);
+  order.set('anticipatedMonetaryTotal', orderObject.anticipatedMonetaryTotal);
+
+  const validation = validateOrder(orderObject);
+  if (!validation.res) return { errors: validation.errors };
+
+  await order.save();
+
+  const updatedXml = buildOrderXml(order.toObject());
+  await OrderXml.updateOne({ orderId: order.id }, { xml: updatedXml }, { upsert: true });
+
+  return order.toObject();
+}
+
+export async function createOrder(userId: string, body: any): Promise<OrderResponse | { errors: ValidationError[] }> {
+  const orderId = crypto.randomUUID();
+  const now = new Date();
+  const fullOrder: Order = {
+    ...body,
+    id: orderId,
+    userId,
+    issueDate: body.issueDate,
+    anticipatedMonetaryTotal: calculateMonetaryTotal(body),
+    createdAt: now.toISOString(),
+    xmlUrl: `/orders/${orderId}/xml`,
+  };
+
+  const validation = validateOrder(fullOrder);
+  if (!validation.res) return { errors: validation.errors };
+
+  await OrderModel.create(fullOrder);
+  const xml = buildOrderXml(fullOrder);
+  await OrderXml.create({ orderId: fullOrder.id, xml });
+
+  return {
+    id: orderId,
+    issueDate: fullOrder.issueDate,
+    documentCurrencyCode: fullOrder.documentCurrencyCode,
+    buyerCustomerParty: fullOrder.buyerCustomerParty,
+    sellerSupplierParty: fullOrder.sellerSupplierParty,
+    orderLines: fullOrder.orderLines,
+    anticipatedMonetaryTotal: fullOrder.anticipatedMonetaryTotal!,
+    createdAt: now,
+    xmlUrl: `/orders/${orderId}/xml`,
+  };
 }
