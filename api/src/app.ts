@@ -13,8 +13,8 @@ import { getOrderXmlResponse } from './utils/getOrderXml';
 import { editOrderFmt, Order, OrderResponse, Frequency, RecurringOrderResponse, ErrorObject } from './types';
 import { handleError } from './utils/httpErrors';
 import RecurringOrderModel from './models/recurringOrder';
-import { generateOrderInstances, processAllRecurringOrders } from './orders/recurringOrderService';
 import { deleteOrder, getOrder, getOrderCSV, listOrders } from './orders/orderService';
+import { editNextInstance, generateOrderInstances, processAllRecurringOrders } from './orders/recurringOrderService';
 import { json2csv } from 'json-2-csv';
 import { getApiKeyFromAuthorizationHeader, getUserIdFromApiKey } from './utils/serverHelpers';
 
