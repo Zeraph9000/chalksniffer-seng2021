@@ -1,3 +1,12 @@
+/**
+ * This contains the typescript types
+ */
+
+export type ErrorObject = {
+  error: string,
+  message: string
+}
+
 type Period = {
   startDate?: string | null;
   endDate?: string | null;
@@ -176,6 +185,7 @@ type editOrderFmt = {
 type Frequency = 'Daily' | 'Weekly' | 'Monthly';
 
 type RecurringOrderInstance = {
+  id: string;
   order: Order;
   scheduledDate: string;
 };
@@ -212,16 +222,17 @@ type OrderFilter = {
   userId?: string | null;
   id?: string;
   issueDate?: string;
-  buyerName?: string;
-  sellerName?: string;
-  payableAmount?: number;
   documentCurrencyCode?: string;
   createdAt?: string;
+  'buyerCustomerParty.party.partyName'?: string;
+  'sellerSupplierParty.party.partyName'?: string;
+  'anticipatedMonetaryTotal.payableAmount'?: number;
 }
 
 type OrderList = {
   orders: OrderPaginated[];
   limit: number;
+  offset: number;
   totalOrders: number;
 }
 

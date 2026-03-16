@@ -1,18 +1,38 @@
-import express from 'express';
-import { router as authRouter, getUserId, apiKeyValidation, getApiKeyFromAuthorizationHeader } from './auth/auth';
+import express, { Request, Response } from 'express';
+import cors from 'cors';
+import swaggerUi from 'swagger-ui-express';
+import YAML from 'yamljs';
+import path from 'path';
+import { router as authRouter, getUserId, apiKeyValidation } from './auth/auth';
 import OrderXml from './models/orderXml';
 import OrderModel from './models/order';
 import { validateOrder } from './utils/validation';
-import { calculateMonetaryTotal, getOrderPages, parsePagedQuery } from './utils/orderHelpers';
+import { calculateMonetaryTotal, parsePagedQuery } from './utils/orderHelpers';
 import { buildOrderXml } from './utils/xmlBuilder';
 import { getOrderXmlResponse } from './utils/getOrderXml';
-import { editOrderFmt, Order, OrderResponse, Frequency, RecurringOrderResponse, OrderFilter } from './types';
+import { editOrderFmt, Order, OrderResponse, Frequency, RecurringOrderResponse, ErrorObject } from './types';
+import { handleError } from './utils/httpErrors';
 import RecurringOrderModel from './models/recurringOrder';
-import { generateOrderInstances, scheduleCronJob } from './utils/recurringOrderService';
+import { deleteOrder, getOrderFromIds, getOrderCSV, listOrders } from './orders/orderService';
+import { editNextInstance, generateOrderInstances, processAllRecurringOrders } from './orders/recurringOrderService';
+import { getApiKeyFromAuthorizationHeader, getUserIdFromApiKey } from './utils/serverHelpers';
 import { json2csv } from 'json-2-csv';
 import { json } from 'node:stream/consumers';
 
 const app = express();
+app.use(cors());
+
+const yamlPath = process.env.VERCEL
+  ? path.join(process.cwd(), 'api/endpoints.yaml')
+  : path.join(__dirname, '../endpoints.yaml');
+const swaggerDocument = YAML.load(yamlPath);
+const swaggerUiDistPath = require('swagger-ui-dist').getAbsoluteFSPath();
+const swaggerUiOptions = {
+  explorer: true,
+  customCss: '.swagger-ui .opblock .opblock-summary-path-description-wrapper { align-items: center; display: flex; flex-wrap: wrap; gap: 0 10px; padding: 0 10px; width: 100%; }',
+  customCssUrl: 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.0.0/swagger-ui.min.css',
+};
+app.use('/docs', express.static(swaggerUiDistPath, { index: false }), swaggerUi.serve, swaggerUi.setup(swaggerDocument, swaggerUiOptions));
 
 app.use(express.json());
 app.use('/auth', authRouter);
@@ -67,8 +87,6 @@ app.post('/orders', async (req, res) => {
       orderInstances,
     });
 
-    scheduleCronJob(recurringOrderId, frequency, startDate);
-
     const response: RecurringOrderResponse = {
       id: recurringOrderId,
       frequency,
@@ -118,7 +136,80 @@ app.post('/orders', async (req, res) => {
   return res.status(200).json(order);
 });
 
-app.put ('/orders/:id', async (req, res) => {
+app.get('/orders/:id/xml', async (req, res) => {
+  const result = await getOrderXmlResponse(
+    getApiKeyFromAuthorizationHeader(req) as string | undefined,
+    req.params.id as string
+  );
+
+  if (result.status !== 200) {
+    return res.status(result.status).json(result.body);
+  }
+
+  res.set('Content-Type', 'application/xml');
+  return res.status(200).send(result.xml);
+});
+
+app.get('/orders', async (req, res) => {
+  try {
+    const result = await getUserIdFromApiKey(req);
+    if ('error' in result) return handleError(res, result);
+
+    const userId = result.userId;
+    const qRes = parsePagedQuery(req.query, userId);
+    if ('error' in qRes) return handleError(res, qRes);
+    const orders = await listOrders(qRes.filter, qRes.limit, qRes.offset);
+    
+    return res.status(200).json(orders);
+  } catch {
+    res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'Failed to process orders list' });
+  }
+});
+
+app.get('/orders/csv', async (req, res) => {
+  try {
+    const result = await getUserIdFromApiKey(req);
+    if ('error' in result) return handleError(res, result);
+    const userId = result.userId;
+
+    const qRes = parsePagedQuery(req.query, userId);
+    if ('error' in qRes) return handleError(res, qRes);
+    const csv = await getOrderCSV(qRes.filter, qRes.limit, qRes.offset);
+    
+    return res.status(200).send(csv);
+  } catch {
+    res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'Failed to process orders CSV' });
+  }
+});
+
+app.post('/orders/recurring', async (_req: Request, res: Response) => {
+  try {
+    const result = await processAllRecurringOrders();
+    if (result) return res.status(400).json(result);
+    
+    res.status(200).json({});
+  } catch {
+    res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'Failed to process recurring orders' });
+  }
+});
+
+app.get('/orders/:id', async (req, res) => {
+  try {
+    const result = await getUserIdFromApiKey(req);
+    if ('error' in result) return handleError(res, result);
+    const userId = result.userId;
+    const id = req.params.id as string;
+
+    const orderRes = await getOrderFromIds(userId, id);
+    if ('error' in orderRes) return handleError(res, orderRes);
+
+    res.status(200).json(orderRes);
+  } catch {
+    res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'Failed to process orders' });
+  }
+});
+
+app.put('/orders/:id', async (req, res) => {
   const apiKey = getApiKeyFromAuthorizationHeader(req) as string;
 
   if (!apiKey || !await apiKeyValidation(apiKey)) {
@@ -178,63 +269,35 @@ app.put ('/orders/:id', async (req, res) => {
   return res.status(200).json(editedOrder);
 });
 
-app.get ('/orders/:id/xml', async (req, res) => {
-  const result = await getOrderXmlResponse(
-    getApiKeyFromAuthorizationHeader(req) as string | undefined,
-    req.params.id as string
-  );
+app.delete('/orders/:id', async (req: Request, res: Response) => {
+  const id = req.params.id as string;
 
-  if (result.status !== 200) {
-    return res.status(result.status).json(result.body);
+  try {
+    const authResult = await getUserIdFromApiKey(req);
+    if ('error' in authResult) return handleError(res, authResult);
+
+    const result = await deleteOrder(authResult.userId, id);
+    if ('error' in result) return handleError(res, result);
+
+    return res.status(200).json(result);
+  } catch {
+    res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'An unexpected error occurred' });
   }
-
-  res.set('Content-Type', 'application/xml');
-  return res.status(200).send(result.xml);
 });
 
-app.get('/orders', async (req, res) => {
+app.put('/order/instance/:id', async (req, res) => {
   const apiKey = getApiKeyFromAuthorizationHeader(req) as string;
   if (!apiKey || !await apiKeyValidation(apiKey)) {
     return res.status(401).json({ error: 'Invalid API key' });
   }
 
   const userId = await getUserId(apiKey);
-  const q = parsePagedQuery(req.query, userId as string);
-
-  if ('error' in q) {
-    return res.status(400).json(q);
-  }
-
-  const ordersFound = await OrderModel.find(q.filter as OrderFilter)
-    .skip(q.offset as number)
-    .lean();
-  const orders = getOrderPages(ordersFound, q.limit as number);
-
-  return res.status(200).json(orders);
-});
-
-app.get('/orders/csv', async (req, res) => {
-  const apiKey = getApiKeyFromAuthorizationHeader(req) as string;
-  if (!apiKey || !await apiKeyValidation(apiKey)) {
+  if (!userId) {
     return res.status(401).json({ error: 'Invalid API key' });
   }
 
-  const userId = await getUserId(apiKey);
-  const q = parsePagedQuery(req.query, userId as string);
-
-  if ('error' in q) {
-    return res.status(400).json(q);
-  }
-
-  const ordersFound = await OrderModel.find(q.filter as OrderFilter)
-    .skip(q.offset as number)
-    .lean();
-  const orders = getOrderPages(ordersFound, q.limit as number);
-
-  if (orders.orders.length === 0) return res.status(200).send('');
-  const csv = await json2csv(orders.orders);
-
-  return res.status(200).send(csv);
+  const result = await editNextInstance(req.params.id, userId, req.body);
+  return res.status(result.status).json(result.body);
 });
 
 app.get('/order/recommend', async (req, res) => {
