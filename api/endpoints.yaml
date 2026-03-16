@@ -421,11 +421,21 @@ paths:
                 message: Cant connect
 
   /orders/recurring/{id}:
+<<<<<<< HEAD
     get:
       tags:
         - order
       summary: Get recurring order by id
       description: Returns a recurring order's metadata, template order, and instance summaries (id + scheduledDate only).
+=======
+    put:
+      tags:
+        - order
+      summary: Edit recurring order template and propagate to all instances
+      description: |
+        Edits the recurring order template (note, delivery, orderLines) and propagates
+        the changes to all pending instances. Monetary totals are recalculated.
+>>>>>>> c374c925ea08e11caefc9f5aad37d51708617408
       security:
         - ApiKeyAuth: []
       parameters:
@@ -435,13 +445,36 @@ paths:
           description: The recurring order ID
           schema:
             type: string
+<<<<<<< HEAD
       responses:
         '200':
           description: OK
+=======
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                note:
+                  type: string
+                delivery:
+                  $ref: '#/components/schemas/Delivery'
+                orderLines:
+                  type: array
+                  minItems: 1
+                  items:
+                    $ref: '#/components/schemas/OrderLine'
+      responses:
+        '200':
+          description: OK - updated recurring order with all instances
+>>>>>>> c374c925ea08e11caefc9f5aad37d51708617408
           content:
             application/json:
               schema:
                 type: object
+<<<<<<< HEAD
                 properties:
                   id:
                     type: string
@@ -484,33 +517,54 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+=======
+        '400':
+          description: Bad Request - recurring order not found or validation failure
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+                  - $ref: '#/components/schemas/ValidationErrorResponse'
+>>>>>>> c374c925ea08e11caefc9f5aad37d51708617408
         '401':
           description: Unauthorized - invalid or missing API key
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+<<<<<<< HEAD
               example:
                 error: UNAUTHORIZED
                 message: Invalid api key is given
+=======
+>>>>>>> c374c925ea08e11caefc9f5aad37d51708617408
         '403':
           description: Forbidden - recurring order does not belong to the user
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+<<<<<<< HEAD
               example:
                 error: FORBIDDEN
                 message: User does not own requested recurring order
         '500':
           description: Internal Server Error
+=======
+        '409':
+          description: Conflict - the recurring order was modified concurrently. Retry the request.
+>>>>>>> c374c925ea08e11caefc9f5aad37d51708617408
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+<<<<<<< HEAD
               example:
                 error: INTERNAL_SERVER_ERROR
                 message: Cant connect
+=======
+>>>>>>> c374c925ea08e11caefc9f5aad37d51708617408
 
   /orders/{id}:
     get:
@@ -685,13 +739,13 @@ paths:
                 error: INTERNAL_SERVER_ERROR
                 message: Cant connect
 
-  /order/instance/{id}:
+  /orders/recurring/{id}/instance/{position}:
     put:
       tags:
         - order
-      summary: Edit next instance of a recurring order
+      summary: Edit an instance of a recurring order by position
       description: |
-        Edits the next scheduled instance of a recurring order (the first element in orderInstances).
+        Edits a scheduled instance of a recurring order at the given 0-based position.
         Editable fields: note, delivery, orderLines. Optionally set updateTemplate to true
         to also apply the changes to the template order for future instances.
       security:
@@ -703,6 +757,13 @@ paths:
           description: The recurring order ID
           schema:
             type: string
+        - in: path
+          name: position
+          required: true
+          description: 0-based index of the instance to edit
+          schema:
+            type: integer
+            minimum: 0
       requestBody:
         required: true
         content:
@@ -768,7 +829,65 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /orders/{id}/instances/{position}:
+  /orders/recurring/{id}/instance/{position}:
+    get:
+      tags:
+        - order
+      summary: Get a single recurring order instance
+      description: Returns a single instance from a recurring order by its 0-based array position.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: The recurring order ID
+          schema:
+            type: string
+        - in: path
+          name: position
+          required: true
+          description: The 0-based index of the instance to retrieve
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        '200':
+          description: OK - the instance object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  order:
+                    $ref: '#/components/schemas/Order'
+                  scheduledDate:
+                    type: string
+                    format: date-time
+                required:
+                  - id
+                  - order
+                  - scheduledDate
+        '400':
+          description: Bad Request - recurring order not found or invalid position
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - recurring order does not belong to the user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     delete:
       tags:
         - order
@@ -799,6 +918,47 @@ paths:
                 $ref: '#/components/schemas/DeleteOrderResponse'
         '400':
           description: Bad Request - recurring order or instance not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - API key does not belong to the right user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /orders/recurring/{id}:
+    delete:
+      tags:
+        - order
+      summary: Delete an entire recurring order
+      description: Deletes a recurring order and all its scheduled instances.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: The recurring order ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteOrderResponse'
+        '400':
+          description: Bad Request - recurring order not found
           content:
             application/json:
               schema:
