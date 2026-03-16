@@ -323,6 +323,30 @@ export async function createRecurringOrder(userId: string, body: any): Promise<R
   return { id: recurringOrderId, frequency, startDate, createdAt: new Date() };
 }
 
+export async function getRecurringOrder(userId: string, id: string) {
+  const recurringOrder = await RecurringOrderModel.findOne({ id });
+  if (!recurringOrder) {
+    return { error: 'INVALID_RECURRING_ORDER_ID', message: `Recurring order with ID ${id} does not exist` } as ErrorObject;
+  }
+
+  if (userId !== recurringOrder.userId) {
+    return { error: 'FORBIDDEN', message: 'User does not own requested recurring order' } as ErrorObject;
+  }
+
+  return {
+    id: recurringOrder.id,
+    userId: recurringOrder.userId,
+    frequency: recurringOrder.frequency,
+    startDate: recurringOrder.startDate,
+    createdAt: recurringOrder.createdAt,
+    order: recurringOrder.order,
+    orderInstances: recurringOrder.orderInstances.map((inst: any) => ({
+      id: inst.id,
+      scheduledDate: inst.scheduledDate,
+    })),
+  };
+}
+
 export async function processAllRecurringOrders(): Promise<ErrorObject | void> {
   const recurringOrders = await RecurringOrderModel.find({
     'orderInstances.0': { $exists: true },
