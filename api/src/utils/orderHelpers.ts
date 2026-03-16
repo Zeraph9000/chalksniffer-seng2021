@@ -1,4 +1,4 @@
-import { Order, MonetaryTotal, OrderPaginated, OrderList, PaginationParams, OrderFilter } from '../types';
+import { Order, MonetaryTotal, OrderPaginated, OrderList, PaginationParams, OrderFilter, ErrorObject } from '../types';
 
 export function calculateMonetaryTotal(order: Order): MonetaryTotal {
   // Sum of quantity × priceAmount for each line item
@@ -64,13 +64,13 @@ export function getOrderPages(ordersFound: Order[], limit: number): OrderList {
   };
 }
 
-export function parsePagedQuery(query: Record<string, unknown>, userId: string): PaginationParams | { error: string } {
+export function parsePagedQuery(query: Record<string, unknown>, userId: string): PaginationParams | ErrorObject {
   const { limit, offset, ...queryFilter } = query;
 
   const lim = parseInt(limit as string);
-  if (lim < 1 || lim > 500) return { error: 'Limit must be between 1 and 500 inclusive' };
+  if (lim < 1 || lim > 500) return { error: 'INVALID_LIMIT', message: 'Limit must be between 1 and 500 inclusive' };
   const offs = parseInt(offset as string);
-  if (offs < 0) return { error: 'Offset must be greater than or equal to 0' };
+  if (offs < 0) return { error: 'INVALID_OFFSET', message: 'Offset must be greater than or equal to 0' };
 
   const qfilter: OrderFilter = { userId, ...queryFilter };
 

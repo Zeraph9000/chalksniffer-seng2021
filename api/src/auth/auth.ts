@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import mongoose from 'mongoose';
 import { UserMap } from '../models/userMap';
+import { ErrorObject } from '../types';
 import crypto from 'crypto';
 
 export const router = Router();
@@ -54,6 +55,16 @@ export async function getUserId(apiKey: string): Promise<string | null> {
   const hashedKey = crypto.createHash('sha256').update(apiKey).digest('hex');
   const mapping = await UserMap.findOne({ apiKey: hashedKey });
   return mapping?.userId ?? null;
+}
+
+// Validates the API key and returns an ErrorObject or userId
+export async function getUserIdFromApiKey(req: Request): Promise<{ userId: string } | ErrorObject> {
+  const apiKey = getApiKeyFromAuthorizationHeader(req) as string;
+  if (!apiKey || !await apiKeyValidation(apiKey)) return { error: 'UNAUTHORIZED', message: 'Invalid API key' };
+
+  const userId = await getUserId(apiKey);
+  if (userId == null) return { error: 'FORBIDDEN', message: 'No user mapped to given API key' };
+  return { userId };
 }
 
 // Creates a new userId and maps a fresh apiKey -> userId.
