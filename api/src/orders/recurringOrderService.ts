@@ -155,6 +155,28 @@ async function executeNextInstance(recurringOrderId: string): Promise<ErrorObjec
   }
 }
 
+export async function getRecurringOrderInstance(
+  recurringOrderId: string,
+  userId: string,
+  position: string
+): Promise<{ status: number; body: any }> {
+  const recurringOrder = await RecurringOrderModel.findOne({ id: recurringOrderId });
+  if (!recurringOrder) {
+    return { status: 400, body: { error: 'Recurring order does not exist' } };
+  }
+
+  if (userId !== recurringOrder.userId) {
+    return { status: 403, body: { error: 'user does not own requested recurring order' } };
+  }
+
+  const pos = Number(position);
+  if (!Number.isInteger(pos) || pos < 0 || pos >= recurringOrder.orderInstances.length) {
+    return { status: 400, body: { error: `Invalid position ${position}. Must be an integer between 0 and ${recurringOrder.orderInstances.length - 1}` } };
+  }
+
+  return { status: 200, body: recurringOrder.orderInstances[pos] };
+}
+
 export async function editRecurringOrder(
   recurringOrderId: string,
   userId: string,

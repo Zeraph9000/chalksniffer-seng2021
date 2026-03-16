@@ -744,6 +744,64 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
   /orders/recurring/{id}/instance/{position}:
+    get:
+      tags:
+        - order
+      summary: Get a single recurring order instance
+      description: Returns a single instance from a recurring order by its 0-based array position.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: The recurring order ID
+          schema:
+            type: string
+        - in: path
+          name: position
+          required: true
+          description: The 0-based index of the instance to retrieve
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        '200':
+          description: OK - the instance object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  order:
+                    $ref: '#/components/schemas/Order'
+                  scheduledDate:
+                    type: string
+                    format: date-time
+                required:
+                  - id
+                  - order
+                  - scheduledDate
+        '400':
+          description: Bad Request - recurring order not found or invalid position
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - recurring order does not belong to the user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     delete:
       tags:
         - order
