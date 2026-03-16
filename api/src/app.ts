@@ -266,7 +266,7 @@ app.put('/orders/recurring/:id/instance/:position', async (req, res) => {
     return res.status(403).json({ error: 'API key does not belong to user' });
   }
 
-  const result = await editNextInstance(req.params.id, userId, req.body);
+  const result = await editInstance(req.params.id, userId, Number(req.params.position), req.body);
   return res.status(result.status).json(result.body);
 });
 
