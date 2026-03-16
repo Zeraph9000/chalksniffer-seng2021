@@ -2,10 +2,10 @@ import mongoose from 'mongoose';
 import RecurringOrderModel from '../models/recurringOrder';
 import OrderModel from '../models/order';
 import OrderXml from '../models/orderXml';
-import { validateOrder } from '../utils/validation';
+import { validateOrder, ValidationError } from '../utils/validation';
 import { calculateMonetaryTotal } from '../utils/orderHelpers';
 import { buildOrderXml } from '../utils/xmlBuilder';
-import { editOrderFmt, ErrorObject, Frequency, Order, RecurringOrderInstance } from '../types';
+import { editOrderFmt, ErrorObject, Frequency, Order, RecurringOrderInstance, RecurringOrderResponse } from '../types';
 
 const INSTANCE_COUNT = 5;
 
@@ -208,6 +208,44 @@ export async function editInstance(
   }
 
   return { status: 200, body: instance };
+}
+
+export async function createRecurringOrder(userId: string, body: any): Promise<RecurringOrderResponse | { errors: { field: string; message: string }[] | ValidationError[] }> {
+  const { frequency, startDate, ...orderBody } = body;
+
+  const validFrequencies: Frequency[] = ['Daily', 'Weekly', 'Monthly'];
+  if (!frequency || !validFrequencies.includes(frequency)) {
+    return { errors: [{ field: 'frequency', message: 'must be one of: Daily, Weekly, Monthly' }] };
+  }
+  if (!startDate || isNaN(Date.parse(startDate))) {
+    return { errors: [{ field: 'startDate', message: 'required and must be a valid date string (e.g. 2026-03-15T09:00:00Z or 2026-03-15)' }] };
+  }
+
+  const templateOrderId = crypto.randomUUID();
+  const templateOrder: Order = {
+    ...orderBody,
+    userId,
+    id: templateOrderId,
+    issueDate: orderBody.issueDate || startDate.split('T')[0],
+    anticipatedMonetaryTotal: calculateMonetaryTotal(orderBody),
+  };
+
+  const validation = validateOrder(templateOrder);
+  if (!validation.res) return { errors: validation.errors };
+
+  const recurringOrderId = crypto.randomUUID();
+  const orderInstances = generateOrderInstances(templateOrder, startDate, frequency);
+
+  await RecurringOrderModel.create({
+    id: recurringOrderId,
+    userId,
+    order: templateOrder,
+    frequency,
+    startDate,
+    orderInstances,
+  });
+
+  return { id: recurringOrderId, frequency, startDate, createdAt: new Date() };
 }
 
 export async function processAllRecurringOrders(): Promise<ErrorObject | void> {

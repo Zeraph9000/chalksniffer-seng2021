@@ -177,8 +177,24 @@ type OrderResponse = {
 };
 
 type editOrderFmt = {
+  salesOrderId?: string | null;
+  issueTime?: string | null;
+  orderTypeCode?: string | null;
   note?: string | null;
+  customerReference?: string | null;
+  accountingCostCode?: string | null;
+  validityPeriod?: Period | null;
+  quotationDocumentReference?: DocumentReference | null;
+  orderDocumentReference?: DocumentReference | null;
+  originatorDocumentReference?: DocumentReference | null;
+  additionalDocumentReference?: DocumentReference[] | null;
+  originatorCustomerParty?: CustomerParty | null;
   delivery?: Delivery | null;
+  deliveryTerms?: DeliveryTerms | null;
+  paymentMeans?: PaymentMeans | null;
+  paymentTerms?: PaymentTerms | null;
+  allowanceCharge?: AllowanceCharge[] | null;
+  taxTotal?: TaxTotal | null;
   orderLines?: OrderLine[] | null;
 };
 
