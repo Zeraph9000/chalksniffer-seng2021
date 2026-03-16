@@ -305,4 +305,69 @@ app.delete('/orders/:id', async (req, res) => {
   return res.status(200).json({ message: `Order ${id} deleted successfully` });
 });
 
+app.put('/order/instance/:id', async (req, res) => {
+  const apiKey = getApiKeyFromAuthorizationHeader(req) as string;
+  if (!apiKey || !await apiKeyValidation(apiKey)) {
+    return res.status(401).json({ error: 'Invalid API key' });
+  }
+
+  const userId = await getUserId(apiKey);
+  if (!userId) {
+    return res.status(401).json({ error: 'Invalid API key' });
+  }
+
+  const id = req.params.id as string;
+  const recurringOrder = await RecurringOrderModel.findOne({ id });
+  if (!recurringOrder) {
+    return res.status(400).json({ error: 'Recurring order does not exist' });
+  }
+
+  if (userId !== recurringOrder.userId) {
+    return res.status(403).json({ error: 'user does not own requested recurring order' });
+  }
+
+  if (!recurringOrder.orderInstances || recurringOrder.orderInstances.length === 0) {
+    return res.status(400).json({ error: 'No pending instances to edit' });
+  }
+
+  const instance = recurringOrder.orderInstances[0];
+  const body = req.body as editOrderFmt & { updateTemplate?: boolean };
+
+  if (body.note !== undefined) {
+    instance.order.note = body.note;
+  }
+  if (body.delivery !== undefined) {
+    instance.order.delivery = body.delivery;
+  }
+  if (body.orderLines !== undefined) {
+    instance.order.orderLines = body.orderLines!;
+  }
+
+  instance.order.anticipatedMonetaryTotal = calculateMonetaryTotal(instance.order);
+
+  const validation = validateOrder(instance.order);
+  if (!validation.res) {
+    return res.status(400).json({ errors: validation.errors });
+  }
+
+  if (body.updateTemplate === true) {
+    if (body.note !== undefined) {
+      recurringOrder.order.note = body.note;
+    }
+    if (body.delivery !== undefined) {
+      recurringOrder.order.delivery = body.delivery;
+    }
+    if (body.orderLines !== undefined) {
+      recurringOrder.order.orderLines = body.orderLines!;
+    }
+    recurringOrder.order.anticipatedMonetaryTotal = calculateMonetaryTotal(recurringOrder.order);
+  }
+
+  recurringOrder.markModified('orderInstances');
+  recurringOrder.markModified('order');
+  await recurringOrder.save();
+
+  return res.status(200).json(instance);
+});
+
 export default app;

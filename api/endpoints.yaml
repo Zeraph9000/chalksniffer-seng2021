@@ -493,6 +493,82 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /order/instance/{id}:
+    put:
+      tags:
+        - order
+      summary: Edit next instance of a recurring order
+      description: |
+        Edits the next scheduled instance of a recurring order (the first element in orderInstances).
+        Editable fields: note, delivery, orderLines. Optionally set updateTemplate to true
+        to also apply the changes to the template order for future instances.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: The recurring order ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                note:
+                  type: string
+                delivery:
+                  $ref: '#/components/schemas/Delivery'
+                orderLines:
+                  type: array
+                  minItems: 1
+                  items:
+                    $ref: '#/components/schemas/OrderLine'
+                updateTemplate:
+                  type: boolean
+                  default: false
+                  description: When true, also updates the recurring order template
+      responses:
+        '200':
+          description: OK - updated instance
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  order:
+                    $ref: '#/components/schemas/Order'
+                  scheduledDate:
+                    type: string
+                    format: date-time
+        '400':
+          description: Bad Request - recurring order not found, no pending instances, or validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - recurring order does not belong to the user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /orders/{id}/xml:
     get:
       tags:
