@@ -141,9 +141,10 @@ async function executeNextInstance(recurringOrderId: string): Promise<ErrorObjec
   }
 }
 
-export async function editNextInstance(
+export async function editInstance(
   recurringOrderId: string,
   userId: string,
+  position: number,
   updates: editOrderFmt & { updateTemplate?: boolean }
 ): Promise<{ status: number; body: any }> {
   const recurringOrder = await RecurringOrderModel.findOne({ id: recurringOrderId });
@@ -159,7 +160,11 @@ export async function editNextInstance(
     return { status: 400, body: { error: 'No pending instances to edit' } };
   }
 
-  const instance = recurringOrder.orderInstances[0]!;
+  if (!Number.isInteger(position) || position < 0 || position >= recurringOrder.orderInstances.length) {
+    return { status: 400, body: { error: `Invalid position ${position}. Must be an integer between 0 and ${recurringOrder.orderInstances.length - 1}` } };
+  }
+
+  const instance = recurringOrder.orderInstances[position]!;
 
   if (updates.note !== undefined) {
     instance.order.note = updates.note;
