@@ -660,13 +660,13 @@ paths:
                 error: INTERNAL_SERVER_ERROR
                 message: Cant connect
 
-  /order/instance/{id}:
+  /orders/recurring/{id}/instance/{position}:
     put:
       tags:
         - order
-      summary: Edit next instance of a recurring order
+      summary: Edit an instance of a recurring order by position
       description: |
-        Edits the next scheduled instance of a recurring order (the first element in orderInstances).
+        Edits a scheduled instance of a recurring order at the given 0-based position.
         Editable fields: note, delivery, orderLines. Optionally set updateTemplate to true
         to also apply the changes to the template order for future instances.
       security:
@@ -678,6 +678,13 @@ paths:
           description: The recurring order ID
           schema:
             type: string
+        - in: path
+          name: position
+          required: true
+          description: 0-based index of the instance to edit
+          schema:
+            type: integer
+            minimum: 0
       requestBody:
         required: true
         content:
