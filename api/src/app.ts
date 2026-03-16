@@ -3,18 +3,15 @@ import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import path from 'path';
-import { router as authRouter, getUserId, apiKeyValidation } from './auth/auth';
+import { router as authRouter } from './auth/auth';
 import OrderModel from './models/order';
 import { parsePagedQuery } from './utils/orderHelpers';
 import { getOrderXmlResponse } from './utils/getOrderXml';
 import { editOrderFmt } from './types';
 import { handleError } from './utils/httpErrors';
 import { deleteOrder, createOrder, updateOrder, listOrders, getOrderFromIds, getOrderCSV } from './orders/orderService';
-import { editRecurringOrder, createRecurringOrder, deleteRecurringOrder, editInstance, getRecurringOrder, getRecurringOrderInstance, generateOrderInstances, processAllRecurringOrders } from './orders/recurringOrderService';
+import { editRecurringOrder, createRecurringOrder, deleteRecurringOrder, deleteRecurringOrderInstance, editInstance, getRecurringOrder, getRecurringOrderInstance, processAllRecurringOrders } from './orders/recurringOrderService';
 import { getApiKeyFromAuthorizationHeader, getUserIdFromApiKey } from './utils/serverHelpers';
-import { json2csv } from 'json-2-csv';
-import { json } from 'node:stream/consumers';
-import RecurringOrderModel from './models/recurringOrder';
 
 const app = express();
 app.use(cors());
@@ -58,17 +55,21 @@ app.post('/orders', async (req: Request, res: Response) => {
 });
 
 app.get('/orders/:id/xml', async (req, res) => {
-  const result = await getOrderXmlResponse(
-    getApiKeyFromAuthorizationHeader(req) as string | undefined,
-    req.params.id as string
-  );
+  try {
+    const result = await getOrderXmlResponse(
+      getApiKeyFromAuthorizationHeader(req) as string | undefined,
+      req.params.id as string
+    );
 
-  if (result.status !== 200) {
-    return res.status(result.status).json(result.body);
+    if (result.status !== 200) {
+      return res.status(result.status).json(result.body);
+    }
+
+    res.set('Content-Type', 'application/xml');
+    return res.status(200).send(result.xml);
+  } catch {
+    res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'An unexpected error occurred' });
   }
-
-  res.set('Content-Type', 'application/xml');
-  return res.status(200).send(result.xml);
 });
 
 app.get('/orders', async (req, res) => {
@@ -180,63 +181,39 @@ app.delete('/orders/:id', async (req: Request, res: Response) => {
 });
 
 app.get('/orders/recurring/:id/instance/:position', async (req, res) => {
-  const apiKey = getApiKeyFromAuthorizationHeader(req) as string | undefined;
-  if (!apiKey || !await apiKeyValidation(apiKey)) {
-    return res.status(401).json({ error: 'Invalid API key' });
-  }
+  try {
+    const authResult = await getUserIdFromApiKey(req);
+    if ('error' in authResult) return handleError(res, authResult);
 
-  const userId = await getUserId(apiKey);
-  if (!userId) {
-    return res.status(403).json({ error: 'API key does not belong to user' });
+    const result = await getRecurringOrderInstance(req.params.id, authResult.userId, req.params.position);
+    return res.status(result.status).json(result.body);
+  } catch {
+    res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'An unexpected error occurred' });
   }
-
-  const result = await getRecurringOrderInstance(req.params.id, userId, req.params.position);
-  return res.status(result.status).json(result.body);
 });
 
 app.delete('/orders/recurring/:id/instance/:position', async (req, res) => {
-  const apiKey = getApiKeyFromAuthorizationHeader(req) as string | undefined;
-  if (!apiKey || !await apiKeyValidation(apiKey)) {
-    return res.status(401).json({ error: 'Invalid API key' });
+  try {
+    const authResult = await getUserIdFromApiKey(req);
+    if ('error' in authResult) return handleError(res, authResult);
+
+    const result = await deleteRecurringOrderInstance(authResult.userId, req.params.id, req.params.position);
+    return res.status(result.status).json(result.body);
+  } catch {
+    res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'An unexpected error occurred' });
   }
-
-  const { id } = req.params;
-  const position = Number(req.params.position);
-  const userId = await getUserId(apiKey);
-  if (!userId) {
-    return res.status(403).json({ error: 'API key does not belong to user' });
-  }
-
-  const recurringOrder = await RecurringOrderModel.findOne({ id });
-  if (!recurringOrder) {
-    return res.status(400).json({ error: `Recurring order with ID ${id} does not exist` });
-  }
-
-  if (userId !== recurringOrder.userId) {
-    return res.status(403).json({ error: 'user does not own requested recurring order' });
-  }
-
-  if (!Number.isInteger(position) || position < 0 || position >= recurringOrder.orderInstances.length) {
-    return res.status(400).json({ error: `Invalid position ${req.params.position}. Must be an integer between 0 and ${recurringOrder.orderInstances.length - 1}` });
-  }
-
-  recurringOrder.orderInstances.splice(position, 1);
-  await recurringOrder.save();
-
-  return res.status(200).json({ message: `Instance at position ${position} deleted from recurring order ${id}` });
 });
 
 app.put('/orders/recurring/:id', async (req, res) => {
-  const apiKey = getApiKeyFromAuthorizationHeader(req) as string | undefined;
-  if (!apiKey || !await apiKeyValidation(apiKey)) {
-    return res.status(401).json({ error: 'Invalid API key' });
+  try {
+    const authResult = await getUserIdFromApiKey(req);
+    if ('error' in authResult) return handleError(res, authResult);
+
+    const result = await editRecurringOrder(req.params.id, authResult.userId, req.body);
+    return res.status(result.status).json(result.body);
+  } catch {
+    res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'An unexpected error occurred' });
   }
-  const userId = await getUserId(apiKey);
-  if (!userId) {
-    return res.status(403).json({ error: 'API key does not belong to user' });
-  }
-  const result = await editRecurringOrder(req.params.id, userId, req.body);
-  return res.status(result.status).json(result.body);
 });
 
 app.delete('/orders/recurring/:id', async (req: Request, res: Response) => {
@@ -256,65 +233,56 @@ app.delete('/orders/recurring/:id', async (req: Request, res: Response) => {
 });
 
 app.put('/orders/recurring/:id/instance/:position', async (req, res) => {
-  const apiKey = getApiKeyFromAuthorizationHeader(req) as string | undefined;
-  if (!apiKey || !await apiKeyValidation(apiKey)) {
-    return res.status(401).json({ error: 'Invalid API key' });
-  }
+  try {
+    const authResult = await getUserIdFromApiKey(req);
+    if ('error' in authResult) return handleError(res, authResult);
 
-  const userId = await getUserId(apiKey);
-  if (!userId) {
-    return res.status(403).json({ error: 'API key does not belong to user' });
+    const result = await editInstance(req.params.id, authResult.userId, Number(req.params.position), req.body);
+    return res.status(result.status).json(result.body);
+  } catch {
+    res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'An unexpected error occurred' });
   }
-
-  const result = await editInstance(req.params.id, userId, Number(req.params.position), req.body);
-  return res.status(result.status).json(result.body);
 });
 
 app.get('/order/recommend', async (req, res) => {
-  const apiKey = getApiKeyFromAuthorizationHeader(req) as string;
+  try {
+    const authResult = await getUserIdFromApiKey(req);
+    if ('error' in authResult) return handleError(res, authResult);
 
-  if (!apiKey || !await apiKeyValidation(apiKey)) {
-    return res.status(401).json({ error: 'Invalid API key' });
-  }
+    const orders = await OrderModel.find({ userId: authResult.userId }).lean();
 
-  const userId = await getUserId(apiKey);
+    const normalizedKeys = orders.map(o => {
+      const items = o.orderLines?.map(line => `${line.lineItem.item.name}:${line.lineItem.quantity}`).sort() || [];
+      return items.join('|');
+    });
 
-  const ordersMongoose = await OrderModel.find({ userId: userId });
-
-  let orders = [];
-  for (const o of ordersMongoose) {
-    orders.push(o.toObject());
-  }
-
-  const normalizedKeys = orders.map(o => {
-    const items = o.orderLines?.map(line => `${line.lineItem.item.name}:${line.lineItem.quantity}`).sort() || [];
-    return items.join('|'); 
-  });
-
-  const freq = new Map<string, number>();
-  for (const key of normalizedKeys) {
-    freq.set(key, (freq.get(key) ?? 0) + 1);
-  }
-
-  let mostFreqKey: string | null = null;
-  let mostFreqCount = 0;
-  for (const [k, count] of freq) {
-    if (count > mostFreqCount) {
-      mostFreqCount = count;
-      mostFreqKey = k;
+    const freq = new Map<string, number>();
+    for (const key of normalizedKeys) {
+      freq.set(key, (freq.get(key) ?? 0) + 1);
     }
+
+    let mostFreqKey: string | null = null;
+    let mostFreqCount = 0;
+    for (const [k, count] of freq) {
+      if (count > mostFreqCount) {
+        mostFreqCount = count;
+        mostFreqKey = k;
+      }
+    }
+
+    if (!mostFreqKey || mostFreqCount < 2) {
+      return res.status(400).json({ error: 'No frequent orders found' });
+    }
+
+    const mostFreqOrder = orders.find(o => {
+      const items = o.orderLines?.map(line => `${line.lineItem.item.name}:${line.lineItem.quantity}`).sort() || [];
+      return items.join('|') === mostFreqKey;
+    });
+
+    return res.status(200).json(mostFreqOrder);
+  } catch {
+    res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'An unexpected error occurred' });
   }
-
-  if (!mostFreqKey || mostFreqCount < 2) { 
-    return res.status(400).json({ error: 'No frequent orders found' });
-  }
-
-  const mostFreqOrder = orders.find(o => {
-    const items = o.orderLines?.map(line => `${line.lineItem.item.name}:${line.lineItem.quantity}`).sort() || [];
-    return items.join('|') === mostFreqKey;
-  });
-
-  return res.status(200).json(mostFreqOrder);
 });
 
 export default app;
