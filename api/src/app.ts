@@ -10,7 +10,7 @@ import { editOrderFmt } from './types';
 import { handleError } from './utils/httpErrors';
 import RecurringOrderModel from './models/recurringOrder';
 import { deleteOrder, createOrder, updateOrder, listOrders, getOrderFromIds, getOrderCSV } from './orders/orderService';
-import { editRecurringOrder, createRecurringOrder, deleteRecurringOrder, editInstance, generateOrderInstances, processAllRecurringOrders } from './orders/recurringOrderService';
+import { editRecurringOrder, createRecurringOrder, deleteRecurringOrder, editInstance, getRecurringOrderInstance, generateOrderInstances, processAllRecurringOrders } from './orders/recurringOrderService';
 import { getApiKeyFromAuthorizationHeader, getUserIdFromApiKey } from './utils/serverHelpers';
 
 const app = express();
@@ -158,6 +158,21 @@ app.delete('/orders/:id', async (req: Request, res: Response) => {
   } catch {
     res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'An unexpected error occurred' });
   }
+});
+
+app.get('/orders/recurring/:id/instance/:position', async (req, res) => {
+  const apiKey = getApiKeyFromAuthorizationHeader(req) as string | undefined;
+  if (!apiKey || !await apiKeyValidation(apiKey)) {
+    return res.status(401).json({ error: 'Invalid API key' });
+  }
+
+  const userId = await getUserId(apiKey);
+  if (!userId) {
+    return res.status(403).json({ error: 'API key does not belong to user' });
+  }
+
+  const result = await getRecurringOrderInstance(req.params.id, userId, req.params.position);
+  return res.status(result.status).json(result.body);
 });
 
 app.delete('/orders/recurring/:id/instance/:position', async (req, res) => {
