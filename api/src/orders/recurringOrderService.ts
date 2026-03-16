@@ -155,7 +155,51 @@ async function executeNextInstance(recurringOrderId: string): Promise<ErrorObjec
   }
 }
 
-export async function editNextInstance(
+export async function editRecurringOrder(
+  recurringOrderId: string,
+  userId: string,
+  updates: editOrderFmt
+): Promise<{ status: number; body: any }> {
+  const recurringOrder = await RecurringOrderModel.findOne({ id: recurringOrderId });
+  if (!recurringOrder) {
+    return { status: 400, body: { error: 'Recurring order does not exist' } };
+  }
+  if (userId !== recurringOrder.userId) {
+    return { status: 403, body: { error: 'user does not own requested recurring order' } };
+  }
+
+  if (updates.note !== undefined) recurringOrder.order.note = updates.note;
+  if (updates.delivery !== undefined) recurringOrder.order.delivery = updates.delivery;
+  if (updates.orderLines !== undefined) recurringOrder.order.orderLines = updates.orderLines!;
+
+  const validation = validateOrder(recurringOrder.order);
+  if (!validation.res) {
+    return { status: 400, body: { errors: validation.errors } };
+  }
+  recurringOrder.order.anticipatedMonetaryTotal = calculateMonetaryTotal(recurringOrder.order);
+
+  for (const inst of recurringOrder.orderInstances) {
+    if (updates.note !== undefined) inst.order.note = updates.note;
+    if (updates.delivery !== undefined) inst.order.delivery = updates.delivery;
+    if (updates.orderLines !== undefined) inst.order.orderLines = updates.orderLines!;
+    inst.order.anticipatedMonetaryTotal = calculateMonetaryTotal(inst.order);
+  }
+
+  recurringOrder.markModified('orderInstances');
+  recurringOrder.markModified('order');
+  try {
+    await recurringOrder.save();
+  } catch (err) {
+    if (err instanceof mongoose.Error.VersionError) {
+      return { status: 409, body: { error: 'Conflict: the recurring order was modified concurrently. Please retry.' } };
+    }
+    throw err;
+  }
+
+  return { status: 200, body: recurringOrder };
+}
+
+export async function editInstance(
   recurringOrderId: string,
   userId: string,
   updates: editOrderFmt & { updateTemplate?: boolean }

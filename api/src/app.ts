@@ -10,7 +10,7 @@ import { getOrderXmlResponse } from './utils/getOrderXml';
 import { editOrderFmt } from './types';
 import { handleError } from './utils/httpErrors';
 import { deleteOrder, createOrder, updateOrder, listOrders, getOrderFromIds, getOrderCSV } from './orders/orderService';
-import { createRecurringOrder, deleteRecurringOrder, editInstance, generateOrderInstances, processAllRecurringOrders } from './orders/recurringOrderService';
+import { editRecurringOrder, createRecurringOrder, deleteRecurringOrder, editInstance, generateOrderInstances, processAllRecurringOrders } from './orders/recurringOrderService';
 import { getApiKeyFromAuthorizationHeader, getUserIdFromApiKey } from './utils/serverHelpers';
 import { json2csv } from 'json-2-csv';
 import { json } from 'node:stream/consumers';
@@ -193,6 +193,19 @@ app.delete('/orders/recurring/:id/instance/:position', async (req, res) => {
   await recurringOrder.save();
 
   return res.status(200).json({ message: `Instance at position ${position} deleted from recurring order ${id}` });
+});
+
+app.put('/orders/recurring/:id', async (req, res) => {
+  const apiKey = getApiKeyFromAuthorizationHeader(req) as string | undefined;
+  if (!apiKey || !await apiKeyValidation(apiKey)) {
+    return res.status(401).json({ error: 'Invalid API key' });
+  }
+  const userId = await getUserId(apiKey);
+  if (!userId) {
+    return res.status(403).json({ error: 'API key does not belong to user' });
+  }
+  const result = await editRecurringOrder(req.params.id, userId, req.body);
+  return res.status(result.status).json(result.body);
 });
 
 app.delete('/orders/recurring/:id', async (req: Request, res: Response) => {
