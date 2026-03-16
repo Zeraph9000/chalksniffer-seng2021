@@ -4,6 +4,7 @@ import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import path from 'path';
 import { router as authRouter, getUserId, apiKeyValidation } from './auth/auth';
+import OrderModel from './models/order';
 import { parsePagedQuery } from './utils/orderHelpers';
 import { getOrderXmlResponse } from './utils/getOrderXml';
 import { editOrderFmt } from './types';
