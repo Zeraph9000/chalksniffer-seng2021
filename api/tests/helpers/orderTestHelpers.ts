@@ -93,6 +93,7 @@ export async function seedInvalidRecurringOrder(): Promise<void> {
     startDate: '2024-01-01',
     orderInstances: [
       {
+        id: crypto.randomUUID(),
         scheduledDate: '2024-01-01T00:00:00.000Z',
         order: {
           id: crypto.randomUUID(),

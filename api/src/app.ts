@@ -13,7 +13,7 @@ import { getOrderXmlResponse } from './utils/getOrderXml';
 import { editOrderFmt, Order, OrderResponse, Frequency, RecurringOrderResponse, OrderFilter } from './types';
 import { handleError } from './utils/httpErrors';
 import RecurringOrderModel from './models/recurringOrder';
-import { generateOrderInstances, processAllRecurringOrders } from './orders/recurringOrderService';
+import { generateOrderInstances, processAllRecurringOrders, editNextInstance } from './orders/recurringOrderService';
 import { deleteOrder, updateOrder } from './orders/orderService';
 import { json2csv } from 'json-2-csv';
 import { getApiKeyFromAuthorizationHeader, getUserIdFromApiKey } from './utils/serverHelpers';
@@ -256,6 +256,21 @@ app.delete('/orders/:id', async (req: Request, res: Response) => {
   } catch {
     res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'An unexpected error occurred' });
   }
+});
+
+app.put('/order/instance/:id', async (req, res) => {
+  const apiKey = getApiKeyFromAuthorizationHeader(req) as string;
+  if (!apiKey || !await apiKeyValidation(apiKey)) {
+    return res.status(401).json({ error: 'Invalid API key' });
+  }
+
+  const userId = await getUserId(apiKey);
+  if (!userId) {
+    return res.status(401).json({ error: 'Invalid API key' });
+  }
+
+  const result = await editNextInstance(req.params.id, userId, req.body);
+  return res.status(result.status).json(result.body);
 });
 
 export default app;
