@@ -5,6 +5,7 @@ import { calculateMonetaryTotal } from '../utils/orderHelpers';
 import { buildOrderXml } from '../utils/xmlBuilder';
 import { ErrorObject, editOrderFmt } from '../types';
 
+// Delete the order based on the id given
 export async function deleteOrder(userId: string, id: string): Promise<{ message: string } | ErrorObject> {
   const foundOrder = await OrderModel.findOne({ id, userId });
   if (!foundOrder) return { error: 'INVALID_USER_ID', message: `User does not own an order with the ID ${id}` };
@@ -15,6 +16,7 @@ export async function deleteOrder(userId: string, id: string): Promise<{ message
   return { message: `Order ${id} deleted successfully` };
 }
 
+// Update the order based on the id given
 export async function updateOrder(userId: string, id: string, body: editOrderFmt): Promise<object | ErrorObject | { errors: ValidationError[] | [{ field: string, message: string }] }> {
   const order = await OrderModel.findOne({ id });
   if (!order) return { errors: [{ field: 'id', message: `Order with ID ${id} does not exist` }] };
