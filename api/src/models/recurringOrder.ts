@@ -3,6 +3,7 @@ import type { RecurringOrder, RecurringOrderInstance } from '../types';
 import { orderSchema } from './order';
 
 const recurringOrderInstanceSchema = new mongoose.Schema<RecurringOrderInstance>({
+  id: { type: String, required: true },
   order: { type: orderSchema, required: true },
   scheduledDate: { type: String, required: true },
 }, { _id: false });
