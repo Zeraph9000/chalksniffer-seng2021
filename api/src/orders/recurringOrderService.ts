@@ -52,6 +52,7 @@ export function generateOrderInstances(
     instanceOrder.anticipatedMonetaryTotal = calculateMonetaryTotal(instanceOrder);
 
     return {
+      id: crypto.randomUUID(),
       order: instanceOrder,
       scheduledDate,
     };
