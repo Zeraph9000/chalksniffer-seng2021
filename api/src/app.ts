@@ -11,6 +11,7 @@ import { handleError } from './utils/httpErrors';
 import { deleteOrder, createOrder, updateOrder, listOrders, getOrderFromIds, getOrderCSV } from './orders/orderService';
 import { createRecurringOrder, editNextInstance, generateOrderInstances, processAllRecurringOrders } from './orders/recurringOrderService';
 import { getApiKeyFromAuthorizationHeader, getUserIdFromApiKey } from './utils/serverHelpers';
+import RecurringOrderModel from './models/recurringOrder';
 
 const app = express();
 app.use(cors());
