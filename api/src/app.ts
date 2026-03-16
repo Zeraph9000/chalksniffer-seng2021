@@ -10,8 +10,7 @@ import { validateOrder } from './utils/validation';
 import { calculateMonetaryTotal, getOrderPages, parsePagedQuery } from './utils/orderHelpers';
 import { buildOrderXml } from './utils/xmlBuilder';
 import { getOrderXmlResponse } from './utils/getOrderXml';
-import { editOrderFmt, Order, OrderResponse, Frequency, RecurringOrderResponse, OrderFilter } from './types';
-import RecurringOrderModel from './models/recurringOrder';
+import { editOrderFmt, Order, OrderResponse, Frequency, OrderFilter } from './types';
 import { editNextInstance, generateOrderInstances, processAllRecurringOrders } from './orders/recurringOrderService';
 import { json2csv } from 'json-2-csv';
 
@@ -57,11 +56,12 @@ app.post('/orders', async (req, res) => {
       return res.status(400).json({ errors: [{ field: 'startDate', message: 'required and must be a valid date string (e.g. 2026-03-15T09:00:00Z or 2026-03-15)' }] });
     }
 
-    const templateOrderId = crypto.randomUUID();
+    const orderId = crypto.randomUUID();
+    const now = new Date();
     const templateOrder: Order = {
       ...orderBody,
       userId,
-      id: templateOrderId,
+      id: orderId,
       issueDate: orderBody.issueDate || startDate.split('T')[0],
       anticipatedMonetaryTotal: calculateMonetaryTotal(orderBody),
     };
@@ -71,26 +71,36 @@ app.post('/orders', async (req, res) => {
       return res.status(400).json({ errors: validation.errors });
     }
 
-    const recurringOrderId = crypto.randomUUID();
     const orderInstances = generateOrderInstances(templateOrder, startDate, frequency);
+    const xmlUrl = `/orders/${orderId}/xml`;
 
-    await RecurringOrderModel.create({
-      id: recurringOrderId,
-      userId,
-      order: templateOrder,
+    const createdOrder = await OrderModel.create({
+      ...templateOrder,
+      isRecurring: true,
       frequency,
       startDate,
       orderInstances,
+      xmlUrl,
+      createdAt: now,
     });
 
-    const response: RecurringOrderResponse = {
-      id: recurringOrderId,
+    const xml = buildOrderXml(templateOrder);
+    await OrderXml.create({ orderId, xml });
+
+    return res.status(200).json({
+      id: orderId,
+      issueDate: templateOrder.issueDate,
+      documentCurrencyCode: templateOrder.documentCurrencyCode,
+      buyerCustomerParty: templateOrder.buyerCustomerParty,
+      sellerSupplierParty: templateOrder.sellerSupplierParty,
+      orderLines: templateOrder.orderLines,
+      anticipatedMonetaryTotal: templateOrder.anticipatedMonetaryTotal,
+      isRecurring: true,
       frequency,
       startDate,
-      createdAt: new Date(),
-    };
-
-    return res.status(200).json(response);
+      createdAt: now,
+      xmlUrl,
+    });
   }
 
   // Existing non-recurring order path

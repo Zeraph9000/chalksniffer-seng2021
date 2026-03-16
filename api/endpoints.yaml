@@ -828,6 +828,9 @@ components:
         createdAt:
           type: string
           format: date-time
+        isRecurring:
+          type: boolean
+          default: false
       required:
         - id
         - issueDate
@@ -836,6 +839,7 @@ components:
         - payableAmount
         - documentCurrencyCode
         - createdAt
+        - isRecurring
 
     OrderListResponse:
       type: object
@@ -1227,6 +1231,15 @@ components:
             xmlUrl:
               type: string
               readOnly: true
+            isRecurring:
+              type: boolean
+              default: false
+            frequency:
+              type: string
+              enum: [Daily, Weekly, Monthly]
+            startDate:
+              type: string
+              format: date-time
 
     OrderCreateRequest:
       allOf:

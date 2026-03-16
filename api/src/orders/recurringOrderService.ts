@@ -1,13 +1,12 @@
 import mongoose from 'mongoose';
-import RecurringOrderModel from '../models/recurringOrder';
 import OrderModel from '../models/order';
 import OrderXml from '../models/orderXml';
 import { validateOrder } from '../utils/validation';
 import { calculateMonetaryTotal } from '../utils/orderHelpers';
 import { buildOrderXml } from '../utils/xmlBuilder';
-import { editOrderFmt, ErrorObject, Frequency, Order, RecurringOrderInstance } from '../types';
+import { editOrderFmt, ErrorObject, Frequency, Order, OrderInstance } from '../types';
 
-const INSTANCE_COUNT = 5;
+const INSTANCE_COUNT = 10;
 
 export function toISOString(date: Date): string {
   return date.toISOString();
@@ -37,11 +36,17 @@ export function generateScheduledDates(startDate: string, frequency: Frequency, 
   return dates;
 }
 
+function extractTemplate(order: any): Order {
+  const obj = order.toJSON ? order.toJSON() : order;
+  const { isRecurring, frequency, startDate, orderInstances, ...template } = obj;
+  return template as Order;
+}
+
 export function generateOrderInstances(
   templateOrder: Order,
   startDate: string,
   frequency: Frequency
-): RecurringOrderInstance[] {
+): OrderInstance[] {
   const dates = generateScheduledDates(startDate, frequency, INSTANCE_COUNT);
 
   return dates.map((scheduledDate) => {
@@ -53,7 +58,6 @@ export function generateOrderInstances(
     instanceOrder.anticipatedMonetaryTotal = calculateMonetaryTotal(instanceOrder);
 
     return {
-      id: crypto.randomUUID(),
       order: instanceOrder,
       scheduledDate,
     };
@@ -64,29 +68,29 @@ export function replenishInstances(
   recurringOrder: any,
   frequency: Frequency,
   lastScheduledDate: string
-): RecurringOrderInstance[] {
+): OrderInstance[] {
   const nextStartDate = new Date(lastScheduledDate);
   advanceDate(nextStartDate, frequency);
 
-  const templateOrder = (recurringOrder.order.toJSON ? recurringOrder.order.toJSON() : recurringOrder.order) as Order;
+  const templateOrder = extractTemplate(recurringOrder);
   return generateOrderInstances(templateOrder, toISOString(nextStartDate), frequency);
 }
 
 async function executeNextInstance(recurringOrderId: string): Promise<ErrorObject | void> {
   // Atomically pop the first instance to prevent race conditions
-  const recurringOrder = await RecurringOrderModel.findOneAndUpdate(
-    { 'id': recurringOrderId, 'orderInstances.0': { $exists: true } },
+  const recurringOrder = await OrderModel.findOneAndUpdate(
+    { 'id': recurringOrderId, isRecurring: true, 'orderInstances.0': { $exists: true } },
     { $pop: { orderInstances: -1 }, $inc: { __v: 1 } },
     { returnDocument: 'before' }
   );
-  if (!recurringOrder || recurringOrder.orderInstances.length === 0) return;
+  if (!recurringOrder || !recurringOrder.orderInstances || recurringOrder.orderInstances.length === 0) return;
 
   const frequency = recurringOrder.frequency as Frequency;
   const instance = recurringOrder.orderInstances[0] as any;
 
   // Skip if this instance isn't due yet (re-push it back)
   if (new Date(instance.scheduledDate).getTime() > Date.now()) {
-    await RecurringOrderModel.findOneAndUpdate(
+    await OrderModel.findOneAndUpdate(
       { id: recurringOrderId },
       { $push: { orderInstances: { $each: [instance], $position: 0 } }, $inc: { __v: 1 } }
     );
@@ -130,10 +134,10 @@ async function executeNextInstance(recurringOrderId: string): Promise<ErrorObjec
   // Auto-replenish if no instances remain (the pop already removed one, so check remaining count)
   // orderInstances.length - 1 because we got the 'before' document
   if (recurringOrder.orderInstances.length - 1 === 0) {
-    const refreshed = await RecurringOrderModel.findOne({ id: recurringOrderId });
+    const refreshed = await OrderModel.findOne({ id: recurringOrderId });
     if (refreshed) {
       const newInstances = replenishInstances(refreshed, frequency, instance.scheduledDate);
-      await RecurringOrderModel.findOneAndUpdate(
+      await OrderModel.findOneAndUpdate(
         { id: recurringOrderId },
         { $push: { orderInstances: { $each: newInstances } }, $inc: { __v: 1 } }
       );
@@ -146,7 +150,7 @@ export async function editNextInstance(
   userId: string,
   updates: editOrderFmt & { updateTemplate?: boolean }
 ): Promise<{ status: number; body: any }> {
-  const recurringOrder = await RecurringOrderModel.findOne({ id: recurringOrderId });
+  const recurringOrder = await OrderModel.findOne({ id: recurringOrderId, isRecurring: true });
   if (!recurringOrder) {
     return { status: 400, body: { error: 'Recurring order does not exist' } };
   }
@@ -180,19 +184,18 @@ export async function editNextInstance(
 
   if (updates.updateTemplate === true) {
     if (updates.note !== undefined) {
-      recurringOrder.order.note = updates.note;
+      recurringOrder.note = updates.note;
     }
     if (updates.delivery !== undefined) {
-      recurringOrder.order.delivery = updates.delivery;
+      recurringOrder.delivery = updates.delivery;
     }
     if (updates.orderLines !== undefined) {
-      recurringOrder.order.orderLines = updates.orderLines!;
+      recurringOrder.orderLines = updates.orderLines!;
     }
-    recurringOrder.order.anticipatedMonetaryTotal = calculateMonetaryTotal(recurringOrder.order);
+    recurringOrder.anticipatedMonetaryTotal = calculateMonetaryTotal(recurringOrder.toObject());
   }
 
   recurringOrder.markModified('orderInstances');
-  recurringOrder.markModified('order');
   try {
     await recurringOrder.save();
   } catch (err) {
@@ -206,7 +209,8 @@ export async function editNextInstance(
 }
 
 export async function processAllRecurringOrders(): Promise<ErrorObject | void> {
-  const recurringOrders = await RecurringOrderModel.find({
+  const recurringOrders = await OrderModel.find({
+    isRecurring: true,
     'orderInstances.0': { $exists: true },
   });
 

@@ -65,15 +65,15 @@ describe('generateScheduledDates', () => {
 describe('generateOrderInstances', () => {
   const templateOrder = buildValidOrderPayload() as any;
 
-  test('returns 5 instances', () => {
+  test('returns 10 instances', () => {
     const instances = generateOrderInstances(templateOrder, '2024-01-15T00:00:00.000Z', 'Weekly' as Frequency);
-    expect(instances).toHaveLength(5);
+    expect(instances).toHaveLength(10);
   });
 
   test('each instance has a unique id', () => {
     const instances = generateOrderInstances(templateOrder, '2024-01-15T00:00:00.000Z', 'Weekly' as Frequency);
     const ids = instances.map(i => i.order.id);
-    expect(new Set(ids).size).toStrictEqual(5);
+    expect(new Set(ids).size).toStrictEqual(10);
   });
 
   test('scheduled dates are spaced correctly for Weekly frequency', () => {

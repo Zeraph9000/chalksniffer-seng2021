@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, jest, test } from '@jest/globals';
 import request from 'supertest';
 import app from '../src/app';
-import RecurringOrderModel from '../src/models/recurringOrder';
+import OrderModel from '../src/models/order';
 import {
   buildValidOrderPayload,
   clearOrderTestData,
@@ -76,7 +76,7 @@ describe('/order/instance/:id (PUT)', () => {
     test('should return 400 when recurring order has no pending instances', async () => {
       const recurringOrderId = await createRecurringOrder(VALID_API_KEY);
       // Remove all instances
-      await RecurringOrderModel.updateOne({ id: recurringOrderId }, { orderInstances: [] });
+      await OrderModel.updateOne({ id: recurringOrderId }, { orderInstances: [] });
 
       const res = await request(app)
         .put(`/order/instance/${recurringOrderId}`)
@@ -148,7 +148,7 @@ describe('/order/instance/:id (PUT)', () => {
     test('should only modify the first instance, leaving others unchanged', async () => {
       const recurringOrderId = await createRecurringOrder(VALID_API_KEY);
 
-      const before = await RecurringOrderModel.findOne({ id: recurringOrderId });
+      const before = await OrderModel.findOne({ id: recurringOrderId });
       const secondInstanceBefore = JSON.parse(JSON.stringify(before!.orderInstances[1]));
 
       await request(app)
@@ -156,7 +156,7 @@ describe('/order/instance/:id (PUT)', () => {
         .set('Authorization', VALID_API_KEY)
         .send({ note: 'Only first instance' });
 
-      const after = await RecurringOrderModel.findOne({ id: recurringOrderId });
+      const after = await OrderModel.findOne({ id: recurringOrderId });
       expect(after!.orderInstances[0].order.note).toStrictEqual('Only first instance');
       expect(after!.orderInstances[1].order.note).toStrictEqual(secondInstanceBefore.order.note);
     });
@@ -180,9 +180,9 @@ describe('/order/instance/:id (PUT)', () => {
     test('returns 409 when a concurrent modification occurs', async () => {
       const recurringOrderId = await createRecurringOrder(VALID_API_KEY);
 
-      const originalSave = RecurringOrderModel.prototype.save;
-      jest.spyOn(RecurringOrderModel.prototype, 'save').mockImplementationOnce(async function(this: any) {
-        await RecurringOrderModel.updateOne(
+      const originalSave = OrderModel.prototype.save;
+      jest.spyOn(OrderModel.prototype, 'save').mockImplementationOnce(async function(this: any) {
+        await OrderModel.updateOne(
           { id: recurringOrderId },
           { $inc: { __v: 1 } }
         );
@@ -210,16 +210,16 @@ describe('/order/instance/:id (PUT)', () => {
 
       expect(res.status).toStrictEqual(200);
 
-      const saved = await RecurringOrderModel.findOne({ id: recurringOrderId });
-      expect(saved!.order.note).toStrictEqual('Template updated too');
-      expect(saved!.orderInstances[0].order.note).toStrictEqual('Template updated too');
+      const saved = await OrderModel.findOne({ id: recurringOrderId });
+      expect(saved!.note).toStrictEqual('Template updated too');
+      expect(saved!.orderInstances![0].order.note).toStrictEqual('Template updated too');
     });
 
     test('should NOT update template order when updateTemplate is not set', async () => {
       const recurringOrderId = await createRecurringOrder(VALID_API_KEY);
 
-      const before = await RecurringOrderModel.findOne({ id: recurringOrderId });
-      const templateNoteBefore = before!.order.note;
+      const before = await OrderModel.findOne({ id: recurringOrderId });
+      const templateNoteBefore = before!.note;
 
       const res = await request(app)
         .put(`/order/instance/${recurringOrderId}`)
@@ -228,9 +228,9 @@ describe('/order/instance/:id (PUT)', () => {
 
       expect(res.status).toStrictEqual(200);
 
-      const after = await RecurringOrderModel.findOne({ id: recurringOrderId });
-      expect(after!.order.note).toStrictEqual(templateNoteBefore);
-      expect(after!.orderInstances[0].order.note).toStrictEqual('Instance only');
+      const after = await OrderModel.findOne({ id: recurringOrderId });
+      expect(after!.note).toStrictEqual(templateNoteBefore);
+      expect(after!.orderInstances![0].order.note).toStrictEqual('Instance only');
     });
   });
 });

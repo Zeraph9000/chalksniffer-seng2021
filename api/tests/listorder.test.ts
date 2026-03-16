@@ -77,6 +77,7 @@ describe('/orders (GET)', () => {
           payableAmount: 20,
           documentCurrencyCode: 'USD',
           createdAt: expect.any(String),
+          isRecurring: false,
         }
       ]
     });
@@ -106,6 +107,7 @@ describe('/orders (GET)', () => {
           payableAmount: 20,
           documentCurrencyCode: 'USD',
           createdAt: expect.any(String),
+          isRecurring: false,
         }
       ]
     });

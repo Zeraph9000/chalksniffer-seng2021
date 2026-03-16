@@ -130,6 +130,11 @@ type OrderLine = {
   lineItem: LineItem;
 };
 
+type OrderInstance = {
+  order: Order;
+  scheduledDate: string;
+};
+
 type Order = {
   id: string;
   userId: string;
@@ -162,6 +167,10 @@ type Order = {
   createdAt?: string | Date | null;
   updatedAt?: string | Date | null;
   xmlUrl?: string | null;
+  isRecurring?: boolean;
+  frequency?: Frequency;
+  startDate?: string;
+  orderInstances?: OrderInstance[];
 };
 
 type OrderResponse = {
@@ -184,30 +193,6 @@ type editOrderFmt = {
 
 type Frequency = 'Daily' | 'Weekly' | 'Monthly';
 
-type RecurringOrderInstance = {
-  id: string;
-  order: Order;
-  scheduledDate: string;
-};
-
-type RecurringOrder = {
-  id: string;
-  userId: string;
-  order: Order;
-  frequency: Frequency;
-  startDate: string;
-  orderInstances: RecurringOrderInstance[];
-  createdAt?: string;
-  updatedAt?: string;
-};
-
-type RecurringOrderResponse = {
-  id: string;
-  frequency: Frequency;
-  startDate: string;
-  createdAt: Date;
-};
-
 type OrderPaginated = {
   id: string;
   issueDate: string;
@@ -216,6 +201,7 @@ type OrderPaginated = {
   payableAmount: number | string;
   documentCurrencyCode: string;
   createdAt: string;
+  isRecurring: boolean;
 }
 
 type OrderFilter = {
@@ -266,9 +252,7 @@ export type {
   OrderResponse,
   editOrderFmt,
   Frequency,
-  RecurringOrderInstance,
-  RecurringOrder,
-  RecurringOrderResponse,
+  OrderInstance,
   OrderPaginated,
   OrderFilter,
   OrderList,

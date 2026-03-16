@@ -54,6 +54,7 @@ export function getOrderPages(ordersFound: Order[], limit: number): OrderList {
       payableAmount: calculateMonetaryTotal(o).payableAmount ?? 0,
       documentCurrencyCode: o.documentCurrencyCode,
       createdAt: o.createdAt as string,
+      isRecurring: o.isRecurring ?? false,
     });
   });
 

@@ -146,6 +146,11 @@ const orderLineSchema = new mongoose.Schema<OrderLine>({
   lineItem: { type: lineItemSchema, required: true },
 }, { _id: false });
 
+const orderInstanceSchema = new mongoose.Schema({
+  order: { type: mongoose.Schema.Types.Mixed, required: true },
+  scheduledDate: { type: String, required: true },
+}, { _id: false });
+
 const orderSchema = new mongoose.Schema<Order>({
   id: { type: String, required: true },
   userId: { type: String, required: true },
@@ -176,7 +181,11 @@ const orderSchema = new mongoose.Schema<Order>({
   anticipatedMonetaryTotal: monetaryTotalSchema,
   orderLines: { type: [orderLineSchema], required: true },
   xmlUrl: String,
-}, { timestamps: true });
+  isRecurring: { type: Boolean, default: false },
+  frequency: { type: String, enum: ['Daily', 'Weekly', 'Monthly'] },
+  startDate: String,
+  orderInstances: { type: [orderInstanceSchema], default: undefined },
+}, { timestamps: true, optimisticConcurrency: true });
 
 const OrderModel = mongoose.model<Order>('Order', orderSchema);
 
