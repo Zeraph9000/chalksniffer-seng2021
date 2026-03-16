@@ -8,10 +8,10 @@ import { parsePagedQuery } from './utils/orderHelpers';
 import { getOrderXmlResponse } from './utils/getOrderXml';
 import { editOrderFmt } from './types';
 import { handleError } from './utils/httpErrors';
-import { deleteOrder, createOrder, updateOrder, listOrders, getOrderFromIds, getOrderCSV } from './orders/orderService';
-import { createRecurringOrder, deleteRecurringOrder, editNextInstance, generateOrderInstances, processAllRecurringOrders } from './orders/recurringOrderService';
-import { getApiKeyFromAuthorizationHeader, getUserIdFromApiKey } from './utils/serverHelpers';
 import RecurringOrderModel from './models/recurringOrder';
+import { deleteOrder, createOrder, updateOrder, listOrders, getOrderFromIds, getOrderCSV } from './orders/orderService';
+import { createRecurringOrder, deleteRecurringOrder, editInstance, generateOrderInstances, processAllRecurringOrders } from './orders/recurringOrderService';
+import { getApiKeyFromAuthorizationHeader, getUserIdFromApiKey } from './utils/serverHelpers';
 
 const app = express();
 app.use(cors());
@@ -208,7 +208,7 @@ app.delete('/orders/recurring/:id', async (req: Request, res: Response) => {
   }
 });
 
-app.put('/orders/instance/:id', async (req, res) => {
+app.put('/orders/recurring/:id/instance/:position', async (req, res) => {
   const apiKey = getApiKeyFromAuthorizationHeader(req) as string | undefined;
   if (!apiKey || !await apiKeyValidation(apiKey)) {
     return res.status(401).json({ error: 'Invalid API key' });
@@ -219,7 +219,7 @@ app.put('/orders/instance/:id', async (req, res) => {
     return res.status(403).json({ error: 'API key does not belong to user' });
   }
 
-  const result = await editNextInstance(req.params.id, userId, req.body);
+  const result = await editInstance(req.params.id, userId, Number(req.params.position), req.body);
   return res.status(result.status).json(result.body);
 });
 
