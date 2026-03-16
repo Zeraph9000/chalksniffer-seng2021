@@ -3,17 +3,19 @@ import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import path from 'path';
-import { router as authRouter, getUserId, apiKeyValidation, getApiKeyFromAuthorizationHeader } from './auth/auth';
+import { router as authRouter, getUserId, apiKeyValidation } from './auth/auth';
 import OrderXml from './models/orderXml';
 import OrderModel from './models/order';
 import { validateOrder } from './utils/validation';
-import { calculateMonetaryTotal, getOrderPages, parsePagedQuery } from './utils/orderHelpers';
+import { calculateMonetaryTotal, parsePagedQuery } from './utils/orderHelpers';
 import { buildOrderXml } from './utils/xmlBuilder';
 import { getOrderXmlResponse } from './utils/getOrderXml';
-import { editOrderFmt, Order, OrderResponse, Frequency, RecurringOrderResponse, OrderFilter } from './types';
+import { editOrderFmt, Order, OrderResponse, Frequency, RecurringOrderResponse, ErrorObject } from './types';
+import { handleError } from './utils/httpErrors';
 import RecurringOrderModel from './models/recurringOrder';
+import { deleteOrder, getOrderFromIds, getOrderCSV, listOrders } from './orders/orderService';
 import { editNextInstance, generateOrderInstances, processAllRecurringOrders } from './orders/recurringOrderService';
-import { json2csv } from 'json-2-csv';
+import { getApiKeyFromAuthorizationHeader, getUserIdFromApiKey } from './utils/serverHelpers';
 
 const app = express();
 app.use(cors());
@@ -132,6 +134,79 @@ app.post('/orders', async (req, res) => {
   return res.status(200).json(order);
 });
 
+app.get('/orders/:id/xml', async (req, res) => {
+  const result = await getOrderXmlResponse(
+    getApiKeyFromAuthorizationHeader(req) as string | undefined,
+    req.params.id as string
+  );
+
+  if (result.status !== 200) {
+    return res.status(result.status).json(result.body);
+  }
+
+  res.set('Content-Type', 'application/xml');
+  return res.status(200).send(result.xml);
+});
+
+app.get('/orders', async (req, res) => {
+  try {
+    const result = await getUserIdFromApiKey(req);
+    if ('error' in result) return handleError(res, result);
+
+    const userId = result.userId;
+    const qRes = parsePagedQuery(req.query, userId);
+    if ('error' in qRes) return handleError(res, qRes);
+    const orders = await listOrders(qRes.filter, qRes.limit, qRes.offset);
+    
+    return res.status(200).json(orders);
+  } catch {
+    res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'Failed to process orders list' });
+  }
+});
+
+app.get('/orders/csv', async (req, res) => {
+  try {
+    const result = await getUserIdFromApiKey(req);
+    if ('error' in result) return handleError(res, result);
+    const userId = result.userId;
+
+    const qRes = parsePagedQuery(req.query, userId);
+    if ('error' in qRes) return handleError(res, qRes);
+    const csv = await getOrderCSV(qRes.filter, qRes.limit, qRes.offset);
+    
+    return res.status(200).send(csv);
+  } catch {
+    res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'Failed to process orders CSV' });
+  }
+});
+
+app.post('/orders/recurring', async (_req: Request, res: Response) => {
+  try {
+    const result = await processAllRecurringOrders();
+    if (result) return res.status(400).json(result);
+    
+    res.status(200).json({});
+  } catch {
+    res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'Failed to process recurring orders' });
+  }
+});
+
+app.get('/orders/:id', async (req, res) => {
+  try {
+    const result = await getUserIdFromApiKey(req);
+    if ('error' in result) return handleError(res, result);
+    const userId = result.userId;
+    const id = req.params.id as string;
+
+    const orderRes = await getOrderFromIds(userId, id);
+    if ('error' in orderRes) return handleError(res, orderRes);
+
+    res.status(200).json(orderRes);
+  } catch {
+    res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'Failed to process orders' });
+  }
+});
+
 app.put('/orders/:id', async (req, res) => {
   const apiKey = getApiKeyFromAuthorizationHeader(req) as string;
 
@@ -192,117 +267,20 @@ app.put('/orders/:id', async (req, res) => {
   return res.status(200).json(editedOrder);
 });
 
-app.get('/orders/:id/xml', async (req, res) => {
-  const result = await getOrderXmlResponse(
-    getApiKeyFromAuthorizationHeader(req) as string | undefined,
-    req.params.id as string
-  );
+app.delete('/orders/:id', async (req: Request, res: Response) => {
+  const id = req.params.id as string;
 
-  if (result.status !== 200) {
-    return res.status(result.status).json(result.body);
-  }
-
-  res.set('Content-Type', 'application/xml');
-  return res.status(200).send(result.xml);
-});
-
-app.get('/orders', async (req, res) => {
-  const apiKey = getApiKeyFromAuthorizationHeader(req) as string;
-  if (!apiKey || !await apiKeyValidation(apiKey)) {
-    return res.status(401).json({ error: 'Invalid API key' });
-  }
-
-  const userId = await getUserId(apiKey);
-  const q = parsePagedQuery(req.query, userId as string);
-
-  if ('error' in q) {
-    return res.status(400).json(q);
-  }
-
-  const ordersFound = await OrderModel.find(q.filter as OrderFilter)
-    .skip(q.offset as number)
-    .lean();
-  const orders = getOrderPages(ordersFound, q.limit as number);
-
-  return res.status(200).json(orders);
-});
-
-app.get('/orders/csv', async (req, res) => {
-  const apiKey = getApiKeyFromAuthorizationHeader(req) as string;
-  if (!apiKey || !await apiKeyValidation(apiKey)) {
-    return res.status(401).json({ error: 'Invalid API key' });
-  }
-
-  const userId = await getUserId(apiKey);
-  const q = parsePagedQuery(req.query, userId as string);
-
-  if ('error' in q) {
-    return res.status(400).json(q);
-  }
-
-  const ordersFound = await OrderModel.find(q.filter as OrderFilter)
-    .skip(q.offset as number)
-    .lean();
-  const orders = getOrderPages(ordersFound, q.limit as number);
-
-  if (orders.orders.length === 0) return res.status(200).send('');
-  const csv = await json2csv(orders.orders);
-
-  return res.status(200).send(csv);
-});
-
-app.post('/orders/recurring', async (_req: Request, res: Response) => {
   try {
-    const result = await processAllRecurringOrders();
-    if (result) return res.status(400).json(result);
-    
-    res.status(200).json({});
+    const authResult = await getUserIdFromApiKey(req);
+    if ('error' in authResult) return handleError(res, authResult);
+
+    const result = await deleteOrder(authResult.userId, id);
+    if ('error' in result) return handleError(res, result);
+
+    return res.status(200).json(result);
   } catch {
-    res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'Failed to process recurring orders' });
+    res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'An unexpected error occurred' });
   }
-});
-
-app.get('/orders/:id', async (req, res) => {
-  const apiKey = getApiKeyFromAuthorizationHeader(req) as string;
-  if (!apiKey || !await apiKeyValidation(apiKey)) {
-    return res.status(401).json({ error: 'Invalid API key' });
-  }
-
-  const id = req.params.id as string;
-  const userId = await getUserId(apiKey);
-  if (!userId) {
-    return res.status(403).json({ error: 'API key does not belong to user' });
-  }
-
-  const foundOrder = await OrderModel.findOne({ id, userId });
-  if (!foundOrder) {
-    return res.status(400).json({ error: `User does not own an order with the ID ${id}` });
-  }
-
-  return res.status(200).json(foundOrder);
-});
-
-app.delete('/orders/:id', async (req, res) => {
-  const apiKey = getApiKeyFromAuthorizationHeader(req) as string | undefined;
-  if (!apiKey || !await apiKeyValidation(apiKey)) {
-    return res.status(401).json({ error: 'Invalid API key' });
-  }
-
-  const id = req.params.id as string;
-  const userId = await getUserId(apiKey);
-  if (!userId) {
-    return res.status(403).json({ error: 'API key does not belong to user' });
-  }
-
-  const foundOrder = await OrderModel.findOne({ id, userId });
-  if (!foundOrder) {
-    return res.status(400).json({ error: `User does not own an order with the ID ${id}` });
-  }
-
-  await OrderXml.deleteOne({ orderId: id });
-  await OrderModel.deleteOne({ id, userId });
-
-  return res.status(200).json({ message: `Order ${id} deleted successfully` });
 });
 
 app.delete('/orders/:id/instances/:position', async (req, res) => {
