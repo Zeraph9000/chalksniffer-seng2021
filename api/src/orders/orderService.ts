@@ -1,0 +1,48 @@
+import OrderModel from '../models/order';
+import OrderXml from '../models/orderXml';
+import { ErrorObject, Order, OrderFilter, OrderList } from '../types';
+import { getOrderPages } from '../utils/orderHelpers';
+import { json2csv } from 'json-2-csv';
+
+export async function deleteOrder(userId: string, id: string): Promise<{ message: string } | ErrorObject> {
+  const getRes = await getOrderFromIds(userId, id);
+  if ('error' in getRes) return getRes;
+
+  await OrderXml.deleteOne({ orderId: id });
+  await OrderModel.deleteOne({ id, userId });
+
+  return { message: `Order ${id} deleted successfully` };
+}
+
+// Return the order based on ID and userId
+export async function getOrder(userId: string, id: string): Promise<Order> {
+  const foundOrder = await OrderModel.findOne({ id, userId });
+  return foundOrder as Order;
+}
+
+export async function getOrderFromIds(userId: string, id: string): Promise<Order | ErrorObject> {
+  const order = await getOrder(userId, id);
+  if (!order) return { error: 'INVALID_ORDER_ID', message: `User does not own an order with ID ${id}` };
+  return order;
+}
+
+// Return a list of orders found
+export async function listOrders(filter: OrderFilter | undefined,
+  limit: number, offset: number): Promise<OrderList> {
+  const ordersFound = await OrderModel.find(filter)
+    .skip(offset as number)
+    .lean();
+
+  const orders = getOrderPages(ordersFound, limit, offset);
+  return orders;
+}
+
+// Return a CSV of orders found
+export async function getOrderCSV(filter: OrderFilter | undefined,
+  limit: number, offset: number): Promise<string> {
+  const orders = await listOrders(filter, limit, offset);
+
+  if (orders.orders.length === 0) return '';
+  const csv = await json2csv(orders.orders);
+  return csv;
+}
