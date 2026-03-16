@@ -175,7 +175,7 @@ app.get('/orders/csv', async (req, res) => {
     if ('error' in qRes) return handleError(res, qRes);
     const csv = await getOrderCSV(qRes.filter, qRes.limit, qRes.offset);
     
-    return res.status(200).json(csv);
+    return res.status(200).send(csv);
   } catch {
     res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'Failed to process orders CSV' });
   }
@@ -284,6 +284,21 @@ app.delete('/orders/:id', async (req: Request, res: Response) => {
   } catch {
     res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'An unexpected error occurred' });
   }
+});
+
+app.put('/order/instance/:id', async (req, res) => {
+  const apiKey = getApiKeyFromAuthorizationHeader(req) as string;
+  if (!apiKey || !await apiKeyValidation(apiKey)) {
+    return res.status(401).json({ error: 'Invalid API key' });
+  }
+
+  const userId = await getUserId(apiKey);
+  if (!userId) {
+    return res.status(401).json({ error: 'Invalid API key' });
+  }
+
+  const result = await editNextInstance(req.params.id, userId, req.body);
+  return res.status(result.status).json(result.body);
 });
 
 export default app;

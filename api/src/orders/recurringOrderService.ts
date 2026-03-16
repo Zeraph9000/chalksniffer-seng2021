@@ -159,7 +159,7 @@ export async function editNextInstance(
     return { status: 400, body: { error: 'No pending instances to edit' } };
   }
 
-  const instance = recurringOrder.orderInstances[0];
+  const instance = recurringOrder.orderInstances[0]!;
 
   if (updates.note !== undefined) {
     instance.order.note = updates.note;
