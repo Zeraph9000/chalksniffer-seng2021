@@ -1,13 +1,12 @@
 import OrderModel from '../models/order';
 import OrderXml from '../models/orderXml';
-import { apiKeyValidation, getUserId } from '../auth/auth';
 import { ErrorObject, Order, OrderFilter, OrderList } from '../types';
 import { getOrderPages } from '../utils/orderHelpers';
 import { json2csv } from 'json-2-csv';
 
 export async function deleteOrder(userId: string, id: string): Promise<{ message: string } | ErrorObject> {
-  const foundOrder = getOrder(userId, id);
-  if (!foundOrder) return { error: 'INVALID_USER_ID', message: `User does not own an order with the ID ${id}` };
+  const getRes = await getOrder(userId, id);
+  if (!getRes) return { error: 'INVALID_ORDER_ID', message: `User does not own an order with ID ${id}` };
 
   await OrderXml.deleteOne({ orderId: id });
   await OrderModel.deleteOne({ id, userId });
@@ -22,7 +21,7 @@ export async function getOrder(userId: string, id: string): Promise<Order> {
 }
 
 // Return a list of orders found
-export async function listOrders(userId: string, filter: OrderFilter | undefined,
+export async function listOrders(filter: OrderFilter | undefined,
   limit: number, offset: number): Promise<OrderList> {
   const ordersFound = await OrderModel.find(filter)
     .skip(offset as number)
@@ -33,9 +32,9 @@ export async function listOrders(userId: string, filter: OrderFilter | undefined
 }
 
 // Return a CSV of orders found
-export async function getOrderCSV(userId: string, filter: OrderFilter | undefined,
+export async function getOrderCSV(filter: OrderFilter | undefined,
   limit: number, offset: number): Promise<string> {
-  const orders = await listOrders(userId, filter, limit, offset);
+  const orders = await listOrders(filter, limit, offset);
 
   if (orders.orders.length === 0) return '';
   const csv = await json2csv(orders.orders);

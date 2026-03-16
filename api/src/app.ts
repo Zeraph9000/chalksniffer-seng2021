@@ -157,7 +157,7 @@ app.get('/orders', async (req, res) => {
     const userId = result.userId;
     const qRes = parsePagedQuery(req.query, userId);
     if ('error' in qRes) return handleError(res, qRes);
-    const orders = listOrders(userId, qRes.filter, qRes.limit, qRes.offset);
+    const orders = await listOrders(qRes.filter, qRes.limit, qRes.offset);
     
     return res.status(200).json(orders);
   } catch {
@@ -173,9 +173,9 @@ app.get('/orders/csv', async (req, res) => {
 
     const qRes = parsePagedQuery(req.query, userId);
     if ('error' in qRes) return handleError(res, qRes);
-    const orders = getOrderCSV(userId, qRes.filter, qRes.limit, qRes.offset);
+    const csv = await getOrderCSV(qRes.filter, qRes.limit, qRes.offset);
     
-    return res.status(200).json(orders);
+    return res.status(200).json(csv);
   } catch {
     res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'Failed to process orders CSV' });
   }
@@ -199,10 +199,11 @@ app.get('/orders/:id', async (req, res) => {
     const userId = result.userId;
     const id = req.params.id as string;
 
-    const orderRes = getOrder(userId, id);
+    const orderRes = await getOrder(userId, id);
     if (!orderRes) {
-      return handleError(res, { error: 'INVALID_OWNER_ID', message: `User does not own an order with the ID ${id}` });
+      return handleError(res, { error: 'INVALID_ORDER_ID', message: `User does not own an order with ID ${id}` });
     }
+
     res.status(200).json(orderRes);
   } catch {
     res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'Failed to process orders' });
