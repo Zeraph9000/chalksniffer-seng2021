@@ -25,6 +25,7 @@ describe('/orders/:id (PUT)', () => {
   test('should return 401 when no Authorization header is provided', async () => {
     const res = await request(app).put('/orders/any-id').send({ note: 'x' });
     expect(res.status).toStrictEqual(401);
+    expect(res.body).toStrictEqual({ error: expect.any(String), message: expect.any(String) });
   });
 
   test('should return 401 when the Authorization header contains an invalid API key', async () => {
@@ -33,6 +34,7 @@ describe('/orders/:id (PUT)', () => {
       .set('Authorization', 'invalid-key')
       .send({ note: 'x' });
     expect(res.status).toStrictEqual(401);
+    expect(res.body).toStrictEqual({ error: expect.any(String), message: expect.any(String) });
   });
 
   test('should return 400 when the specified order ID does not exist', async () => {
@@ -42,7 +44,11 @@ describe('/orders/:id (PUT)', () => {
       .send({ note: 'x' });
 
     expect(res.status).toStrictEqual(400);
-    expect(res.body.error?.toString()).toContain('Order does not exist');
+    expect(res.body).toStrictEqual({
+      errors: expect.arrayContaining([
+        expect.objectContaining({ field: expect.any(String), message: expect.any(String) })
+      ])
+    });
   });
 
   test('should return 403 when the order exists but belongs to another user', async () => {
@@ -54,7 +60,8 @@ describe('/orders/:id (PUT)', () => {
       .set('Authorization', VALID_API_KEY)
       .send({ note: 'updated-note' });
 
-    expect(res.status).toStrictEqual(403);
+    expect(res.status).toStrictEqual(403);    
+    expect(res.body).toStrictEqual({ error: expect.any(String), message: expect.any(String) });
   });
 
   test('should return 200 and the updated order when the request is valid', async () => {
