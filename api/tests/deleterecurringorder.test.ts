@@ -58,7 +58,7 @@ describe('DELETE /orders/:id/instances/:position', () => {
     expect(res.body.error).toContain('nonexistent-id');
   });
 
-  test('should return 400 when the recurring order belongs to another user', async () => {
+  test('should return 403 when the recurring order belongs to another user', async () => {
     await createUserMap(OTHER_API_KEY, OTHER_USER_ID);
     const otherRecurringOrderId = await createRecurringOrder(OTHER_API_KEY);
 
@@ -66,8 +66,8 @@ describe('DELETE /orders/:id/instances/:position', () => {
       .delete(`/orders/${otherRecurringOrderId}/instances/0`)
       .set('Authorization', VALID_API_KEY);
 
-    expect(res.status).toStrictEqual(400);
-    expect(res.body.error).toContain(otherRecurringOrderId);
+    expect(res.status).toStrictEqual(403);
+    expect(res.body.error).toContain('does not own');
   });
 
   test('should return 400 when position is out of bounds', async () => {
