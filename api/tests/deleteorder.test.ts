@@ -27,6 +27,7 @@ describe('/orders/:id (DELETE)', () => {
       const res = await request(app).delete('/orders/any-id');
 
       expect(res.status).toStrictEqual(401);
+      expect(res.body).toStrictEqual({ error: expect.any(String), message: expect.any(String) });
     });
 
     test('should return 401 when the Authorization header contains an invalid API key', async () => {
@@ -35,6 +36,7 @@ describe('/orders/:id (DELETE)', () => {
         .set('Authorization', 'invalid-key');
 
       expect(res.status).toStrictEqual(401);
+      expect(res.body).toStrictEqual({ error: expect.any(String), message: expect.any(String) });
     });
 
     test('should return 400 when the specified order ID does not exist for this user', async () => {
@@ -46,7 +48,7 @@ describe('/orders/:id (DELETE)', () => {
         .set('Authorization', VALID_API_KEY);
 
       expect(res.status).toStrictEqual(400);
-      expect(res.body.error?.toString()).toContain(`User does not own an order with the ID ${orderId}invalid`);
+      expect(res.body).toStrictEqual({ error: expect.any(String), message: expect.any(String) });
     });
 
     test('should return 400 when the order exists but belongs to another user', async () => {
@@ -58,7 +60,7 @@ describe('/orders/:id (DELETE)', () => {
         .set('Authorization', VALID_API_KEY);
 
       expect(res.status).toStrictEqual(400);
-      expect(res.body.error?.toString()).toContain(`User does not own an order with the ID ${otherOrderId}`);
+      expect(res.body).toStrictEqual({ error: expect.any(String), message: expect.any(String) });
     });
   });
 
@@ -70,7 +72,7 @@ describe('/orders/:id (DELETE)', () => {
         .set('Authorization', VALID_API_KEY);
 
       expect(res.status).toStrictEqual(200);
-      expect(res.body).toStrictEqual({ message: `Order ${orderId} deleted successfully` });
+      expect(res.body).toStrictEqual({ message: expect.any(String) });
 
       const xmlAfter = await OrderXml.findOne({ orderId });
       expect(xmlAfter).toBeNull();

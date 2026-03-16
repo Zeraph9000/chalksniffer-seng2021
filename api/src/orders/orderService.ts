@@ -5,17 +5,8 @@ import { ErrorObject, Order, OrderFilter, OrderList } from '../types';
 import { getOrderPages } from '../utils/orderHelpers';
 import { json2csv } from 'json-2-csv';
 
-export async function deleteOrder(apiKey: string | null, id: string): Promise<{ message: string } | ErrorObject> {
-  if (!apiKey || !await apiKeyValidation(apiKey)) {
-    return { error: 'UNAUTHORIZED', message: 'Invalid API key' };
-  }
-
-  const userId = await getUserId(apiKey);
-  if (!userId) {
-    return { error: 'FORBIDDEN', message: 'API key does not belong to user' };
-  }
-
-  const foundOrder = await OrderModel.findOne({ id, userId });
+export async function deleteOrder(userId: string, id: string): Promise<{ message: string } | ErrorObject> {
+  const foundOrder = getOrder(userId, id);
   if (!foundOrder) return { error: 'INVALID_USER_ID', message: `User does not own an order with the ID ${id}` };
 
   await OrderXml.deleteOne({ orderId: id });
@@ -24,11 +15,10 @@ export async function deleteOrder(apiKey: string | null, id: string): Promise<{ 
   return { message: `Order ${id} deleted successfully` };
 }
 
-// Return the order based on ID
-export async function getOrder(userId: string, id: string): Promise<ErrorObject | Order> {
+// Return the order based on ID and userId
+export async function getOrder(userId: string, id: string): Promise<Order> {
   const foundOrder = await OrderModel.findOne({ id, userId });
-  if (!foundOrder) return { error: 'INVALID_ORDER_ID', message: `User does not own an order with the ID ${id}` };
-  return foundOrder;
+  return foundOrder as Order;
 }
 
 // Return a list of orders found

@@ -3,17 +3,9 @@ import mongoose from 'mongoose';
 import { UserMap } from '../models/userMap';
 import { ErrorObject } from '../types';
 import crypto from 'crypto';
+import { getApiKeyFromAuthorizationHeader } from '../utils/serverHelpers';
 
 export const router = Router();
-
-export function getApiKeyFromAuthorizationHeader(req: Request): string | null {
-  const header = req.header('Authorization');
-  if (!header) return null;
-
-  // Accept either: "Bearer <apiKey>" or "<apiKey>"
-  const match = header.match(/^Bearer\s+(.+)$/i);
-  return (match?.[1] ?? header).trim() || null;
-}
 
 // Validates API key against database
 export async function apiKeyValidation(apiKey: string): Promise<boolean> {
