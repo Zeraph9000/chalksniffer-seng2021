@@ -296,9 +296,13 @@ app.delete('/orders/:id/instances/:position', async (req, res) => {
     return res.status(403).json({ error: 'API key does not belong to user' });
   }
 
-  const recurringOrder = await RecurringOrderModel.findOne({ id, userId });
+  const recurringOrder = await RecurringOrderModel.findOne({ id });
   if (!recurringOrder) {
-    return res.status(400).json({ error: `User does not own a recurring order with the ID ${id}` });
+    return res.status(400).json({ error: `Recurring order with ID ${id} does not exist` });
+  }
+
+  if (userId !== recurringOrder.userId) {
+    return res.status(403).json({ error: 'user does not own requested recurring order' });
   }
 
   if (!Number.isInteger(position) || position < 0 || position >= recurringOrder.orderInstances.length) {
