@@ -14,7 +14,7 @@ const recurringOrderSchema = new mongoose.Schema<RecurringOrder>({
   frequency: { type: String, enum: ['Daily', 'Weekly', 'Monthly'], required: true },
   startDate: { type: String, required: true },
   orderInstances: { type: [recurringOrderInstanceSchema], required: true },
-}, { timestamps: true });
+}, { timestamps: true, optimisticConcurrency: true });
 
 const RecurringOrderModel = mongoose.model<RecurringOrder>('RecurringOrder', recurringOrderSchema);
 

@@ -549,7 +549,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                oneOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+                  - $ref: '#/components/schemas/ValidationErrorResponse'
         '401':
           description: Unauthorized - invalid or missing API key
           content:
@@ -562,6 +564,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — the recurring order was modified concurrently. Retry the request.
         '500':
           description: Internal Server Error
           content:

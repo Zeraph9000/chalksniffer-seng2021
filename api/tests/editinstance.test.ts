@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, test } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, jest, test } from '@jest/globals';
 import request from 'supertest';
 import app from '../src/app';
 import RecurringOrderModel from '../src/models/recurringOrder';
@@ -173,6 +173,29 @@ describe('/order/instance/:id (PUT)', () => {
 
       expect(res.status).toStrictEqual(400);
       expect(res.body.errors).toBeDefined();
+    });
+  });
+
+  describe('concurrent modification', () => {
+    test('returns 409 when a concurrent modification occurs', async () => {
+      const recurringOrderId = await createRecurringOrder(VALID_API_KEY);
+
+      const originalSave = RecurringOrderModel.prototype.save;
+      jest.spyOn(RecurringOrderModel.prototype, 'save').mockImplementationOnce(async function(this: any) {
+        await RecurringOrderModel.updateOne(
+          { id: recurringOrderId },
+          { $inc: { __v: 1 } }
+        );
+        return originalSave.call(this);
+      });
+
+      const res = await request(app)
+        .put(`/order/instance/${recurringOrderId}`)
+        .set('Authorization', VALID_API_KEY)
+        .send({ note: 'should conflict' });
+
+      expect(res.status).toStrictEqual(409);
+      expect(res.body.error).toContain('Conflict');
     });
   });
 
