@@ -421,6 +421,87 @@ paths:
                 message: Cant connect
 
   /orders/recurring/{id}:
+    get:
+      tags:
+        - order
+      summary: Get recurring order by id
+      description: Returns a recurring order's metadata, template order, and instance summaries (id + scheduledDate only).
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: The recurring order ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  userId:
+                    type: string
+                  frequency:
+                    type: string
+                    enum: [Daily, Weekly, Monthly]
+                  startDate:
+                    type: string
+                    format: date-time
+                  createdAt:
+                    type: string
+                    format: date-time
+                  order:
+                    $ref: '#/components/schemas/Order'
+                  orderInstances:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        scheduledDate:
+                          type: string
+                          format: date-time
+                      required:
+                        - id
+                        - scheduledDate
+                required:
+                  - id
+                  - userId
+                  - frequency
+                  - startDate
+                  - order
+                  - orderInstances
+        '400':
+          description: Bad Request - recurring order does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - recurring order does not belong to the user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     put:
       tags:
         - order
@@ -482,6 +563,45 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
           description: Conflict - the recurring order was modified concurrently. Retry the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - order
+      summary: Delete an entire recurring order
+      description: Deletes a recurring order and all its scheduled instances.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: The recurring order ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteOrderResponse'
+        '400':
+          description: Bad Request - recurring order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - API key does not belong to the right user
           content:
             application/json:
               schema:
@@ -839,47 +959,6 @@ paths:
                 $ref: '#/components/schemas/DeleteOrderResponse'
         '400':
           description: Bad Request - recurring order or instance not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Unauthorized - invalid or missing API key
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Forbidden - API key does not belong to the right user
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /orders/recurring/{id}:
-    delete:
-      tags:
-        - order
-      summary: Delete an entire recurring order
-      description: Deletes a recurring order and all its scheduled instances.
-      security:
-        - ApiKeyAuth: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          description: The recurring order ID
-          schema:
-            type: string
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DeleteOrderResponse'
-        '400':
-          description: Bad Request - recurring order not found
           content:
             application/json:
               schema:

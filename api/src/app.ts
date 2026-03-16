@@ -10,7 +10,7 @@ import { editOrderFmt } from './types';
 import { handleError } from './utils/httpErrors';
 import RecurringOrderModel from './models/recurringOrder';
 import { deleteOrder, createOrder, updateOrder, listOrders, getOrderFromIds, getOrderCSV } from './orders/orderService';
-import { editRecurringOrder, createRecurringOrder, deleteRecurringOrder, editInstance, getRecurringOrderInstance, generateOrderInstances, processAllRecurringOrders } from './orders/recurringOrderService';
+import { editRecurringOrder, createRecurringOrder, deleteRecurringOrder, editInstance, getRecurringOrder, getRecurringOrderInstance, generateOrderInstances, processAllRecurringOrders } from './orders/recurringOrderService';
 import { getApiKeyFromAuthorizationHeader, getUserIdFromApiKey } from './utils/serverHelpers';
 
 const app = express();
@@ -108,6 +108,22 @@ app.post('/orders/recurring', async (_req: Request, res: Response) => {
     res.status(200).json({});
   } catch {
     res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'Failed to process recurring orders' });
+  }
+});
+
+app.get('/orders/recurring/:id', async (req, res) => {
+  try {
+    const result = await getUserIdFromApiKey(req);
+    if ('error' in result) return handleError(res, result);
+    const userId = result.userId;
+    const id = req.params.id as string;
+
+    const orderRes = await getRecurringOrder(userId, id);
+    if ('error' in orderRes) return handleError(res, orderRes);
+
+    res.status(200).json(orderRes);
+  } catch {
+    res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'Failed to get recurring order' });
   }
 });
 
