@@ -723,7 +723,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
   /orders/{id}/xml:
     get:
       tags:
@@ -818,6 +817,51 @@ paths:
               example:
                 error: INTERNAL_SERVER_ERROR
                 message: Cant connect
+  /order/recommend:
+    get:
+      tags:
+        - order
+      summary: Get order recommendation
+      description: 
+        Analyses the authenticated user's past orders and returns the most frequently occurring combination of line items
+        (same item names and quantities) as a single representative order.
+        At least two orders with the same pattern are required; otherwise a 400 is returned.
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: OK - most frequently occurring order pattern for the user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          description: Bad Request - no frequent orders found for the user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: NO_FREQUENT_ORDERS
+                message: No frequent orders found
+        '401':
+          description: Unauthorized - invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Invalid api key is given
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: Cant connect 
 
 components:
   securitySchemes:
