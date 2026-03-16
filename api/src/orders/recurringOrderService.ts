@@ -1,10 +1,11 @@
+import mongoose from 'mongoose';
 import RecurringOrderModel from '../models/recurringOrder';
 import OrderModel from '../models/order';
 import OrderXml from '../models/orderXml';
 import { validateOrder } from '../utils/validation';
 import { calculateMonetaryTotal } from '../utils/orderHelpers';
 import { buildOrderXml } from '../utils/xmlBuilder';
-import { ErrorObject, Frequency, Order, RecurringOrderInstance } from '../types';
+import { editOrderFmt, ErrorObject, Frequency, Order, RecurringOrderInstance } from '../types';
 
 const INSTANCE_COUNT = 5;
 
@@ -74,7 +75,7 @@ async function executeNextInstance(recurringOrderId: string): Promise<ErrorObjec
   // Atomically pop the first instance to prevent race conditions
   const recurringOrder = await RecurringOrderModel.findOneAndUpdate(
     { 'id': recurringOrderId, 'orderInstances.0': { $exists: true } },
-    { $pop: { orderInstances: -1 } },
+    { $pop: { orderInstances: -1 }, $inc: { __v: 1 } },
     { returnDocument: 'before' }
   );
   if (!recurringOrder || recurringOrder.orderInstances.length === 0) return;
@@ -86,7 +87,7 @@ async function executeNextInstance(recurringOrderId: string): Promise<ErrorObjec
   if (new Date(instance.scheduledDate).getTime() > Date.now()) {
     await RecurringOrderModel.findOneAndUpdate(
       { id: recurringOrderId },
-      { $push: { orderInstances: { $each: [instance], $position: 0 } } }
+      { $push: { orderInstances: { $each: [instance], $position: 0 } }, $inc: { __v: 1 } }
     );
     return;
   }
@@ -131,10 +132,76 @@ async function executeNextInstance(recurringOrderId: string): Promise<ErrorObjec
     const refreshed = await RecurringOrderModel.findOne({ id: recurringOrderId });
     if (refreshed) {
       const newInstances = replenishInstances(refreshed, frequency, instance.scheduledDate);
-      refreshed.orderInstances.push(...(newInstances as any));
-      await refreshed.save();
+      await RecurringOrderModel.findOneAndUpdate(
+        { id: recurringOrderId },
+        { $push: { orderInstances: { $each: newInstances } }, $inc: { __v: 1 } }
+      );
     }
   }
+}
+
+export async function editNextInstance(
+  recurringOrderId: string,
+  userId: string,
+  updates: editOrderFmt & { updateTemplate?: boolean }
+): Promise<{ status: number; body: any }> {
+  const recurringOrder = await RecurringOrderModel.findOne({ id: recurringOrderId });
+  if (!recurringOrder) {
+    return { status: 400, body: { error: 'Recurring order does not exist' } };
+  }
+
+  if (userId !== recurringOrder.userId) {
+    return { status: 403, body: { error: 'user does not own requested recurring order' } };
+  }
+
+  if (!recurringOrder.orderInstances || recurringOrder.orderInstances.length === 0) {
+    return { status: 400, body: { error: 'No pending instances to edit' } };
+  }
+
+  const instance = recurringOrder.orderInstances[0];
+
+  if (updates.note !== undefined) {
+    instance.order.note = updates.note;
+  }
+  if (updates.delivery !== undefined) {
+    instance.order.delivery = updates.delivery;
+  }
+  if (updates.orderLines !== undefined) {
+    instance.order.orderLines = updates.orderLines!;
+  }
+
+  const validation = validateOrder(instance.order);
+  if (!validation.res) {
+    return { status: 400, body: { errors: validation.errors } };
+  }
+
+  instance.order.anticipatedMonetaryTotal = calculateMonetaryTotal(instance.order);
+
+  if (updates.updateTemplate === true) {
+    if (updates.note !== undefined) {
+      recurringOrder.order.note = updates.note;
+    }
+    if (updates.delivery !== undefined) {
+      recurringOrder.order.delivery = updates.delivery;
+    }
+    if (updates.orderLines !== undefined) {
+      recurringOrder.order.orderLines = updates.orderLines!;
+    }
+    recurringOrder.order.anticipatedMonetaryTotal = calculateMonetaryTotal(recurringOrder.order);
+  }
+
+  recurringOrder.markModified('orderInstances');
+  recurringOrder.markModified('order');
+  try {
+    await recurringOrder.save();
+  } catch (err) {
+    if (err instanceof mongoose.Error.VersionError) {
+      return { status: 409, body: { error: 'Conflict: the recurring order was modified concurrently. Please retry.' } };
+    }
+    throw err;
+  }
+
+  return { status: 200, body: instance };
 }
 
 export async function processAllRecurringOrders(): Promise<ErrorObject | void> {
