@@ -658,42 +658,28 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-<<<<<<< Updated upstream
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-  /orders/instance/{id}:
+  /orders/{id}/instances/{position}:
     delete:
       tags:
         - order
-      summary: Stop a recurring order
-<<<<<<< Updated upstream
-      description: Deletes a recurring order by its ID, stopping all future instances from being generated or executed.
-=======
-      description: |
-        Deletes a recurring order or a single instance within it.
-        If `instanceId` query parameter is provided, only that instance is removed.
-        Otherwise the entire recurring order and all its pending instances are deleted.
->>>>>>> Stashed changes
+      summary: Delete a single recurring order instance
+      description: Deletes a single instance from a recurring order by its 0-based array position.
       security:
         - ApiKeyAuth: []
       parameters:
         - in: path
           name: id
           required: true
-          schema:
-            type: string
-<<<<<<< Updated upstream
-=======
           description: The recurring order ID
-        - in: query
-          name: instanceId
-          required: false
           schema:
             type: string
-          description: Optional. If provided, only this specific instance is deleted from the recurring order.
->>>>>>> Stashed changes
+        - in: path
+          name: position
+          required: true
+          description: The 0-based index of the instance to delete
+          schema:
+            type: integer
+            minimum: 0
       responses:
         '200':
           description: OK
@@ -702,7 +688,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/DeleteOrderResponse'
         '400':
-          description: Bad Request - recurring order does not exist or does not belong to user
+          description: Bad Request - recurring order or instance not found
           content:
             application/json:
               schema:
@@ -719,17 +705,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
 
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
->>>>>>> Stashed changes
   /orders/{id}/xml:
     get:
       tags:
