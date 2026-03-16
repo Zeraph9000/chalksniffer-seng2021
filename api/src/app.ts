@@ -4,17 +4,15 @@ import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import path from 'path';
 import { router as authRouter, getUserId, apiKeyValidation } from './auth/auth';
-import OrderXml from './models/orderXml';
 import OrderModel from './models/order';
 import { validateOrder } from './utils/validation';
 import { calculateMonetaryTotal, getOrderPages, parsePagedQuery } from './utils/orderHelpers';
-import { buildOrderXml } from './utils/xmlBuilder';
 import { getOrderXmlResponse } from './utils/getOrderXml';
-import { editOrderFmt, Order, OrderResponse, Frequency, RecurringOrderResponse, OrderFilter } from './types';
+import { editOrderFmt, Order, Frequency, RecurringOrderResponse, OrderFilter } from './types';
 import { handleError } from './utils/httpErrors';
 import RecurringOrderModel from './models/recurringOrder';
 import { generateOrderInstances, processAllRecurringOrders, editNextInstance } from './orders/recurringOrderService';
-import { deleteOrder, updateOrder } from './orders/orderService';
+import { deleteOrder, updateOrder, createOrder } from './orders/orderService';
 import { json2csv } from 'json-2-csv';
 import { getApiKeyFromAuthorizationHeader, getUserIdFromApiKey } from './utils/serverHelpers';
 
@@ -97,42 +95,9 @@ app.post('/orders', async (req, res) => {
   }
 
   // Existing non-recurring order path
-  const orderId = crypto.randomUUID();
-  const now = new Date();
-
-  const fullOrder: Order = {
-    ...req.body,
-    id: orderId,
-    userId,
-    issueDate: req.body.issueDate,
-    anticipatedMonetaryTotal: calculateMonetaryTotal(req.body),
-    createdAt: now.toISOString(),
-    xmlUrl: `/orders/${orderId}/xml`,
-  };
-
-  const validation = validateOrder(fullOrder);
-  if (!validation.res) {
-    return res.status(400).json({ errors: validation.errors });
-  }
-
-  const order: OrderResponse = {
-    id: orderId,
-    issueDate: fullOrder.issueDate,
-    documentCurrencyCode: fullOrder.documentCurrencyCode,
-    buyerCustomerParty: fullOrder.buyerCustomerParty,
-    sellerSupplierParty: fullOrder.sellerSupplierParty,
-    orderLines: fullOrder.orderLines,
-    anticipatedMonetaryTotal: fullOrder.anticipatedMonetaryTotal!,
-    createdAt: now,
-    xmlUrl: `/orders/${orderId}/xml`,
-  };
-
-  await OrderModel.create(fullOrder);
-
-  const xml = buildOrderXml(fullOrder);
-  await OrderXml.create({ orderId: fullOrder.id, xml });
-
-  return res.status(200).json(order);
+  const result = await createOrder(userId, req.body);
+  if ('errors' in result) return res.status(400).json(result);
+  return res.status(200).json(result);
 });
 
 app.get('/orders/:id/xml', async (req, res) => {
