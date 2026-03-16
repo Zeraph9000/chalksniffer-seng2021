@@ -159,15 +159,47 @@ app.delete('/orders/:id', async (req: Request, res: Response) => {
   }
 });
 
-app.put('/order/instance/:id', async (req, res) => {
-  const apiKey = getApiKeyFromAuthorizationHeader(req) as string;
+app.delete('/orders/:id/instances/:position', async (req, res) => {
+  const apiKey = getApiKeyFromAuthorizationHeader(req) as string | undefined;
+  if (!apiKey || !await apiKeyValidation(apiKey)) {
+    return res.status(401).json({ error: 'Invalid API key' });
+  }
+
+  const { id } = req.params;
+  const position = Number(req.params.position);
+  const userId = await getUserId(apiKey);
+  if (!userId) {
+    return res.status(403).json({ error: 'API key does not belong to user' });
+  }
+
+  const recurringOrder = await RecurringOrderModel.findOne({ id });
+  if (!recurringOrder) {
+    return res.status(400).json({ error: `Recurring order with ID ${id} does not exist` });
+  }
+
+  if (userId !== recurringOrder.userId) {
+    return res.status(403).json({ error: 'user does not own requested recurring order' });
+  }
+
+  if (!Number.isInteger(position) || position < 0 || position >= recurringOrder.orderInstances.length) {
+    return res.status(400).json({ error: `Invalid position ${req.params.position}. Must be an integer between 0 and ${recurringOrder.orderInstances.length - 1}` });
+  }
+
+  recurringOrder.orderInstances.splice(position, 1);
+  await recurringOrder.save();
+
+  return res.status(200).json({ message: `Instance at position ${position} deleted from recurring order ${id}` });
+});
+
+app.put('/orders/instance/:id', async (req, res) => {
+  const apiKey = getApiKeyFromAuthorizationHeader(req) as string | undefined;
   if (!apiKey || !await apiKeyValidation(apiKey)) {
     return res.status(401).json({ error: 'Invalid API key' });
   }
 
   const userId = await getUserId(apiKey);
   if (!userId) {
-    return res.status(401).json({ error: 'Invalid API key' });
+    return res.status(403).json({ error: 'API key does not belong to user' });
   }
 
   const result = await editNextInstance(req.params.id, userId, req.body);
