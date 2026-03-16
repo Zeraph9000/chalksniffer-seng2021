@@ -493,12 +493,24 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+<<<<<<< Updated upstream
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
   /orders/instance/{id}:
     delete:
       tags:
         - order
       summary: Stop a recurring order
+<<<<<<< Updated upstream
       description: Deletes a recurring order by its ID, stopping all future instances from being generated or executed.
+=======
+      description: |
+        Deletes a recurring order or a single instance within it.
+        If `instanceId` query parameter is provided, only that instance is removed.
+        Otherwise the entire recurring order and all its pending instances are deleted.
+>>>>>>> Stashed changes
       security:
         - ApiKeyAuth: []
       parameters:
@@ -507,6 +519,16 @@ paths:
           required: true
           schema:
             type: string
+<<<<<<< Updated upstream
+=======
+          description: The recurring order ID
+        - in: query
+          name: instanceId
+          required: false
+          schema:
+            type: string
+          description: Optional. If provided, only this specific instance is deleted from the recurring order.
+>>>>>>> Stashed changes
       responses:
         '200':
           description: OK
@@ -539,6 +561,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
   /orders/{id}/xml:
     get:
       tags:

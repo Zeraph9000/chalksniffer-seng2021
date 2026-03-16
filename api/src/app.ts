@@ -322,6 +322,24 @@ app.delete('/orders/instance/:id', async (req, res) => {
     return res.status(400).json({ error: `User does not own a recurring order with the ID ${id}` });
   }
 
+<<<<<<< Updated upstream
+=======
+  const instanceId = req.query.instanceId as string | undefined;
+  if (instanceId) {
+    const instanceIndex = recurringOrder.orderInstances.findIndex(
+      (inst: any) => inst.id === instanceId
+    );
+    if (instanceIndex === -1) {
+      return res.status(400).json({ error: `Instance ${instanceId} not found in recurring order ${id}` });
+    }
+
+    recurringOrder.orderInstances.splice(instanceIndex, 1);
+    await recurringOrder.save();
+
+    return res.status(200).json({ message: `Instance ${instanceId} deleted from recurring order ${id}` });
+  }
+
+>>>>>>> Stashed changes
   await RecurringOrderModel.deleteOne({ id, userId });
 
   return res.status(200).json({ message: `Recurring order ${id} deleted successfully` });
