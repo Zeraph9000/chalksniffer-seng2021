@@ -222,11 +222,11 @@ type OrderFilter = {
   userId?: string | null;
   id?: string;
   issueDate?: string;
-  buyerName?: string;
-  sellerName?: string;
-  payableAmount?: number;
   documentCurrencyCode?: string;
   createdAt?: string;
+  'buyerCustomerParty.party.partyName'?: string;
+  'sellerSupplierParty.party.partyName'?: string;
+  'anticipatedMonetaryTotal.payableAmount'?: number;
 }
 
 type OrderList = {

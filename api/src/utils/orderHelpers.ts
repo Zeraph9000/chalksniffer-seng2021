@@ -73,7 +73,18 @@ export function parsePagedQuery(query: Record<string, unknown>, userId: string):
   const offs = parseInt(offset as string);
   if (offs < 0) return { error: 'INVALID_OFFSET', message: 'Offset must be greater than or equal to 0' };
 
-  const qfilter: OrderFilter = { userId, ...queryFilter };
+  const { buyerName, sellerName, payableAmount, ...rest } = queryFilter as Record<string, unknown>;
+
+  const qfilter: OrderFilter = { userId, ...rest };
+  if (buyerName !== undefined) {
+    qfilter['buyerCustomerParty.party.partyName'] = buyerName as string;
+  }
+  if (sellerName !== undefined) {
+    qfilter['sellerSupplierParty.party.partyName'] = sellerName as string;
+  }
+  if (payableAmount !== undefined) {
+    qfilter['anticipatedMonetaryTotal.payableAmount'] = payableAmount as number;
+  }
 
   return { limit: lim, offset: offs, filter: qfilter };
 }

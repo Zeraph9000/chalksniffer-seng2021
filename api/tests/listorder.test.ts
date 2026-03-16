@@ -92,7 +92,7 @@ describe('/orders (GET)', () => {
     const res = await request(app)
       .get('/orders')
       .set('Authorization', VALID_API_KEY)
-      .query({ limit: 10, offset: 0, id: orderId });
+      .query({ limit: 10, offset: 0, id: orderId, buyerName: 'Buyer Pty Ltd' });
 
     expect(res.status).toBe(200);
     expect(res.body).toStrictEqual({
