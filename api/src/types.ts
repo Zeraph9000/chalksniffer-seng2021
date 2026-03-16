@@ -232,6 +232,7 @@ type OrderFilter = {
 type OrderList = {
   orders: OrderPaginated[];
   limit: number;
+  offset: number;
   totalOrders: number;
 }
 

@@ -42,7 +42,7 @@ export function calculateMonetaryTotal(order: Order): MonetaryTotal {
   };
 }
 
-export function getOrderPages(ordersFound: Order[], limit: number): OrderList {
+export function getOrderPages(ordersFound: Order[], limit: number, offset: number): OrderList {
   const pagedOrders: OrderPaginated[] = [];
 
   ordersFound.forEach((o) => {
@@ -60,6 +60,7 @@ export function getOrderPages(ordersFound: Order[], limit: number): OrderList {
   return {
     orders: pagedOrders.slice(0, limit),
     limit,
+    offset,
     totalOrders: pagedOrders.length
   };
 }

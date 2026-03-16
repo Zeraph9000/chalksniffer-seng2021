@@ -5,8 +5,8 @@ import { getOrderPages } from '../utils/orderHelpers';
 import { json2csv } from 'json-2-csv';
 
 export async function deleteOrder(userId: string, id: string): Promise<{ message: string } | ErrorObject> {
-  const getRes = await getOrder(userId, id);
-  if (!getRes) return { error: 'INVALID_ORDER_ID', message: `User does not own an order with ID ${id}` };
+  const getRes = await getOrderFromIds(userId, id);
+  if ('error' in getRes) return getRes;
 
   await OrderXml.deleteOne({ orderId: id });
   await OrderModel.deleteOne({ id, userId });
@@ -20,6 +20,12 @@ export async function getOrder(userId: string, id: string): Promise<Order> {
   return foundOrder as Order;
 }
 
+export async function getOrderFromIds(userId: string, id: string): Promise<Order | ErrorObject> {
+  const order = await getOrder(userId, id);
+  if (!order) return { error: 'INVALID_ORDER_ID', message: `User does not own an order with ID ${id}` };
+  return order;
+}
+
 // Return a list of orders found
 export async function listOrders(filter: OrderFilter | undefined,
   limit: number, offset: number): Promise<OrderList> {
@@ -27,7 +33,7 @@ export async function listOrders(filter: OrderFilter | undefined,
     .skip(offset as number)
     .lean();
 
-  const orders = getOrderPages(ordersFound, limit);
+  const orders = getOrderPages(ordersFound, limit, offset);
   return orders;
 }
 

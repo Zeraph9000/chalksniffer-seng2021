@@ -7,15 +7,14 @@ import { router as authRouter, getUserId, apiKeyValidation } from './auth/auth';
 import OrderXml from './models/orderXml';
 import OrderModel from './models/order';
 import { validateOrder } from './utils/validation';
-import { calculateMonetaryTotal, getOrderPages, parsePagedQuery } from './utils/orderHelpers';
+import { calculateMonetaryTotal, parsePagedQuery } from './utils/orderHelpers';
 import { buildOrderXml } from './utils/xmlBuilder';
 import { getOrderXmlResponse } from './utils/getOrderXml';
 import { editOrderFmt, Order, OrderResponse, Frequency, RecurringOrderResponse, ErrorObject } from './types';
 import { handleError } from './utils/httpErrors';
 import RecurringOrderModel from './models/recurringOrder';
-import { deleteOrder, getOrder, getOrderCSV, listOrders } from './orders/orderService';
+import { deleteOrder, getOrderFromIds, getOrderCSV, listOrders } from './orders/orderService';
 import { editNextInstance, generateOrderInstances, processAllRecurringOrders } from './orders/recurringOrderService';
-import { json2csv } from 'json-2-csv';
 import { getApiKeyFromAuthorizationHeader, getUserIdFromApiKey } from './utils/serverHelpers';
 
 const app = express();
@@ -199,10 +198,8 @@ app.get('/orders/:id', async (req, res) => {
     const userId = result.userId;
     const id = req.params.id as string;
 
-    const orderRes = await getOrder(userId, id);
-    if (!orderRes) {
-      return handleError(res, { error: 'INVALID_ORDER_ID', message: `User does not own an order with ID ${id}` });
-    }
+    const orderRes = await getOrderFromIds(userId, id);
+    if ('error' in orderRes) return handleError(res, orderRes);
 
     res.status(200).json(orderRes);
   } catch {

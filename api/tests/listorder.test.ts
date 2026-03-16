@@ -67,6 +67,7 @@ describe('/orders (GET)', () => {
     expect(res.status).toBe(200);
     expect(res.body).toStrictEqual({
       limit: 1,
+      offset: 0,
       totalOrders: 2,
       orders: [
         {
@@ -96,6 +97,7 @@ describe('/orders (GET)', () => {
     expect(res.status).toBe(200);
     expect(res.body).toStrictEqual({
       limit: 10,
+      offset: 0,
       totalOrders: 1,
       orders: [
         {
