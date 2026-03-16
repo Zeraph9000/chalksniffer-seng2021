@@ -751,7 +751,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
   /orders/recurring/{id}/instance/{position}:
-<<<<<<< HEAD
     get:
       tags:
         - order
@@ -810,10 +809,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
-  /orders/{id}/instances/{position}:
-=======
->>>>>>> d24628a6dd2424b9907e7e1479093dcf5f935cab
     delete:
       tags:
         - order
