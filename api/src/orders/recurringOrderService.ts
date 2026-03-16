@@ -2,11 +2,10 @@ import mongoose from 'mongoose';
 import RecurringOrderModel from '../models/recurringOrder';
 import OrderModel from '../models/order';
 import OrderXml from '../models/orderXml';
-import { validateOrder } from '../utils/validation';
+import { validateOrder, ValidationError } from '../utils/validation';
 import { calculateMonetaryTotal } from '../utils/orderHelpers';
 import { buildOrderXml } from '../utils/xmlBuilder';
 import { editOrderFmt, ErrorObject, Frequency, Order, RecurringOrderInstance, RecurringOrderResponse } from '../types';
-import { ValidationError } from '../utils/validation';
 
 const INSTANCE_COUNT = 5;
 
