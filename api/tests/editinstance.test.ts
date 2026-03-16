@@ -27,7 +27,7 @@ async function createRecurringOrder(apiKey: string): Promise<string> {
   return res.body.id as string;
 }
 
-describe('/order/instance/:id (PUT)', () => {
+describe('/orders/instance/:id (PUT)', () => {
   beforeEach(async () => {
     await clearOrderTestData();
     await seedDefaultUserMap();
@@ -39,20 +39,20 @@ describe('/order/instance/:id (PUT)', () => {
 
   describe('authentication and ownership errors', () => {
     test('should return 401 when no Authorization header is provided', async () => {
-      const res = await request(app).put('/order/instance/any-id');
+      const res = await request(app).put('/orders/instance/any-id');
       expect(res.status).toStrictEqual(401);
     });
 
     test('should return 401 when the Authorization header contains an invalid API key', async () => {
       const res = await request(app)
-        .put('/order/instance/any-id')
+        .put('/orders/instance/any-id')
         .set('Authorization', 'invalid-key');
       expect(res.status).toStrictEqual(401);
     });
 
     test('should return 400 when the recurring order ID does not exist', async () => {
       const res = await request(app)
-        .put('/order/instance/nonexistent-id')
+        .put('/orders/instance/nonexistent-id')
         .set('Authorization', VALID_API_KEY)
         .send({ note: 'test' });
       expect(res.status).toStrictEqual(400);
@@ -64,7 +64,7 @@ describe('/order/instance/:id (PUT)', () => {
       const otherRecurringOrderId = await createRecurringOrder(OTHER_API_KEY);
 
       const res = await request(app)
-        .put(`/order/instance/${otherRecurringOrderId}`)
+        .put(`/orders/instance/${otherRecurringOrderId}`)
         .set('Authorization', VALID_API_KEY)
         .send({ note: 'test' });
       expect(res.status).toStrictEqual(403);
@@ -79,7 +79,7 @@ describe('/order/instance/:id (PUT)', () => {
       await RecurringOrderModel.updateOne({ id: recurringOrderId }, { orderInstances: [] });
 
       const res = await request(app)
-        .put(`/order/instance/${recurringOrderId}`)
+        .put(`/orders/instance/${recurringOrderId}`)
         .set('Authorization', VALID_API_KEY)
         .send({ note: 'test' });
       expect(res.status).toStrictEqual(400);
@@ -92,7 +92,7 @@ describe('/order/instance/:id (PUT)', () => {
       const recurringOrderId = await createRecurringOrder(VALID_API_KEY);
 
       const res = await request(app)
-        .put(`/order/instance/${recurringOrderId}`)
+        .put(`/orders/instance/${recurringOrderId}`)
         .set('Authorization', VALID_API_KEY)
         .send({ note: 'Updated note' });
 
@@ -115,7 +115,7 @@ describe('/order/instance/:id (PUT)', () => {
       ];
 
       const res = await request(app)
-        .put(`/order/instance/${recurringOrderId}`)
+        .put(`/orders/instance/${recurringOrderId}`)
         .set('Authorization', VALID_API_KEY)
         .send({ orderLines: newOrderLines });
 
@@ -137,7 +137,7 @@ describe('/order/instance/:id (PUT)', () => {
       };
 
       const res = await request(app)
-        .put(`/order/instance/${recurringOrderId}`)
+        .put(`/orders/instance/${recurringOrderId}`)
         .set('Authorization', VALID_API_KEY)
         .send({ delivery: newDelivery });
 
@@ -152,7 +152,7 @@ describe('/order/instance/:id (PUT)', () => {
       const secondInstanceBefore = JSON.parse(JSON.stringify(before!.orderInstances[1]));
 
       await request(app)
-        .put(`/order/instance/${recurringOrderId}`)
+        .put(`/orders/instance/${recurringOrderId}`)
         .set('Authorization', VALID_API_KEY)
         .send({ note: 'Only first instance' });
 
@@ -167,7 +167,7 @@ describe('/order/instance/:id (PUT)', () => {
       const recurringOrderId = await createRecurringOrder(VALID_API_KEY);
 
       const res = await request(app)
-        .put(`/order/instance/${recurringOrderId}`)
+        .put(`/orders/instance/${recurringOrderId}`)
         .set('Authorization', VALID_API_KEY)
         .send({ orderLines: [] });
 
@@ -190,7 +190,7 @@ describe('/order/instance/:id (PUT)', () => {
       });
 
       const res = await request(app)
-        .put(`/order/instance/${recurringOrderId}`)
+        .put(`/orders/instance/${recurringOrderId}`)
         .set('Authorization', VALID_API_KEY)
         .send({ note: 'should conflict' });
 
@@ -204,7 +204,7 @@ describe('/order/instance/:id (PUT)', () => {
       const recurringOrderId = await createRecurringOrder(VALID_API_KEY);
 
       const res = await request(app)
-        .put(`/order/instance/${recurringOrderId}`)
+        .put(`/orders/instance/${recurringOrderId}`)
         .set('Authorization', VALID_API_KEY)
         .send({ note: 'Template updated too', updateTemplate: true });
 
@@ -222,7 +222,7 @@ describe('/order/instance/:id (PUT)', () => {
       const templateNoteBefore = before!.order.note;
 
       const res = await request(app)
-        .put(`/order/instance/${recurringOrderId}`)
+        .put(`/orders/instance/${recurringOrderId}`)
         .set('Authorization', VALID_API_KEY)
         .send({ note: 'Instance only' });
 
