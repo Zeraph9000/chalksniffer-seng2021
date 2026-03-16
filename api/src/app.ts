@@ -3,7 +3,7 @@ import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import path from 'path';
-import { router as authRouter, getUserId, apiKeyValidation, getApiKeyFromAuthorizationHeader } from './auth/auth';
+import { router as authRouter, getUserId, apiKeyValidation } from './auth/auth';
 import OrderXml from './models/orderXml';
 import OrderModel from './models/order';
 import { validateOrder } from './utils/validation';
@@ -11,9 +11,12 @@ import { calculateMonetaryTotal, getOrderPages, parsePagedQuery } from './utils/
 import { buildOrderXml } from './utils/xmlBuilder';
 import { getOrderXmlResponse } from './utils/getOrderXml';
 import { editOrderFmt, Order, OrderResponse, Frequency, RecurringOrderResponse, OrderFilter } from './types';
+import { handleError } from './utils/httpErrors';
 import RecurringOrderModel from './models/recurringOrder';
 import { generateOrderInstances, processAllRecurringOrders } from './orders/recurringOrderService';
+import { deleteOrder } from './orders/orderService';
 import { json2csv } from 'json-2-csv';
+import { getApiKeyFromAuthorizationHeader, getUserIdFromApiKey } from './utils/serverHelpers';
 
 const app = express();
 app.use(cors());
@@ -132,66 +135,6 @@ app.post('/orders', async (req, res) => {
   return res.status(200).json(order);
 });
 
-app.put('/orders/:id', async (req, res) => {
-  const apiKey = getApiKeyFromAuthorizationHeader(req) as string;
-
-  if (!apiKey || !await apiKeyValidation(apiKey)) {
-    return res.status(401).json({ error: 'Invalid API key' });
-  }
-
-  const body = req.body as editOrderFmt;
-
-  const id = req.params.id as string;
-
-  const editedOrder = await OrderModel.findOne({ id: id });
-
-  if (!editedOrder) {
-    return res.status(400).json({ error: 'Order does not exist' });
-  }
-
-  const userId = await getUserId(apiKey);
-  if (!userId) {
-    return res.status(401).json({ error: 'Invalid API key' });
-  }
-
-  const orderUserId = editedOrder.userId;
-
-  if (await userId !== orderUserId) {
-    return res.status(403).json({ error: 'user does not own requested order' });
-  }
-
-  if (body.note) {
-    editedOrder.set('note', body.note);
-  }
-  if (body.delivery) {
-    editedOrder.set('delivery', body.delivery);
-  }
-  if (body.orderLines) {
-    editedOrder.set('orderLines', body.orderLines);
-  }
-
-  const editedOrderObject = editedOrder.toObject();
-  editedOrderObject.anticipatedMonetaryTotal = calculateMonetaryTotal(editedOrderObject);
-
-  editedOrder.set('anticipatedMonetaryTotal', editedOrderObject.anticipatedMonetaryTotal);
-
-  const validation = validateOrder(editedOrderObject);
-  if (!validation.res) {
-    return res.status(400).json({ errors: validation.errors });
-  }
-
-  await editedOrder.save();
-
-  const updatedXml = buildOrderXml(editedOrder.toObject());
-  await OrderXml.updateOne(
-    { orderId: editedOrder.id },
-    { xml: updatedXml },
-    { upsert: true }
-  );
-
-  return res.status(200).json(editedOrder);
-});
-
 app.get('/orders/:id/xml', async (req, res) => {
   const result = await getOrderXmlResponse(
     getApiKeyFromAuthorizationHeader(req) as string | undefined,
@@ -282,27 +225,80 @@ app.get('/orders/:id', async (req, res) => {
   return res.status(200).json(foundOrder);
 });
 
-app.delete('/orders/:id', async (req, res) => {
-  const apiKey = getApiKeyFromAuthorizationHeader(req) as string | undefined;
+app.put('/orders/:id', async (req, res) => {
+  const apiKey = getApiKeyFromAuthorizationHeader(req) as string;
+
   if (!apiKey || !await apiKeyValidation(apiKey)) {
     return res.status(401).json({ error: 'Invalid API key' });
   }
 
+  const body = req.body as editOrderFmt;
+
   const id = req.params.id as string;
+
+  const editedOrder = await OrderModel.findOne({ id: id });
+
+  if (!editedOrder) {
+    return res.status(400).json({ error: 'Order does not exist' });
+  }
+
   const userId = await getUserId(apiKey);
   if (!userId) {
-    return res.status(403).json({ error: 'API key does not belong to user' });
+    return res.status(401).json({ error: 'Invalid API key' });
   }
 
-  const foundOrder = await OrderModel.findOne({ id, userId });
-  if (!foundOrder) {
-    return res.status(400).json({ error: `User does not own an order with the ID ${id}` });
+  const orderUserId = editedOrder.userId;
+
+  if (await userId !== orderUserId) {
+    return res.status(403).json({ error: 'user does not own requested order' });
   }
 
-  await OrderXml.deleteOne({ orderId: id });
-  await OrderModel.deleteOne({ id, userId });
+  if (body.note) {
+    editedOrder.set('note', body.note);
+  }
+  if (body.delivery) {
+    editedOrder.set('delivery', body.delivery);
+  }
+  if (body.orderLines) {
+    editedOrder.set('orderLines', body.orderLines);
+  }
 
-  return res.status(200).json({ message: `Order ${id} deleted successfully` });
+  const editedOrderObject = editedOrder.toObject();
+  editedOrderObject.anticipatedMonetaryTotal = calculateMonetaryTotal(editedOrderObject);
+
+  editedOrder.set('anticipatedMonetaryTotal', editedOrderObject.anticipatedMonetaryTotal);
+
+  const validation = validateOrder(editedOrderObject);
+  if (!validation.res) {
+    return res.status(400).json({ errors: validation.errors });
+  }
+
+  await editedOrder.save();
+
+  const updatedXml = buildOrderXml(editedOrder.toObject());
+  await OrderXml.updateOne(
+    { orderId: editedOrder.id },
+    { xml: updatedXml },
+    { upsert: true }
+  );
+
+  return res.status(200).json(editedOrder);
+});
+
+app.delete('/orders/:id', async (req: Request, res: Response) => {
+  const id = req.params.id as string;
+
+  try {
+    const authResult = await getUserIdFromApiKey(req);
+    if ('error' in authResult) return handleError(res, authResult);
+
+    const result = await deleteOrder(authResult.userId, id);
+    if ('error' in result) return handleError(res, result);
+
+    return res.status(200).json(result);
+  } catch {
+    res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'An unexpected error occurred' });
+  }
 });
 
 export default app;
