@@ -185,6 +185,7 @@ type editOrderFmt = {
 type Frequency = 'Daily' | 'Weekly' | 'Monthly';
 
 type RecurringOrderInstance = {
+  id: string;
   order: Order;
   scheduledDate: string;
 };

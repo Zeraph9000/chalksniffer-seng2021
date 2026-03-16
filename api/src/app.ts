@@ -12,7 +12,7 @@ import { buildOrderXml } from './utils/xmlBuilder';
 import { getOrderXmlResponse } from './utils/getOrderXml';
 import { editOrderFmt, Order, OrderResponse, Frequency, RecurringOrderResponse, OrderFilter } from './types';
 import RecurringOrderModel from './models/recurringOrder';
-import { generateOrderInstances, processAllRecurringOrders } from './orders/recurringOrderService';
+import { editNextInstance, generateOrderInstances, processAllRecurringOrders } from './orders/recurringOrderService';
 import { json2csv } from 'json-2-csv';
 
 const app = express();
@@ -340,6 +340,21 @@ app.delete('/orders/instance/:id', async (req, res) => {
   await RecurringOrderModel.deleteOne({ id, userId });
 
   return res.status(200).json({ message: `Recurring order ${id} deleted successfully` });
+});
+
+app.put('/orders/instance/:id', async (req, res) => {
+  const apiKey = getApiKeyFromAuthorizationHeader(req) as string | undefined;
+  if (!apiKey || !await apiKeyValidation(apiKey)) {
+    return res.status(401).json({ error: 'Invalid API key' });
+  }
+
+  const userId = await getUserId(apiKey);
+  if (!userId) {
+    return res.status(403).json({ error: 'API key does not belong to user' });
+  }
+
+  const result = await editNextInstance(req.params.id, userId, req.body);
+  return res.status(result.status).json(result.body);
 });
 
 export default app;
