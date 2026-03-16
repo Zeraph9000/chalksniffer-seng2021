@@ -4,7 +4,7 @@ import OrderXml from '../models/orderXml';
 import { validateOrder } from '../utils/validation';
 import { calculateMonetaryTotal } from '../utils/orderHelpers';
 import { buildOrderXml } from '../utils/xmlBuilder';
-import { ErrorObject, Frequency, Order, RecurringOrderInstance } from '../types';
+import { editOrderFmt, ErrorObject, Frequency, Order, RecurringOrderInstance } from '../types';
 
 const INSTANCE_COUNT = 5;
 
@@ -135,6 +135,63 @@ async function executeNextInstance(recurringOrderId: string): Promise<ErrorObjec
       await refreshed.save();
     }
   }
+}
+
+export async function editNextInstance(
+  recurringOrderId: string,
+  userId: string,
+  updates: editOrderFmt & { updateTemplate?: boolean }
+): Promise<{ status: number; body: any }> {
+  const recurringOrder = await RecurringOrderModel.findOne({ id: recurringOrderId });
+  if (!recurringOrder) {
+    return { status: 400, body: { error: 'Recurring order does not exist' } };
+  }
+
+  if (userId !== recurringOrder.userId) {
+    return { status: 403, body: { error: 'user does not own requested recurring order' } };
+  }
+
+  if (!recurringOrder.orderInstances || recurringOrder.orderInstances.length === 0) {
+    return { status: 400, body: { error: 'No pending instances to edit' } };
+  }
+
+  const instance = recurringOrder.orderInstances[0];
+
+  if (updates.note !== undefined) {
+    instance.order.note = updates.note;
+  }
+  if (updates.delivery !== undefined) {
+    instance.order.delivery = updates.delivery;
+  }
+  if (updates.orderLines !== undefined) {
+    instance.order.orderLines = updates.orderLines!;
+  }
+
+  instance.order.anticipatedMonetaryTotal = calculateMonetaryTotal(instance.order);
+
+  const validation = validateOrder(instance.order);
+  if (!validation.res) {
+    return { status: 400, body: { errors: validation.errors } };
+  }
+
+  if (updates.updateTemplate === true) {
+    if (updates.note !== undefined) {
+      recurringOrder.order.note = updates.note;
+    }
+    if (updates.delivery !== undefined) {
+      recurringOrder.order.delivery = updates.delivery;
+    }
+    if (updates.orderLines !== undefined) {
+      recurringOrder.order.orderLines = updates.orderLines!;
+    }
+    recurringOrder.order.anticipatedMonetaryTotal = calculateMonetaryTotal(recurringOrder.order);
+  }
+
+  recurringOrder.markModified('orderInstances');
+  recurringOrder.markModified('order');
+  await recurringOrder.save();
+
+  return { status: 200, body: instance };
 }
 
 export async function processAllRecurringOrders(): Promise<ErrorObject | void> {
