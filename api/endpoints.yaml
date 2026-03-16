@@ -275,6 +275,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: FORBIDDEN
+                message: API key does not belong to the user
         '500':
           description: Internal Server Error
           content:
@@ -404,6 +407,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: FORBIDDEN
+                message: API key does not belong to the user
         '500':
           description: Internal Server Error
           content:
@@ -456,6 +462,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: FORBIDDEN
+                message: API key does not belong to the user
         '500':
           description: Internal Server Error
           content:
@@ -655,6 +664,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: FORBIDDEN
+                message: API key does not belong to the user
         '409':
           description: Conflict — the recurring order was modified concurrently. Retry the request.
         '500':
@@ -746,6 +758,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: FORBIDDEN
+                message: API key does not belong to the user
         '500':
           description: Internal Server Error
           content:

@@ -5,13 +5,11 @@ import YAML from 'yamljs';
 import path from 'path';
 import { router as authRouter, getUserId, apiKeyValidation } from './auth/auth';
 import OrderModel from './models/order';
-import { validateOrder } from './utils/validation';
-import { calculateMonetaryTotal, getOrderPages, parsePagedQuery } from './utils/orderHelpers';
+import { getOrderPages, parsePagedQuery } from './utils/orderHelpers';
 import { getOrderXmlResponse } from './utils/getOrderXml';
-import { editOrderFmt, Order, Frequency, RecurringOrderResponse, OrderFilter } from './types';
+import { editOrderFmt, OrderFilter } from './types';
 import { handleError } from './utils/httpErrors';
-import RecurringOrderModel from './models/recurringOrder';
-import { generateOrderInstances, processAllRecurringOrders, editNextInstance } from './orders/recurringOrderService';
+import { processAllRecurringOrders, editNextInstance, createRecurringOrder } from './orders/recurringOrderService';
 import { deleteOrder, updateOrder, createOrder } from './orders/orderService';
 import { json2csv } from 'json-2-csv';
 import { getApiKeyFromAuthorizationHeader, getUserIdFromApiKey } from './utils/serverHelpers';
@@ -38,66 +36,23 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-app.post('/orders', async (req, res) => {
-  const apiKey = req.headers.authorization;
-  if (!apiKey || !await apiKeyValidation(apiKey)) {
-    return res.status(401).json({ error: 'Invalid API key' });
+app.post('/orders', async (req: Request, res: Response) => {
+  try {
+    const authResult = await getUserIdFromApiKey(req);
+    if ('error' in authResult) return handleError(res, authResult);
+
+    if (req.body.recurring === true) {
+      const result = await createRecurringOrder(authResult.userId, req.body);
+      if ('errors' in result) return res.status(400).json(result);
+      return res.status(200).json(result);
+    }
+
+    const result = await createOrder(authResult.userId, req.body);
+    if ('errors' in result) return res.status(400).json(result);
+    return res.status(200).json(result);
+  } catch {
+    res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'An unexpected error occurred' });
   }
-
-  const userId = (await getUserId(apiKey)) as string;
-
-  // Recurring order branch
-  if (req.body.recurring === true) {
-    const { frequency, startDate, ...orderBody } = req.body;
-
-    const validFrequencies: Frequency[] = ['Daily', 'Weekly', 'Monthly'];
-    if (!frequency || !validFrequencies.includes(frequency)) {
-      return res.status(400).json({ errors: [{ field: 'frequency', message: 'must be one of: Daily, Weekly, Monthly' }] });
-    }
-    if (!startDate || isNaN(Date.parse(startDate))) {
-      return res.status(400).json({ errors: [{ field: 'startDate', message: 'required and must be a valid date string (e.g. 2026-03-15T09:00:00Z or 2026-03-15)' }] });
-    }
-
-    const templateOrderId = crypto.randomUUID();
-    const templateOrder: Order = {
-      ...orderBody,
-      userId,
-      id: templateOrderId,
-      issueDate: orderBody.issueDate || startDate.split('T')[0],
-      anticipatedMonetaryTotal: calculateMonetaryTotal(orderBody),
-    };
-
-    const validation = validateOrder(templateOrder);
-    if (!validation.res) {
-      return res.status(400).json({ errors: validation.errors });
-    }
-
-    const recurringOrderId = crypto.randomUUID();
-    const orderInstances = generateOrderInstances(templateOrder, startDate, frequency);
-
-    await RecurringOrderModel.create({
-      id: recurringOrderId,
-      userId,
-      order: templateOrder,
-      frequency,
-      startDate,
-      orderInstances,
-    });
-
-    const response: RecurringOrderResponse = {
-      id: recurringOrderId,
-      frequency,
-      startDate,
-      createdAt: new Date(),
-    };
-
-    return res.status(200).json(response);
-  }
-
-  // Existing non-recurring order path
-  const result = await createOrder(userId, req.body);
-  if ('errors' in result) return res.status(400).json(result);
-  return res.status(200).json(result);
 });
 
 app.get('/orders/:id/xml', async (req, res) => {
