@@ -125,18 +125,7 @@ async function executeNextInstance(recurringOrderId: string): Promise<ErrorObjec
     return { error: 'INVALID_ORDER_DATA', message: `Validation failed for recurring order ${recurringOrderId}` };
   }
 
-  await OrderModel.create({
-    id: fullOrder.id,
-    userId: recurringOrder.userId,
-    issueDate: fullOrder.issueDate,
-    documentCurrencyCode: fullOrder.documentCurrencyCode,
-    buyerCustomerParty: fullOrder.buyerCustomerParty,
-    sellerSupplierParty: fullOrder.sellerSupplierParty,
-    orderLines: fullOrder.orderLines,
-    anticipatedMonetaryTotal: fullOrder.anticipatedMonetaryTotal!,
-    createdAt: new Date(),
-    xmlUrl,
-  });
+  await OrderModel.create(fullOrder);
 
   const xml = buildOrderXml(fullOrder);
   await OrderXml.create({ orderId: fullOrder.id, xml });
@@ -153,6 +142,31 @@ async function executeNextInstance(recurringOrderId: string): Promise<ErrorObjec
       );
     }
   }
+}
+
+export async function deleteRecurringOrderInstance(
+  userId: string,
+  recurringOrderId: string,
+  positionRaw: string
+): Promise<{ status: number; body: any }> {
+  const position = Number(positionRaw);
+  const recurringOrder = await RecurringOrderModel.findOne({ id: recurringOrderId });
+  if (!recurringOrder) {
+    return { status: 400, body: { error: `Recurring order with ID ${recurringOrderId} does not exist` } };
+  }
+
+  if (userId !== recurringOrder.userId) {
+    return { status: 403, body: { error: 'user does not own requested recurring order' } };
+  }
+
+  if (!Number.isInteger(position) || position < 0 || position >= recurringOrder.orderInstances.length) {
+    return { status: 400, body: { error: `Invalid position ${positionRaw}. Must be an integer between 0 and ${recurringOrder.orderInstances.length - 1}` } };
+  }
+
+  recurringOrder.orderInstances.splice(position, 1);
+  await recurringOrder.save();
+
+  return { status: 200, body: { message: `Instance at position ${position} deleted from recurring order ${recurringOrderId}` } };
 }
 
 export async function getRecurringOrderInstance(
@@ -357,8 +371,11 @@ export async function processAllRecurringOrders(): Promise<ErrorObject | void> {
     'orderInstances.0': { $exists: true },
   });
 
+  const errors: ErrorObject[] = [];
   for (const ro of recurringOrders) {
     const result = await executeNextInstance(ro.id);
-    if (result) return result;
+    if (result) errors.push(result);
   }
+
+  if (errors.length > 0) return errors[0];
 }

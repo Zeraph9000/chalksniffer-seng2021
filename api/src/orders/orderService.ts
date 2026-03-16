@@ -21,11 +21,13 @@ export async function getOrderFromIds(userId: string, id: string): Promise<Order
 // Return a list of orders found
 export async function listOrders(filter: OrderFilter | undefined,
   limit: number, offset: number): Promise<OrderList> {
+  const totalOrders = await OrderModel.countDocuments(filter);
   const ordersFound = await OrderModel.find(filter)
-    .skip(offset as number)
+    .skip(offset)
+    .limit(limit)
     .lean();
 
-  const orders = getOrderPages(ordersFound, limit, offset);
+  const orders = getOrderPages(ordersFound, limit, offset, totalOrders);
   return orders;
 }
 

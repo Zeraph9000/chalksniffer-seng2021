@@ -42,36 +42,32 @@ export function calculateMonetaryTotal(order: Order): MonetaryTotal {
   };
 }
 
-export function getOrderPages(ordersFound: Order[], limit: number, offset: number): OrderList {
-  const pagedOrders: OrderPaginated[] = [];
-
-  ordersFound.forEach((o) => {
-    pagedOrders.push({
-      id: o.id,
-      issueDate: o.issueDate,
-      buyerName: o.buyerCustomerParty.party.partyName,
-      sellerName: o.sellerSupplierParty.party.partyName,
-      payableAmount: calculateMonetaryTotal(o).payableAmount ?? 0,
-      documentCurrencyCode: o.documentCurrencyCode,
-      createdAt: o.createdAt as string,
-    });
-  });
+export function getOrderPages(ordersFound: Order[], limit: number, offset: number, totalOrders: number): OrderList {
+  const pagedOrders: OrderPaginated[] = ordersFound.map((o) => ({
+    id: o.id,
+    issueDate: o.issueDate,
+    buyerName: o.buyerCustomerParty.party.partyName,
+    sellerName: o.sellerSupplierParty.party.partyName,
+    payableAmount: o.anticipatedMonetaryTotal?.payableAmount ?? 0,
+    documentCurrencyCode: o.documentCurrencyCode,
+    createdAt: o.createdAt as string,
+  }));
 
   return {
-    orders: pagedOrders.slice(0, limit),
+    orders: pagedOrders,
     limit,
     offset,
-    totalOrders: pagedOrders.length
+    totalOrders,
   };
 }
 
 export function parsePagedQuery(query: Record<string, unknown>, userId: string): PaginationParams | ErrorObject {
   const { limit, offset, ...queryFilter } = query;
 
-  const lim = parseInt(limit as string);
-  if (lim < 1 || lim > 500) return { error: 'INVALID_LIMIT', message: 'Limit must be between 1 and 500 inclusive' };
-  const offs = parseInt(offset as string);
-  if (offs < 0) return { error: 'INVALID_OFFSET', message: 'Offset must be greater than or equal to 0' };
+  const lim = limit != null ? parseInt(limit as string) : 20;
+  if (isNaN(lim) || lim < 1 || lim > 500) return { error: 'INVALID_LIMIT', message: 'Limit must be between 1 and 500 inclusive' };
+  const offs = offset != null ? parseInt(offset as string) : 0;
+  if (isNaN(offs) || offs < 0) return { error: 'INVALID_OFFSET', message: 'Offset must be greater than or equal to 0' };
 
   const { buyerName, sellerName, payableAmount, ...rest } = queryFilter as Record<string, unknown>;
 
