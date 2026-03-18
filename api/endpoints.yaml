@@ -106,7 +106,12 @@ paths:
       tags:
         - order
       summary: Create order
-      description: Creates an order from JSON input. Validates the data, generates UBL 2.4 XML, and stores the order.
+      description: |
+        Creates an order from JSON input. Validates the data, generates UBL 2.4 XML, and stores the order.
+
+        To create a recurring order, set `recurring: true` in the request body along with `frequency` and `startDate`.
+        This creates a recurring order schedule with 5 pre-generated instances. The recurring order can then be
+        managed via the `/orders/recurring/{id}` endpoints.
       security:
         - ApiKeyAuth: []
       requestBody:
@@ -114,43 +119,84 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/OrderCreateRequest'
-            example:
-              issueDate: "2026-03-16"
-              documentCurrencyCode: "AUD"
-              buyerCustomerParty:
-                party:
-                  partyName: "Buyer Co"
-                  postalAddress:
-                    streetName: "123 Buyer St"
-                    cityName: "Sydney"
-                    postalZone: "2000"
-                    country: "AU"
-              sellerSupplierParty:
-                party:
-                  partyName: "Seller Co"
-                  postalAddress:
-                    streetName: "456 Seller Ave"
-                    cityName: "Melbourne"
-                    postalZone: "3000"
-                    country: "AU"
-              orderLines:
-                - lineItem:
-                    id: "1"
-                    quantity: 2
-                    lineExtensionAmount: 100.00
-                    item:
-                      name: "Widget"
-                    price:
-                      priceAmount: 50.00
-                      currencyID: "AUD"
+              oneOf:
+                - $ref: '#/components/schemas/OrderCreateRequest'
+                - $ref: '#/components/schemas/RecurringOrderCreateRequest'
+            examples:
+              standardOrder:
+                summary: Create a standard one-time order
+                value:
+                  issueDate: "2026-03-16"
+                  documentCurrencyCode: "AUD"
+                  buyerCustomerParty:
+                    party:
+                      partyName: "Buyer Co"
+                      postalAddress:
+                        streetName: "123 Buyer St"
+                        cityName: "Sydney"
+                        postalZone: "2000"
+                        country: "AU"
+                  sellerSupplierParty:
+                    party:
+                      partyName: "Seller Co"
+                      postalAddress:
+                        streetName: "456 Seller Ave"
+                        cityName: "Melbourne"
+                        postalZone: "3000"
+                        country: "AU"
+                  orderLines:
+                    - lineItem:
+                        id: "1"
+                        quantity: 2
+                        lineExtensionAmount: 100.00
+                        item:
+                          name: "Widget"
+                        price:
+                          priceAmount: 50.00
+                          currencyID: "AUD"
+              recurringOrder:
+                summary: Create a recurring order (Weekly, starting 2026-03-20)
+                value:
+                  recurring: true
+                  frequency: "Weekly"
+                  startDate: "2026-03-20"
+                  documentCurrencyCode: "AUD"
+                  buyerCustomerParty:
+                    party:
+                      partyName: "Buyer Co"
+                      postalAddress:
+                        streetName: "123 Buyer St"
+                        cityName: "Sydney"
+                        postalZone: "2000"
+                        country: "AU"
+                  sellerSupplierParty:
+                    party:
+                      partyName: "Seller Co"
+                      postalAddress:
+                        streetName: "456 Seller Ave"
+                        cityName: "Melbourne"
+                        postalZone: "3000"
+                        country: "AU"
+                  orderLines:
+                    - lineItem:
+                        id: "1"
+                        quantity: 2
+                        lineExtensionAmount: 100.00
+                        item:
+                          name: "Widget"
+                        price:
+                          priceAmount: 50.00
+                          currencyID: "AUD"
       responses:
         '200':
-          description: OK - created order object with system-generated fields
+          description: |
+            OK - returns the created order object for standard orders, or a recurring order summary for recurring orders.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Order'
+                oneOf:
+                  - $ref: '#/components/schemas/Order'
+                  - $ref: '#/components/schemas/RecurringOrderCreateResponse'
         '400':
           description: Bad Request - missing or invalid fields with per-field error details
           content:
@@ -1598,6 +1644,55 @@ components:
     OrderCreateRequest:
       allOf:
         - $ref: '#/components/schemas/OrderBase'
+
+    RecurringOrderCreateRequest:
+      allOf:
+        - $ref: '#/components/schemas/OrderBase'
+        - type: object
+          description: |
+            Request body for creating a recurring order. Includes all standard order fields
+            plus recurring-specific fields (recurring, frequency, startDate). The order fields
+            serve as the template for each generated instance. 5 instances are pre-generated
+            upon creation and automatically replenished as they are executed.
+          required:
+            - recurring
+            - frequency
+            - startDate
+          properties:
+            recurring:
+              type: boolean
+              enum: [true]
+              description: Must be set to `true` to create a recurring order.
+            frequency:
+              type: string
+              enum: [Daily, Weekly, Monthly]
+              description: How often the order should recur.
+            startDate:
+              type: string
+              format: date-time
+              description: The date the first instance is scheduled for (e.g. "2026-03-20" or "2026-03-20T09:00:00Z").
+
+    RecurringOrderCreateResponse:
+      type: object
+      description: Summary returned after successfully creating a recurring order.
+      required:
+        - id
+        - frequency
+        - startDate
+        - createdAt
+      properties:
+        id:
+          type: string
+          description: The unique ID of the recurring order.
+        frequency:
+          type: string
+          enum: [Daily, Weekly, Monthly]
+        startDate:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
 
     OrderUpdateRequest:
       type: object
