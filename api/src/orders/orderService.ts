@@ -7,14 +7,21 @@ import { ErrorObject, editOrderFmt, Order, OrderResponse, OrderFilter, OrderList
 import { json2csv } from 'json-2-csv';
 
 // Return the order based on ID and userId
-export async function getOrder(userId: string, id: string): Promise<Order> {
-  const foundOrder = await OrderModel.findOne({ id, userId });
-  return foundOrder as Order;
+export async function getOrder(userId: string, id: string): Promise<Order | ErrorObject> {
+  const userOrder = await OrderModel.findOne({ id, userId });
+  const order = await OrderModel.findOne({ id });
+  if (!userOrder && order) {
+    return { error: 'FORBIDDEN', message: 'User is forbidden from accessing this order' };
+  } else if (!userOrder && !order) {
+    return { error: 'INVALID_ORDER_ID', message: `User does not own an order with ID ${id}` };
+  }
+
+  return userOrder as Order;
 }
 
 export async function getOrderFromIds(userId: string, id: string): Promise<Order | ErrorObject> {
   const order = await getOrder(userId, id);
-  if (!order) return { error: 'INVALID_ORDER_ID', message: `User does not own an order with ID ${id}` };
+  if ('error' in order) return order;
   return order;
 }
 
