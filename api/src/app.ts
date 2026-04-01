@@ -9,7 +9,7 @@ import { parsePagedQuery } from './utils/orderHelpers';
 import { getOrderXmlResponse } from './utils/getOrderXml';
 import { editOrderFmt } from './types';
 import { handleError } from './utils/httpErrors';
-import { deleteOrder, createOrder, updateOrder, listOrders, getOrderFromIds, getOrderCSV } from './orders/orderService';
+import { deleteOrder, createOrder, updateOrder, listOrders, getOrder, getOrderCSV } from './orders/orderService';
 import { editRecurringOrder, createRecurringOrder, deleteRecurringOrder, deleteRecurringOrderInstance, editInstance, getRecurringOrder, getRecurringOrderInstance, processAllRecurringOrders } from './orders/recurringOrderService';
 import { getApiKeyFromAuthorizationHeader, getUserIdFromApiKey } from './utils/serverHelpers';
 
@@ -138,7 +138,7 @@ app.get('/orders/:id', async (req, res) => {
     const userId = result.userId;
     const id = req.params.id as string;
 
-    const orderRes = await getOrderFromIds(userId, id);
+    const orderRes = await getOrder(userId, id);
     if ('error' in orderRes) return handleError(res, orderRes);
 
     res.status(200).json(orderRes);

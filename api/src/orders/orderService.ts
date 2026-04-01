@@ -8,21 +8,14 @@ import { json2csv } from 'json-2-csv';
 
 // Return the order based on ID and userId
 export async function getOrder(userId: string, id: string): Promise<Order | ErrorObject> {
-  const userOrder = await OrderModel.findOne({ id, userId });
   const order = await OrderModel.findOne({ id });
-  if (!userOrder && order) {
+  if (order && order.userId !== userId) {
     return { error: 'FORBIDDEN', message: 'User is forbidden from accessing this order' };
-  } else if (!userOrder && !order) {
+  } else if (!order) {
     return { error: 'INVALID_ORDER_ID', message: `User does not own an order with ID ${id}` };
   }
 
-  return userOrder as Order;
-}
-
-export async function getOrderFromIds(userId: string, id: string): Promise<Order | ErrorObject> {
-  const order = await getOrder(userId, id);
-  if ('error' in order) return order;
-  return order;
+  return order as Order;
 }
 
 // Return a list of orders found
@@ -50,7 +43,7 @@ export async function getOrderCSV(filter: OrderFilter | undefined,
 
 // Delete the order based on the id given
 export async function deleteOrder(userId: string, id: string): Promise<{ message: string } | ErrorObject> {
-  const getRes = await getOrderFromIds(userId, id);
+  const getRes = await getOrder(userId, id);
   if ('error' in getRes) return getRes;
 
   await OrderXml.deleteOne({ orderId: id });
