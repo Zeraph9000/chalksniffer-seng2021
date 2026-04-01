@@ -51,7 +51,7 @@ describe('/orders/:id (DELETE)', () => {
       expect(res.body).toStrictEqual({ error: expect.any(String), message: expect.any(String) });
     });
 
-    test('should return 400 when the order exists but belongs to another user', async () => {
+    test('should return 403 when the order exists but belongs to another user', async () => {
       await createUserMap(OTHER_API_KEY, OTHER_USER_ID);
       const otherOrderId = await createOrder(OTHER_API_KEY);
 
@@ -59,7 +59,7 @@ describe('/orders/:id (DELETE)', () => {
         .delete(`/orders/${otherOrderId}`)
         .set('Authorization', VALID_API_KEY);
 
-      expect(res.status).toStrictEqual(400);
+      expect(res.status).toStrictEqual(403);
       expect(res.body).toStrictEqual({ error: expect.any(String), message: expect.any(String) });
     });
   });

@@ -31,6 +31,19 @@ describe('/orders/:id (GET)', () => {
       expect(res.status).toStrictEqual(401);
     });
 
+    test('responds 403 when another user tries to access an order they do not own', async () => {
+      const orderId = await createOrder(VALID_API_KEY);
+
+      await createUserMap(OTHER_API_KEY, OTHER_USER_ID);
+      await createOrder(OTHER_API_KEY);
+
+      const res = await request(app)
+        .get(`/orders/${orderId}`)
+        .set('Authorization', OTHER_API_KEY);
+
+      expect(res.status).toStrictEqual(403);
+    });
+
     test('responds 400 when an invalid orderId was provided', async () => {
       const orderId = await createOrder(VALID_API_KEY);
       await createOrder(VALID_API_KEY);
