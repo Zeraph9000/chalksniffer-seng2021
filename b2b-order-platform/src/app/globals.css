@@ -57,22 +57,22 @@
     @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
   }
   .status-draft {
-    @apply status-badge bg-gray-50 text-gray-600 border border-gray-200;
+    @apply status-badge bg-semantic-neutral-muted text-semantic-neutral border border-slate-300;
   }
   .status-sent {
-    @apply status-badge bg-blue-50/60 text-blue-700 border border-blue-200;
+    @apply status-badge bg-semantic-info-muted text-semantic-info border border-blue-300;
   }
   .status-paid {
-    @apply status-badge bg-emerald-50/60 text-emerald-700 border border-emerald-200;
+    @apply status-badge bg-semantic-success-muted text-semantic-success border border-emerald-300;
   }
   .status-despatched {
-    @apply status-badge bg-blue-50/60 text-blue-700 border border-blue-200;
+    @apply status-badge bg-semantic-info-muted text-semantic-info border border-blue-300;
   }
   .status-received {
-    @apply status-badge bg-emerald-50/60 text-emerald-700 border border-emerald-200;
+    @apply status-badge bg-semantic-success-muted text-semantic-success border border-emerald-300;
   }
   .status-cancelled {
-    @apply status-badge bg-red-50/60 text-red-700 border border-red-200;
+    @apply status-badge bg-semantic-danger-muted text-semantic-danger border border-red-300;
   }
 
   .btn-warning {

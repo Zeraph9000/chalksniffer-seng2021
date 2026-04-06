@@ -29,7 +29,7 @@ export function OrderDetailCard({ order }: { order: Order }) {
             <p
               className={`mt-1.5 text-sm ${
                 field.highlight
-                  ? "font-semibold text-emerald-600"
+                  ? "font-semibold font-mono text-ink"
                   : field.mono
                   ? "font-mono text-ink"
                   : "text-ink"

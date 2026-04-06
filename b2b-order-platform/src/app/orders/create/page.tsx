@@ -405,7 +405,7 @@ export default function CreateOrderPage() {
           <div className="mt-3 flex items-center justify-between">
             <button type="button" onClick={addLineItem} className="text-sm font-medium text-accent-buyer hover:opacity-80">+ Add Line Item</button>
             <p className="text-sm font-semibold text-ink">
-              Order Total: <span className="font-mono text-emerald-600">{orderTotal.toFixed(2)} {currencyCode}</span>
+              Order Total: <span className="font-mono text-ink">{orderTotal.toFixed(2)} {currencyCode}</span>
             </p>
           </div>
         </fieldset>

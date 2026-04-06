@@ -18,12 +18,12 @@ type Stats = {
 type OrderWithMapping = OrderPaginated & { mapping?: OrderMapping };
 
 const PIPELINE_SECTIONS = [
-  { key: "actionRequired", label: "Action Required", stripe: "bg-amber-600" },
-  { key: "awaitingReview", label: "Awaiting Review", stripe: "bg-slate-500" },
-  { key: "despatched", label: "Despatched", stripe: "bg-blue-600" },
-  { key: "received", label: "Received", stripe: "bg-emerald-600" },
+  { key: "actionRequired", label: "Action Required", stripe: "bg-semantic-warning" },
+  { key: "awaitingReview", label: "Awaiting Review", stripe: "bg-semantic-neutral" },
+  { key: "despatched", label: "Despatched", stripe: "bg-semantic-info" },
+  { key: "received", label: "Received", stripe: "bg-semantic-success" },
   { key: "invoiced", label: "Awaiting Payment", stripe: "bg-purple-600" },
-  { key: "paid", label: "Paid", stripe: "bg-emerald-600" },
+  { key: "paid", label: "Paid", stripe: "bg-semantic-success" },
 ];
 
 function getStatusLabel(mapping: OrderMapping | undefined, role: string): string {
@@ -113,7 +113,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <div>
+      <div className="rounded-lg border border-surface-border bg-gradient-to-r from-accent-buyer/5 to-transparent p-6">
         <h1 className="text-2xl font-bold text-ink">
           {userName ? `Welcome, ${userName}` : isBuyer ? "Contractor Dashboard" : "Supplier Dashboard"}
         </h1>

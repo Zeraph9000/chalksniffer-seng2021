@@ -61,7 +61,7 @@ export default function InvoicesPage() {
                   </p>
                 </div>
               </div>
-              <p className="text-sm font-semibold font-mono text-ink">{inv.payable_amount} {inv.currency}</p>
+              <p className={`text-sm font-semibold font-mono ${inv.status === "paid" ? "text-semantic-success" : "text-ink"}`}>{inv.payable_amount} {inv.currency}</p>
             </div>
           ))}
         </div>

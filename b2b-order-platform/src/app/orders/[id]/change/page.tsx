@@ -52,7 +52,7 @@ export default function OrderChangePage() {
           <label className="input-label">Changes Requested</label>
           <textarea required rows={4} value={changesMade} onChange={(e) => setChangesMade(e.target.value)} placeholder="Describe the changes you need..." className="input mt-1" />
         </div>
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        {error && <p className="text-sm text-semantic-danger">{error}</p>}
         <div className="flex gap-3">
           <button type="button" onClick={() => router.back()} className="btn-ghost flex-1">Cancel</button>
           <button type="submit" disabled={loading} className="btn-primary flex-1 disabled:opacity-50">{loading ? "Submitting..." : "Submit Change"}</button>

@@ -21,16 +21,16 @@ export function Toast() {
 
   return (
     <div
-      className="fixed top-4 right-4 z-50 animate-slide-down rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
+      className="fixed top-4 right-4 z-50 animate-slide-down rounded-lg border border-red-200 bg-semantic-danger-muted px-4 py-3 text-sm font-medium text-semantic-danger"
       role="alert"
       aria-live="assertive"
     >
       <div className="flex items-center gap-2">
-        <AlertCircle size={16} className="shrink-0 text-red-500" />
+        <AlertCircle size={16} className="shrink-0 text-semantic-danger" />
         <span>You don&apos;t have permission to access that page.</span>
         <button
           onClick={() => setVisible(false)}
-          className="ml-2 shrink-0 text-red-400 hover:text-red-600"
+          className="ml-2 shrink-0 text-semantic-danger/60 hover:text-semantic-danger"
           aria-label="Dismiss notification"
         >
           <X size={14} />

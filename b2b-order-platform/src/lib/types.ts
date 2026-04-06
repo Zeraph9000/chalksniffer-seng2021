@@ -43,6 +43,9 @@ export type OrderMapping = {
   despatchDocumentId?: string;
   receiptAdviceId?: string;
   invoiceId?: string;
+  payableAmount?: number;
+  documentCurrencyCode?: string;
+  issueDate?: string;
   createdAt: Date;
 };
 

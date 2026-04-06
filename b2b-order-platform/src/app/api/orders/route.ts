@@ -32,9 +32,16 @@ export async function POST(request: NextRequest) {
   const res = await chalksniffer().post("/orders", orderBody);
   const data = await res.json();
   if (res.ok && data.id) {
+    const payableAmount = data.anticipatedMonetaryTotal?.payableAmount
+      ?? data.orderLines?.reduce((sum: number, line: { lineItem: { price: { priceAmount: number }; quantity: number } }) =>
+        sum + line.lineItem.price.priceAmount * line.lineItem.quantity, 0)
+      ?? 0;
     await setMapping(data.id, {
       orderId: data.id, buyerEmail: session.email, sellerEmail,
       buyerStatus: "under_review", sellerStatus: "needs_review",
+      payableAmount,
+      documentCurrencyCode: data.documentCurrencyCode || "AUD",
+      issueDate: data.issueDate,
     });
   }
   return NextResponse.json(data, { status: res.status });

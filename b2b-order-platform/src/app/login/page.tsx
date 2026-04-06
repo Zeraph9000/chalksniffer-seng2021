@@ -269,7 +269,7 @@ export default function LoginPage() {
             )}
 
             {error && (
-              <p className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-600">
+              <p className="rounded-lg bg-semantic-danger-muted border border-red-200 px-3 py-2 text-sm text-semantic-danger">
                 {error}
               </p>
             )}
