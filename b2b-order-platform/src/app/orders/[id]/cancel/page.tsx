@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { ErrorBanner } from "@/components/error-banner";
 
 export default function OrderCancelPage() {
   const { id } = useParams<{ id: string }>();
@@ -50,7 +51,7 @@ export default function OrderCancelPage() {
           <label className="input-label">Reason for Cancellation</label>
           <textarea required rows={4} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Why are you cancelling this order?" className="input mt-1" />
         </div>
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        <ErrorBanner message={error} onDismiss={() => setError("")} />
         <div className="flex gap-3">
           <button type="button" onClick={() => router.back()} className="btn-ghost flex-1">Go Back</button>
           <button type="submit" disabled={loading} className="btn-danger flex-1 disabled:opacity-50">{loading ? "Cancelling..." : "Cancel Order"}</button>

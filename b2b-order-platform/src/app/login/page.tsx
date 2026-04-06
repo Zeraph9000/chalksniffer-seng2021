@@ -1,16 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { UserRole } from "@/lib/types";
 
 export default function LoginPage() {
-  const router = useRouter();
-  const [mode, setMode] = useState<"login" | "register">("register");
+  const [mode, setMode] = useState<"login" | "register">("login");
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<UserRole>("buyer");
+  const [companyName, setCompanyName] = useState("");
+  const [abn, setAbn] = useState("");
+  const [streetName, setStreetName] = useState("");
+  const [cityName, setCityName] = useState("");
+  const [postalZone, setPostalZone] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -24,7 +28,21 @@ export default function LoginPage() {
 
     const payload =
       mode === "register"
-        ? { name, email, password, role }
+        ? {
+            name,
+            email,
+            password,
+            role,
+            companyName,
+            abn,
+            phone,
+            address: {
+              streetName,
+              cityName,
+              postalZone,
+              country: "AU",
+            },
+          }
         : { email, password };
 
     try {
@@ -40,8 +58,7 @@ export default function LoginPage() {
         return;
       }
 
-      router.push("/dashboard");
-      router.refresh();
+      window.location.href = "/dashboard";
     } catch {
       setError("Network error");
     } finally {
@@ -51,7 +68,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-surface px-4">
-      <div className="w-full max-w-sm">
+      <div className="w-full max-w-md">
         {/* Header */}
         <div className="mb-8 flex flex-col items-center text-center">
           <svg className="mb-3 h-12 w-12" viewBox="0 0 40 40" fill="none">
@@ -70,7 +87,7 @@ export default function LoginPage() {
           </p>
           <p className="mt-2 text-sm text-ink-muted">
             {mode === "register"
-              ? "Set up your account to manage orders"
+              ? "Set up your business account to manage orders"
               : "Welcome back"}
           </p>
         </div>
@@ -78,7 +95,7 @@ export default function LoginPage() {
         <div className="card p-6">
           {/* Mode toggle */}
           <div className="mb-6 flex rounded-lg bg-surface p-1">
-            {(["register", "login"] as const).map((m) => (
+            {(["login", "register"] as const).map((m) => (
               <button
                 key={m}
                 type="button"
@@ -97,17 +114,31 @@ export default function LoginPage() {
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === "register" && (
-              <div>
-                <label className="input-label">Full Name</label>
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="input"
-                  autoComplete="name"
-                />
-              </div>
+              <>
+                <div>
+                  <label className="input-label">Full Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="input"
+                    autoComplete="name"
+                  />
+                </div>
+
+                <div>
+                  <label className="input-label">Phone</label>
+                  <input
+                    type="tel"
+                    required
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="input"
+                    autoComplete="tel"
+                  />
+                </div>
+              </>
             )}
 
             <div>
@@ -137,33 +168,104 @@ export default function LoginPage() {
             </div>
 
             {mode === "register" && (
-              <div>
-                <label className="input-label mb-2 block">Role</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setRole("buyer")}
-                    className={`rounded-lg border px-3 py-2.5 text-sm font-medium transition-all ${
-                      role === "buyer"
-                        ? "border-accent-primary bg-accent-primary-muted text-accent-primary"
-                        : "border-surface-border text-ink-muted hover:text-ink"
-                    }`}
-                  >
-                    Contractor
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setRole("seller")}
-                    className={`rounded-lg border px-3 py-2.5 text-sm font-medium transition-all ${
-                      role === "seller"
-                        ? "border-accent-primary bg-accent-primary-muted text-accent-primary"
-                        : "border-surface-border text-ink-muted hover:text-ink"
-                    }`}
-                  >
-                    Supplier
-                  </button>
+              <>
+                <div>
+                  <label className="input-label mb-2 block">Role</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setRole("buyer")}
+                      className={`rounded-lg border px-3 py-2.5 text-sm font-medium transition-all ${
+                        role === "buyer"
+                          ? "border-accent-primary bg-accent-primary-muted text-accent-primary"
+                          : "border-surface-border text-ink-muted hover:text-ink"
+                      }`}
+                    >
+                      Contractor
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRole("seller")}
+                      className={`rounded-lg border px-3 py-2.5 text-sm font-medium transition-all ${
+                        role === "seller"
+                          ? "border-accent-primary bg-accent-primary-muted text-accent-primary"
+                          : "border-surface-border text-ink-muted hover:text-ink"
+                      }`}
+                    >
+                      Supplier
+                    </button>
+                  </div>
                 </div>
-              </div>
+
+                <fieldset className="rounded-lg border border-surface-border p-4">
+                  <legend className="text-sm font-medium text-ink px-1">Business Details</legend>
+                  <div className="mt-2 space-y-3">
+                    <div>
+                      <label className="input-label">Company Name</label>
+                      <input
+                        type="text"
+                        required
+                        value={companyName}
+                        onChange={(e) => setCompanyName(e.target.value)}
+                        className="input mt-1"
+                        autoComplete="organization"
+                      />
+                    </div>
+                    <div>
+                      <label className="input-label">ABN</label>
+                      <input
+                        type="text"
+                        required
+                        value={abn}
+                        onChange={(e) => setAbn(e.target.value)}
+                        className="input mt-1"
+                        placeholder="11 digit ABN"
+                      />
+                    </div>
+                  </div>
+                </fieldset>
+
+                <fieldset className="rounded-lg border border-surface-border p-4">
+                  <legend className="text-sm font-medium text-ink px-1">Business Address</legend>
+                  <div className="mt-2 space-y-3">
+                    <div>
+                      <label className="input-label">Street Address</label>
+                      <input
+                        type="text"
+                        required
+                        value={streetName}
+                        onChange={(e) => setStreetName(e.target.value)}
+                        className="input mt-1"
+                        autoComplete="street-address"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="input-label">City</label>
+                        <input
+                          type="text"
+                          required
+                          value={cityName}
+                          onChange={(e) => setCityName(e.target.value)}
+                          className="input mt-1"
+                          autoComplete="address-level2"
+                        />
+                      </div>
+                      <div>
+                        <label className="input-label">Postal Code</label>
+                        <input
+                          type="text"
+                          required
+                          value={postalZone}
+                          onChange={(e) => setPostalZone(e.target.value)}
+                          className="input mt-1"
+                          autoComplete="postal-code"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </fieldset>
+              </>
             )}
 
             {error && (

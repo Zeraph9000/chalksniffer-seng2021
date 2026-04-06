@@ -23,13 +23,17 @@ export async function setMapping(
     buyerEmail: update.buyerEmail ?? existing?.buyerEmail ?? "",
     sellerEmail: update.sellerEmail ?? existing?.sellerEmail ?? "",
     status: "placed",
+    buyerStatus: update.buyerStatus ?? existing?.buyerStatus ?? "under_review",
+    sellerStatus: update.sellerStatus ?? existing?.sellerStatus ?? "needs_review",
     createdAt: existing?.createdAt ?? new Date(),
     ...existing,
     ...update,
-  };
+  } as OrderMapping;
 
-  // Derive status from linked documents
-  if (mapping.invoiceId) {
+  // Derive status from linked documents (don't override "paid")
+  if (update.status === "paid" || existing?.status === "paid") {
+    mapping.status = "paid";
+  } else if (mapping.invoiceId) {
     mapping.status = "invoiced";
   } else if (mapping.receiptAdviceId) {
     mapping.status = "received";
@@ -94,4 +98,18 @@ export async function assertOrderAccess(
   if (role === "seller" && mapping.sellerEmail !== email) {
     throw new Error("Access denied");
   }
+}
+
+export async function getMappingByInvoice(invoiceId: string): Promise<OrderMapping | null> {
+  const client = await clientPromise;
+  const db = client.db();
+  return db.collection<OrderMapping>(COLLECTION).findOne({ invoiceId });
+}
+
+export async function buyerEdited(orderId: string): Promise<void> {
+  await setMapping(orderId, { buyerStatus: "under_review", sellerStatus: "needs_review", sellerNote: undefined });
+}
+
+export async function requestChange(orderId: string, note: string): Promise<OrderMapping> {
+  return setMapping(orderId, { buyerStatus: "needs_review", sellerStatus: "under_review", sellerNote: note });
 }

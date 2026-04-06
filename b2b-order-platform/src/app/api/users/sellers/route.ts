@@ -10,7 +10,7 @@ export async function GET() {
   const db = client.db();
   const sellers = await db
     .collection("users")
-    .find({ role: "seller" }, { projection: { name: 1, email: 1, _id: 0 } })
+    .find({ role: "seller" }, { projection: { name: 1, email: 1, companyName: 1, abn: 1, phone: 1, address: 1, _id: 0 } })
     .toArray();
 
   return NextResponse.json(sellers);

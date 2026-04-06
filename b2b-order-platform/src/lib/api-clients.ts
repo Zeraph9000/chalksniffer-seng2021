@@ -1,5 +1,3 @@
-import { SessionData } from "./types";
-
 const CHALKSNIFFER_URL = process.env.CHALKSNIFFER_API_URL!;
 const DESPATCH_URL = process.env.DESPATCH_API_URL!;
 const LASTMINUTEPUSH_URL = process.env.LASTMINUTEPUSH_API_URL!;
@@ -41,21 +39,48 @@ export function chalksniffer() {
   };
 }
 
-export function despatch(session: SessionData) {
-  const authHeaders = { sessionId: session.despatch.sessionId };
+async function getDespatchSessionId(): Promise<string> {
+  const res = await fetch(`${DESPATCH_URL}/sessions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      username: process.env.DESPATCH_USERNAME!,
+      email: process.env.DESPATCH_EMAIL || process.env.DESPATCH_USERNAME!,
+      password: process.env.DESPATCH_PASSWORD!,
+    }),
+  });
+  if (!res.ok) throw new Error("Failed to create Despatch session");
+  const data = await res.json();
+  return data.sessionId;
+}
+
+export function despatch() {
+  const getHeaders = async () => {
+    const sessionId = await getDespatchSessionId();
+    return { sessionId };
+  };
   return {
-    get: (path: string) => apiFetch(DESPATCH_URL, path, authHeaders),
-    post: (path: string, body: unknown) =>
-      apiFetch(DESPATCH_URL, path, authHeaders, { method: "POST", body }),
-    put: (path: string, body: unknown) =>
-      apiFetch(DESPATCH_URL, path, authHeaders, { method: "PUT", body }),
-    delete: (path: string) =>
-      apiFetch(DESPATCH_URL, path, authHeaders, { method: "DELETE" }),
+    get: async (path: string) => {
+      const authHeaders = await getHeaders();
+      return apiFetch(DESPATCH_URL, path, authHeaders);
+    },
+    post: async (path: string, body: unknown) => {
+      const authHeaders = await getHeaders();
+      return apiFetch(DESPATCH_URL, path, authHeaders, { method: "POST", body });
+    },
+    put: async (path: string, body: unknown) => {
+      const authHeaders = await getHeaders();
+      return apiFetch(DESPATCH_URL, path, authHeaders, { method: "PUT", body });
+    },
+    delete: async (path: string) => {
+      const authHeaders = await getHeaders();
+      return apiFetch(DESPATCH_URL, path, authHeaders, { method: "DELETE" });
+    },
   };
 }
 
-export function lastminutepush(session: SessionData) {
-  const authHeaders = { "X-API-Key": session.lastminutepush.apiKey };
+export function lastminutepush() {
+  const authHeaders = { "X-API-Key": process.env.LASTMINUTEPUSH_API_KEY! };
   return {
     get: (path: string, headers?: Record<string, string>) =>
       apiFetch(LASTMINUTEPUSH_URL, path, authHeaders, { headers }),

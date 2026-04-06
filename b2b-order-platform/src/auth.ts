@@ -28,34 +28,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const valid = await bcrypt.compare(password, user.password);
         if (!valid) return null;
 
-        // Create a fresh Despatch session using stored credentials
-        const despatchRes = await fetch(
-          `${process.env.DESPATCH_API_URL}/sessions`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              username: user.despatch.email,
-              password: user.despatch.password,
-            }),
-          }
-        );
-
-        let despatchSessionId = "";
-        let despatchClientId = "";
-        if (despatchRes.ok) {
-          const despatchSession = await despatchRes.json();
-          despatchSessionId = despatchSession.sessionId;
-          despatchClientId = despatchSession.clientId;
-        }
-
         return {
           id: user._id!.toString(),
           name: user.name,
           email: user.email,
           role: user.role,
-          despatchSessionId,
-          despatchClientId,
         };
       },
     }),

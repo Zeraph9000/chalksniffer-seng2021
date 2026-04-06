@@ -10,7 +10,7 @@ export async function GET(
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { documentId } = await params;
-  const res = await despatch(session).get(`/despatch-advices/${documentId}`);
+  const res = await despatch().get(`/despatch-advices/${documentId}`);
   const data = await res.json();
   return NextResponse.json(data, { status: res.status });
 }
@@ -24,7 +24,7 @@ export async function PUT(
 
   const { documentId } = await params;
   const body = await request.json();
-  const res = await despatch(session).put(`/despatch-advices/${documentId}`, body);
+  const res = await despatch().put(`/despatch-advices/${documentId}`, body);
   const data = await res.json();
   return NextResponse.json(data, { status: res.status });
 }
@@ -37,7 +37,7 @@ export async function DELETE(
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { documentId } = await params;
-  const res = await despatch(session).delete(`/despatch-advices/${documentId}`);
+  const res = await despatch().delete(`/despatch-advices/${documentId}`);
   if (res.status === 204) return new NextResponse(null, { status: 204 });
   const data = await res.json();
   return NextResponse.json(data, { status: res.status });

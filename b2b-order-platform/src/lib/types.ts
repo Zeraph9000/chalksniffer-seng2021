@@ -8,8 +8,13 @@ export type SessionData = {
   role: UserRole;
   name: string;
   email: string;
-  despatch: { sessionId: string; clientId: string };
-  lastminutepush: { apiKey: string };
+};
+
+export type UserAddress = {
+  streetName: string;
+  cityName: string;
+  postalZone: string;
+  country: string;
 };
 
 export type User = {
@@ -18,16 +23,23 @@ export type User = {
   email: string;
   password: string;
   role: UserRole;
-  despatch: { email: string; password: string };
-  lastminutepush: { apiKey: string };
+  companyName: string;
+  abn: string;
+  phone: string;
+  address: UserAddress;
   createdAt: Date;
 };
+
+export type PreDespatchStatus = "needs_review" | "under_review";
 
 export type OrderMapping = {
   orderId: string;
   buyerEmail: string;
   sellerEmail: string;
-  status: "placed" | "despatched" | "received" | "invoiced";
+  status: "placed" | "despatched" | "received" | "invoiced" | "paid";
+  buyerStatus: PreDespatchStatus;
+  sellerStatus: PreDespatchStatus;
+  sellerNote?: string;
   despatchDocumentId?: string;
   receiptAdviceId?: string;
   invoiceId?: string;

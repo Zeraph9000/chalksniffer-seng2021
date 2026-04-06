@@ -12,7 +12,7 @@ export async function POST(
 
   const { documentId } = await params;
   const body = await request.json();
-  const res = await despatch(session).post(
+  const res = await despatch().post(
     `/despatch-advices/${documentId}/receipt-advices`,
     body
   );

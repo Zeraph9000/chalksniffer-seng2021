@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500&display=swap");
+
+@layer base {
+  * {
+    border-color: theme("colors.surface.border");
+  }
+
+  ::selection {
+    background: theme("colors.accent.buyer");
+    color: white;
+  }
+}
+
+@layer components {
+  .input {
+    @apply w-full rounded-lg border border-surface-border bg-white px-3 py-2.5 text-sm text-ink
+      placeholder:text-ink-faint
+      focus:border-accent-buyer focus:outline-none focus:ring-2 focus:ring-accent-buyer/20
+      transition-colors duration-150;
+  }
+
+  .input-label {
+    @apply block text-xs font-medium text-ink-muted mb-1.5;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium
+      transition-all duration-150 active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none;
+  }
+
+  .btn-primary {
+    @apply btn bg-accent-buyer text-white hover:bg-accent-buyer/90 shadow-sm;
+  }
+
+  .btn-seller {
+    @apply btn bg-accent-primary text-white hover:bg-accent-primary/90 shadow-sm;
+  }
+
+  .btn-danger {
+    @apply btn bg-[#dc2640] text-white hover:bg-[#c41f36] shadow-sm;
+  }
+
+  .btn-ghost {
+    @apply btn border border-surface-border text-ink-muted hover:text-ink hover:bg-surface-hover;
+  }
+
+  .card {
+    @apply rounded-xl border border-surface-border bg-white shadow-sm;
+  }
+
+  /* Status badges */
+  .status-badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+  .status-draft {
+    @apply status-badge bg-gray-100 text-gray-600;
+  }
+  .status-sent {
+    @apply status-badge bg-blue-50 text-blue-600;
+  }
+  .status-paid {
+    @apply status-badge bg-emerald-50 text-emerald-600;
+  }
+  .status-despatched {
+    @apply status-badge bg-blue-50 text-blue-600;
+  }
+  .status-received {
+    @apply status-badge bg-emerald-50 text-emerald-600;
+  }
+  .status-cancelled {
+    @apply status-badge bg-red-50 text-red-600;
+  }
+
+  .btn-warning {
+    @apply btn bg-amber-600 text-white hover:bg-amber-700 shadow-sm;
+  }
+
+  .btn-success {
+    @apply btn bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm;
+  }
+
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-accent-primary/40 focus:ring-offset-1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

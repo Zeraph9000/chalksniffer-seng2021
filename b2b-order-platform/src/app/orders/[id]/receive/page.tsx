@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Order, OrderMapping } from "@/lib/types";
+import { LoadingSpinner } from "@/components/loading-spinner";
+import { ErrorBanner } from "@/components/error-banner";
 
 type ReceiptLineForm = {
   id: string;
@@ -141,13 +143,27 @@ export default function ReceiveOrderPage() {
     }
   }
 
-  if (loading) return <div className="py-12 text-center text-sm text-ink-muted">Loading...</div>;
+  if (loading) return <LoadingSpinner message="Loading order..." />;
   if (!order) return <div className="py-12 text-center text-sm text-ink-muted">Order not found</div>;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <h1 className="text-2xl font-bold text-ink">Confirm Receipt</h1>
       <p className="text-sm text-ink-muted">Order: <span className="font-mono">{id}</span></p>
+
+      {order.delivery?.deliveryAddress && (
+        <div className="card p-4">
+          <p className="text-xs font-medium text-ink-faint">Delivery Address</p>
+          <p className="mt-1 text-sm text-ink">
+            {order.delivery.deliveryAddress.streetName}, {order.delivery.deliveryAddress.cityName} {order.delivery.deliveryAddress.postalZone}
+          </p>
+          {order.delivery.requestedDeliveryPeriod?.startDate && (
+            <p className="mt-1 text-xs text-ink-muted">
+              Requested delivery: {order.delivery.requestedDeliveryPeriod.startDate}
+            </p>
+          )}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="card">
@@ -182,7 +198,7 @@ export default function ReceiveOrderPage() {
           <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} className="input mt-1" />
         </div>
 
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        <ErrorBanner message={error} onDismiss={() => setError("")} />
 
         <div className="flex gap-3">
           <button type="button" onClick={() => router.back()} className="btn-ghost flex-1">Cancel</button>
