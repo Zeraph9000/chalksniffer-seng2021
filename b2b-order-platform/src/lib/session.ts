@@ -10,7 +10,6 @@ export async function getSessionOrNull(): Promise<SessionData | null> {
     user: { email: string; name: string };
     despatchSessionId?: string;
     despatchClientId?: string;
-    role?: string;
   };
 
   const client = await clientPromise;
@@ -24,7 +23,7 @@ export async function getSessionOrNull(): Promise<SessionData | null> {
   return {
     role: user.role,
     name: user.name,
-    chalksniffer: user.chalksniffer,
+    email: user.email,
     despatch: {
       sessionId: token.despatchSessionId ?? "",
       clientId: token.despatchClientId ?? "",
