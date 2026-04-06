@@ -11,6 +11,13 @@ const config = {
     ...tsJestTransformCfg,
   },
   setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
+  collectCoverageFrom: [
+    'src/**/*.ts',
+    '!src/index.ts',
+    '!src/db.ts',
+    '!src/models/*.ts',
+    '!src/app.ts',
+  ],
 };
 
 export default config;
