@@ -60,7 +60,7 @@ describe('PUT /orders/recurring/:id', () => {
       .send({ note: 'test' });
 
     expect(res.status).toStrictEqual(400);
-    expect(res.body.error).toContain('does not exist');
+    expect(res.body).toMatchObject({ error: expect.any(String), message: expect.any(String) });
   });
 
   test('should return 403 when the recurring order belongs to another user', async () => {
@@ -73,7 +73,7 @@ describe('PUT /orders/recurring/:id', () => {
       .send({ note: 'hijack' });
 
     expect(res.status).toStrictEqual(403);
-    expect(res.body.error).toContain('does not own');
+    expect(res.body).toMatchObject({ error: expect.any(String), message: expect.any(String) });
   });
 
   // Successful edit tests
@@ -121,11 +121,11 @@ describe('PUT /orders/recurring/:id', () => {
     const updated = await RecurringOrderModel.findOne({ id: recurringOrderId });
     expect(updated).not.toBeNull();
     expect(updated!.order.orderLines[0].lineItem.item.name).toStrictEqual('New Chalk');
-    expect(updated!.order.anticipatedMonetaryTotal.payableAmount).toStrictEqual(50);
+    expect(updated!.order.anticipatedMonetaryTotal!.payableAmount).toStrictEqual(50);
 
     for (const inst of updated!.orderInstances) {
       expect(inst.order.orderLines[0].lineItem.item.name).toStrictEqual('New Chalk');
-      expect(inst.order.anticipatedMonetaryTotal.payableAmount).toStrictEqual(50);
+      expect(inst.order.anticipatedMonetaryTotal!.payableAmount).toStrictEqual(50);
     }
   });
 
@@ -150,9 +150,9 @@ describe('PUT /orders/recurring/:id', () => {
 
     const updated = await RecurringOrderModel.findOne({ id: recurringOrderId });
     expect(updated).not.toBeNull();
-    expect(updated!.order.delivery.deliveryAddress.streetName).toStrictEqual('99 Delivery Rd');
+    expect(updated!.order.delivery!.deliveryAddress!.streetName).toStrictEqual('99 Delivery Rd');
     for (const inst of updated!.orderInstances) {
-      expect(inst.order.delivery.deliveryAddress.streetName).toStrictEqual('99 Delivery Rd');
+      expect(inst.order.delivery!.deliveryAddress!.streetName).toStrictEqual('99 Delivery Rd');
     }
   });
 

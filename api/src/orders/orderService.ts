@@ -53,9 +53,9 @@ export async function deleteOrder(userId: string, id: string): Promise<{ message
 }
 
 // Update the order based on the id given
-export async function updateOrder(userId: string, id: string, body: editOrderFmt): Promise<object | ErrorObject | { errors: ValidationError[] | [{ field: string; message: string }] }> {
+export async function updateOrder(userId: string, id: string, body: editOrderFmt): Promise<object | ErrorObject | { errors: ValidationError[] }> {
   const order = await OrderModel.findOne({ id });
-  if (!order) return { errors: [{ field: 'id', message: `Order with ID ${id} does not exist` }] };
+  if (!order) return { error: 'INVALID_ORDER_ID', message: `Order with ID ${id} does not exist` };
   if (order.userId !== userId) return { error: 'FORBIDDEN', message: 'User does not own requested order' };
 
   const updatableFields = [

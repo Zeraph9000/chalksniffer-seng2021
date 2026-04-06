@@ -270,8 +270,8 @@ app.get('/order/recommend', async (req, res) => {
       }
     }
 
-    if (!mostFreqKey || mostFreqCount < 2) {
-      return res.status(400).json({ error: 'No frequent orders found' });
+    if (mostFreqKey == null || mostFreqCount < 2) {
+      return res.status(400).json({ error: 'INVALID_RECOMMENDATION', message: 'No frequent orders found' });
     }
 
     const mostFreqOrder = orders.find(o => {
