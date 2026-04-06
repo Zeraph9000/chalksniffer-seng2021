@@ -107,9 +107,9 @@ app.get('/orders/csv', async (req, res) => {
 app.post('/orders/recurring', async (_req: Request, res: Response) => {
   try {
     const result = await processAllRecurringOrders();
-    if (result) return res.status(400).json(result);
-    
-    res.status(200).json({});
+    if ('error' in result) return res.status(400).json(result);
+
+    res.status(200).json(result);
   } catch {
     res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'Failed to process recurring orders' });
   }
@@ -128,6 +128,47 @@ app.get('/orders/recurring/:id', async (req, res) => {
     res.status(200).json(orderRes);
   } catch {
     res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'Failed to get recurring order' });
+  }
+});
+
+app.get('/orders/recommend', async (req, res) => {
+  try {
+    const authResult = await getUserIdFromApiKey(req);
+    if ('error' in authResult) return handleError(res, authResult);
+
+    const orders = await OrderModel.find({ userId: authResult.userId }).lean();
+
+    const normalizedKeys = orders.map(o => {
+      const items = o.orderLines?.map(line => `${line.lineItem.item.name}:${line.lineItem.quantity}`).sort() || [];
+      return items.join('|');
+    });
+
+    const freq = new Map<string, number>();
+    for (const key of normalizedKeys) {
+      freq.set(key, (freq.get(key) ?? 0) + 1);
+    }
+
+    let mostFreqKey: string | null = null;
+    let mostFreqCount = 0;
+    for (const [k, count] of freq) {
+      if (count > mostFreqCount) {
+        mostFreqCount = count;
+        mostFreqKey = k;
+      }
+    }
+
+    if (mostFreqKey == null || mostFreqCount < 2) {
+      return res.status(400).json({ error: 'INVALID_RECOMMENDATION', message: 'No frequent orders found' });
+    }
+
+    const mostFreqOrder = orders.find(o => {
+      const items = o.orderLines?.map(line => `${line.lineItem.item.name}:${line.lineItem.quantity}`).sort() || [];
+      return items.join('|') === mostFreqKey;
+    });
+
+    return res.status(200).json(mostFreqOrder);
+  } catch {
+    res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'An unexpected error occurred' });
   }
 });
 
@@ -239,47 +280,6 @@ app.put('/orders/recurring/:id/instance/:position', async (req, res) => {
 
     const result = await editInstance(req.params.id, authResult.userId, Number(req.params.position), req.body);
     return res.status(result.status).json(result.body);
-  } catch {
-    res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'An unexpected error occurred' });
-  }
-});
-
-app.get('/order/recommend', async (req, res) => {
-  try {
-    const authResult = await getUserIdFromApiKey(req);
-    if ('error' in authResult) return handleError(res, authResult);
-
-    const orders = await OrderModel.find({ userId: authResult.userId }).lean();
-
-    const normalizedKeys = orders.map(o => {
-      const items = o.orderLines?.map(line => `${line.lineItem.item.name}:${line.lineItem.quantity}`).sort() || [];
-      return items.join('|');
-    });
-
-    const freq = new Map<string, number>();
-    for (const key of normalizedKeys) {
-      freq.set(key, (freq.get(key) ?? 0) + 1);
-    }
-
-    let mostFreqKey: string | null = null;
-    let mostFreqCount = 0;
-    for (const [k, count] of freq) {
-      if (count > mostFreqCount) {
-        mostFreqCount = count;
-        mostFreqKey = k;
-      }
-    }
-
-    if (!mostFreqKey || mostFreqCount < 2) {
-      return res.status(400).json({ error: 'No frequent orders found' });
-    }
-
-    const mostFreqOrder = orders.find(o => {
-      const items = o.orderLines?.map(line => `${line.lineItem.item.name}:${line.lineItem.quantity}`).sort() || [];
-      return items.join('|') === mostFreqKey;
-    });
-
-    return res.status(200).json(mostFreqOrder);
   } catch {
     res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'An unexpected error occurred' });
   }

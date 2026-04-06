@@ -247,9 +247,11 @@ paths:
         - in: query
           name: issueDate
           required: false
+          description: 'Filter by issue date. Must be in YYYY-MM-DD format (e.g. 2026-03-16).'
           schema:
             type: string
             format: date
+            example: '2026-03-16'
         - in: query
           name: buyerName
           required: false
@@ -275,9 +277,11 @@ paths:
         - in: query
           name: createdAt
           required: false
+          description: 'Filter by creation date. Must be in YYYY-MM-DD format (e.g. 2026-03-16).'
           schema:
             type: string
-            format: date-time
+            format: date
+            example: '2026-03-16'
         - in: query
           name: limit
           required: false
@@ -340,14 +344,35 @@ paths:
       tags:
         - order
       summary: Process recurring orders
-      description: Processes all due recurring orders by creating the next scheduled order instance for each. Intended to be called by a scheduled cron job.
+      description: |
+        Processes all due recurring orders by creating the next scheduled order instance for each.
+        An **order instance** is a concrete order generated from a recurring order template on its scheduled date.
+        Each recurring order holds up to 5 upcoming instances; when all are consumed, new ones are automatically generated.
+        This endpoint is intended to be called by a scheduled cron job (e.g. daily).
       responses:
         '200':
-          description: all due recurring orders processed
+          description: All due recurring orders processed successfully
           content:
             application/json:
               schema:
                 type: object
+                properties:
+                  processed:
+                    type: integer
+                    description: Number of recurring orders that had an instance processed
+                  orderIds:
+                    type: array
+                    description: IDs of the concrete orders that were created
+                    items:
+                      type: string
+                required:
+                  - processed
+                  - orderIds
+                example:
+                  processed: 2
+                  orderIds:
+                    - "abc-123"
+                    - "def-456"
         '400':
           description: a recurring order instance failed validation
           content:
@@ -387,9 +412,11 @@ paths:
         - in: query
           name: issueDate
           required: false
+          description: 'Filter by issue date. Must be in YYYY-MM-DD format (e.g. 2026-03-16).'
           schema:
             type: string
             format: date
+            example: '2026-03-16'
         - in: query
           name: buyerName
           required: false
@@ -415,9 +442,11 @@ paths:
         - in: query
           name: createdAt
           required: false
+          description: 'Filter by creation date. Must be in YYYY-MM-DD format (e.g. 2026-03-16).'
           schema:
             type: string
-            format: date-time
+            format: date
+            example: '2026-03-16'
         - in: query
           name: limit
           required: false
@@ -481,7 +510,15 @@ paths:
       tags:
         - order
       summary: Get recurring order by id
-      description: Returns a recurring order's metadata, template order, and instance summaries (id + scheduledDate only).
+      description: |
+        Returns a recurring order's metadata, template order, and its upcoming **order instances**.
+
+        An **order instance** is a scheduled occurrence of the recurring order — it holds a `scheduledDate` and
+        a copy of the order template. When an instance's scheduled date is due, `POST /orders/recurring` will
+        convert it into a real order. Up to 5 future instances are kept at a time and auto-replenished when consumed.
+
+        This endpoint returns a summary of each instance (id + scheduledDate only). To get full instance details,
+        use `GET /orders/recurring/{id}/instance/{position}`.
       security:
         - ApiKeyAuth: []
       parameters:
@@ -597,6 +634,42 @@ paths:
             application/json:
               schema:
                 type: object
+                properties:
+                  id:
+                    type: string
+                  userId:
+                    type: string
+                  frequency:
+                    type: string
+                    enum: [Daily, Weekly, Monthly]
+                  startDate:
+                    type: string
+                    format: date-time
+                  createdAt:
+                    type: string
+                    format: date-time
+                  order:
+                    $ref: '#/components/schemas/Order'
+                  orderInstances:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        scheduledDate:
+                          type: string
+                          format: date-time
+                      required:
+                        - id
+                        - scheduledDate
+                required:
+                  - id
+                  - userId
+                  - frequency
+                  - startDate
+                  - order
+                  - orderInstances
         '400':
           description: Bad Request - recurring order not found or validation failure
           content:
@@ -841,7 +914,11 @@ paths:
       tags:
         - order
       summary: Get a single recurring order instance
-      description: Returns a single instance from a recurring order by its 0-based array position.
+      description: |
+        Returns a single **order instance** from a recurring order by its 0-based position in the instances array.
+
+        An order instance is an upcoming scheduled occurrence of the recurring order. Position `0` is the next due instance,
+        position `1` is the one after that, and so on. Use `GET /orders/recurring/{id}` to see all instance IDs and their scheduled dates.
       security:
         - ApiKeyAuth: []
       parameters:
@@ -1127,7 +1204,7 @@ paths:
               example:
                 error: INTERNAL_SERVER_ERROR
                 message: Cant connect
-  /order/recommend:
+  /orders/recommend:
     get:
       tags:
         - order
@@ -1152,7 +1229,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
               example:
-                error: NO_FREQUENT_ORDERS
+                error: INVALID_RECOMMENDATION
                 message: No frequent orders found
         '401':
           description: Unauthorized - invalid or missing API key

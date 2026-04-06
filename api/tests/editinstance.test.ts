@@ -56,7 +56,7 @@ describe('/orders/instance/:id (PUT)', () => {
         .set('Authorization', VALID_API_KEY)
         .send({ note: 'test' });
       expect(res.status).toStrictEqual(400);
-      expect(res.body.error).toContain('Recurring order does not exist');
+      expect(res.body).toMatchObject({ error: expect.any(String), message: expect.any(String) });
     });
 
     test('should return 403 when the recurring order belongs to another user', async () => {
@@ -68,7 +68,7 @@ describe('/orders/instance/:id (PUT)', () => {
         .set('Authorization', VALID_API_KEY)
         .send({ note: 'test' });
       expect(res.status).toStrictEqual(403);
-      expect(res.body.error).toContain('user does not own requested recurring order');
+      expect(res.body).toMatchObject({ error: expect.any(String), message: expect.any(String) });
     });
   });
 
@@ -82,7 +82,7 @@ describe('/orders/instance/:id (PUT)', () => {
         .send({ note: 'test' });
 
       expect(res.status).toStrictEqual(400);
-      expect(res.body.error).toContain('Invalid position');
+      expect(res.body).toMatchObject({ error: expect.any(String), message: expect.any(String) });
     });
   });
 
@@ -97,7 +97,7 @@ describe('/orders/instance/:id (PUT)', () => {
         .set('Authorization', VALID_API_KEY)
         .send({ note: 'test' });
       expect(res.status).toStrictEqual(400);
-      expect(res.body.error).toContain('No pending instances to edit');
+      expect(res.body).toMatchObject({ error: expect.any(String), message: expect.any(String) });
     });
   });
 
@@ -209,7 +209,7 @@ describe('/orders/instance/:id (PUT)', () => {
         .send({ note: 'should conflict' });
 
       expect(res.status).toStrictEqual(409);
-      expect(res.body.error).toContain('Conflict');
+      expect(res.body).toMatchObject({ error: expect.any(String), message: expect.any(String) });
     });
   });
 

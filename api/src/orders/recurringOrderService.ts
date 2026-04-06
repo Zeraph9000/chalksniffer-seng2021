@@ -86,7 +86,7 @@ export async function deleteRecurringOrder(userId: string, id: string): Promise<
   return { message: `Recurring order ${id} deleted successfully` };
 }
 
-async function executeNextInstance(recurringOrderId: string): Promise<ErrorObject | void> {
+async function executeNextInstance(recurringOrderId: string): Promise<{ orderId: string } | ErrorObject | void> {
   // Atomically pop the first instance to prevent race conditions
   const recurringOrder = await RecurringOrderModel.findOneAndUpdate(
     { 'id': recurringOrderId, 'orderInstances.0': { $exists: true } },
@@ -142,6 +142,8 @@ async function executeNextInstance(recurringOrderId: string): Promise<ErrorObjec
       );
     }
   }
+
+  return { orderId: fullOrder.id };
 }
 
 export async function deleteRecurringOrderInstance(
@@ -152,15 +154,15 @@ export async function deleteRecurringOrderInstance(
   const position = Number(positionRaw);
   const recurringOrder = await RecurringOrderModel.findOne({ id: recurringOrderId });
   if (!recurringOrder) {
-    return { status: 400, body: { error: `Recurring order with ID ${recurringOrderId} does not exist` } };
+    return { status: 400, body: { error: 'INVALID_RECURRING_ORDER_ID', message: `Recurring order with ID ${recurringOrderId} does not exist` } };
   }
 
   if (userId !== recurringOrder.userId) {
-    return { status: 403, body: { error: 'user does not own requested recurring order' } };
+    return { status: 403, body: { error: 'FORBIDDEN', message: 'User does not own requested recurring order' } };
   }
 
   if (!Number.isInteger(position) || position < 0 || position >= recurringOrder.orderInstances.length) {
-    return { status: 400, body: { error: `Invalid position ${positionRaw}. Must be an integer between 0 and ${recurringOrder.orderInstances.length - 1}` } };
+    return { status: 400, body: { error: 'INVALID_POSITION', message: `Invalid position ${positionRaw}. Must be an integer between 0 and ${recurringOrder.orderInstances.length - 1}` } };
   }
 
   recurringOrder.orderInstances.splice(position, 1);
@@ -176,16 +178,16 @@ export async function getRecurringOrderInstance(
 ): Promise<{ status: number; body: any }> {
   const recurringOrder = await RecurringOrderModel.findOne({ id: recurringOrderId });
   if (!recurringOrder) {
-    return { status: 400, body: { error: 'Recurring order does not exist' } };
+    return { status: 400, body: { error: 'INVALID_RECURRING_ORDER_ID', message: `Recurring order with ID ${recurringOrderId} does not exist` } };
   }
 
   if (userId !== recurringOrder.userId) {
-    return { status: 403, body: { error: 'user does not own requested recurring order' } };
+    return { status: 403, body: { error: 'FORBIDDEN', message: 'User does not own requested recurring order' } };
   }
 
   const pos = Number(position);
   if (!Number.isInteger(pos) || pos < 0 || pos >= recurringOrder.orderInstances.length) {
-    return { status: 400, body: { error: `Invalid position ${position}. Must be an integer between 0 and ${recurringOrder.orderInstances.length - 1}` } };
+    return { status: 400, body: { error: 'INVALID_POSITION', message: `Invalid position ${position}. Must be an integer between 0 and ${recurringOrder.orderInstances.length - 1}` } };
   }
 
   return { status: 200, body: recurringOrder.orderInstances[pos] };
@@ -198,10 +200,10 @@ export async function editRecurringOrder(
 ): Promise<{ status: number; body: any }> {
   const recurringOrder = await RecurringOrderModel.findOne({ id: recurringOrderId });
   if (!recurringOrder) {
-    return { status: 400, body: { error: 'Recurring order does not exist' } };
+    return { status: 400, body: { error: 'INVALID_RECURRING_ORDER_ID', message: 'Recurring order does not exist' } };
   }
   if (userId !== recurringOrder.userId) {
-    return { status: 403, body: { error: 'user does not own requested recurring order' } };
+    return { status: 403, body: { error: 'FORBIDDEN', message: 'User does not own requested recurring order' } };
   }
 
   if (updates.note !== undefined) recurringOrder.order.note = updates.note;
@@ -227,7 +229,7 @@ export async function editRecurringOrder(
     await recurringOrder.save();
   } catch (err) {
     if (err instanceof mongoose.Error.VersionError) {
-      return { status: 409, body: { error: 'Conflict: the recurring order was modified concurrently. Please retry.' } };
+      return { status: 409, body: { error: 'CONFLICT', message: 'The recurring order was modified concurrently. Please retry.' } };
     }
     throw err;
   }
@@ -243,19 +245,19 @@ export async function editInstance(
 ): Promise<{ status: number; body: any }> {
   const recurringOrder = await RecurringOrderModel.findOne({ id: recurringOrderId });
   if (!recurringOrder) {
-    return { status: 400, body: { error: 'Recurring order does not exist' } };
+    return { status: 400, body: { error: 'INVALID_RECURRING_ORDER_ID', message: 'Recurring order does not exist' } };
   }
 
   if (userId !== recurringOrder.userId) {
-    return { status: 403, body: { error: 'user does not own requested recurring order' } };
+    return { status: 403, body: { error: 'FORBIDDEN', message: 'User does not own requested recurring order' } };
   }
 
   if (!recurringOrder.orderInstances || recurringOrder.orderInstances.length === 0) {
-    return { status: 400, body: { error: 'No pending instances to edit' } };
+    return { status: 400, body: { error: 'NO_PENDING_INSTANCES', message: 'No pending instances to edit' } };
   }
 
   if (!Number.isInteger(position) || position < 0 || position >= recurringOrder.orderInstances.length) {
-    return { status: 400, body: { error: `Invalid position ${position}. Must be an integer between 0 and ${recurringOrder.orderInstances.length - 1}` } };
+    return { status: 400, body: { error: 'INVALID_POSITION', message: `Invalid position ${position}. Must be an integer between 0 and ${recurringOrder.orderInstances.length - 1}` } };
   }
 
   const instance = recurringOrder.orderInstances[position]!;
@@ -296,7 +298,7 @@ export async function editInstance(
     await recurringOrder.save();
   } catch (err) {
     if (err instanceof mongoose.Error.VersionError) {
-      return { status: 409, body: { error: 'Conflict: the recurring order was modified concurrently. Please retry.' } };
+      return { status: 409, body: { error: 'CONFLICT', message: 'The recurring order was modified concurrently. Please retry.' } };
     }
     throw err;
   }
@@ -366,16 +368,17 @@ export async function getRecurringOrder(userId: string, id: string) {
   };
 }
 
-export async function processAllRecurringOrders(): Promise<ErrorObject | void> {
+export async function processAllRecurringOrders(): Promise<{ processed: number; orderIds: string[] } | ErrorObject> {
   const recurringOrders = await RecurringOrderModel.find({
     'orderInstances.0': { $exists: true },
   });
 
-  const errors: ErrorObject[] = [];
+  const orderIds: string[] = [];
   for (const ro of recurringOrders) {
     const result = await executeNextInstance(ro.id);
-    if (result) errors.push(result);
+    if (result && 'error' in result) return result;
+    if (result && 'orderId' in result) orderIds.push(result.orderId);
   }
 
-  if (errors.length > 0) return errors[0];
+  return { processed: orderIds.length, orderIds };
 }

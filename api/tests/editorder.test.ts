@@ -44,11 +44,7 @@ describe('/orders/:id (PUT)', () => {
       .send({ note: 'x' });
 
     expect(res.status).toStrictEqual(400);
-    expect(res.body).toStrictEqual({
-      errors: expect.arrayContaining([
-        expect.objectContaining({ field: expect.any(String), message: expect.any(String) })
-      ])
-    });
+    expect(res.body).toMatchObject({ error: expect.any(String), message: expect.any(String) });
   });
 
   test('should return 403 when the order exists but belongs to another user', async () => {

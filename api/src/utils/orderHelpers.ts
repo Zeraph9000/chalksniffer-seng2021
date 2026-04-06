@@ -1,4 +1,5 @@
 import { Order, MonetaryTotal, OrderPaginated, OrderList, PaginationParams, OrderFilter, ErrorObject } from '../types';
+import { dateValidation, currencyValidation } from './validation';
 
 export function calculateMonetaryTotal(order: Order): MonetaryTotal {
   // Sum of quantity × priceAmount for each line item
@@ -69,18 +70,28 @@ export function parsePagedQuery(query: Record<string, unknown>, userId: string):
   const offs = offset != null ? parseInt(offset as string) : 0;
   if (isNaN(offs) || offs < 0) return { error: 'INVALID_OFFSET', message: 'Offset must be greater than or equal to 0' };
 
-  const { buyerName, sellerName, payableAmount, ...rest } = queryFilter as Record<string, unknown>;
+  const { buyerName, sellerName, payableAmount, issueDate, createdAt, documentCurrencyCode, ...rest } = queryFilter as Record<string, unknown>;
+
+  if (issueDate !== undefined && !dateValidation(issueDate as string)) {
+    return { error: 'INVALID_ISSUE_DATE', message: 'issueDate must be a valid date (YYYY-MM-DD)' };
+  }
+  if (createdAt !== undefined && !dateValidation(createdAt as string)) {
+    return { error: 'INVALID_CREATED_AT', message: 'createdAt must be a valid date (YYYY-MM-DD)' };
+  }
+  if (documentCurrencyCode !== undefined && !currencyValidation(documentCurrencyCode as string)) {
+    return { error: 'INVALID_DOCUMENT_CURRENCY_CODE', message: 'documentCurrencyCode must be a valid ISO 4217 currency code' };
+  }
+  if (payableAmount !== undefined && isNaN(Number(payableAmount))) {
+    return { error: 'INVALID_PAYABLE_AMOUNT', message: 'payableAmount must be a number' };
+  }
 
   const qfilter: OrderFilter = { userId, ...rest };
-  if (buyerName !== undefined) {
-    qfilter['buyerCustomerParty.party.partyName'] = buyerName as string;
-  }
-  if (sellerName !== undefined) {
-    qfilter['sellerSupplierParty.party.partyName'] = sellerName as string;
-  }
-  if (payableAmount !== undefined) {
-    qfilter['anticipatedMonetaryTotal.payableAmount'] = payableAmount as number;
-  }
+  if (buyerName !== undefined) qfilter['buyerCustomerParty.party.partyName'] = buyerName as string;
+  if (sellerName !== undefined) qfilter['sellerSupplierParty.party.partyName'] = sellerName as string;
+  if (payableAmount !== undefined) qfilter['anticipatedMonetaryTotal.payableAmount'] = Number(payableAmount);
+  if (issueDate !== undefined) qfilter.issueDate = issueDate as string;
+  if (createdAt !== undefined) qfilter.createdAt = createdAt as string;
+  if (documentCurrencyCode !== undefined) qfilter.documentCurrencyCode = documentCurrencyCode as string;
 
   return { limit: lim, offset: offs, filter: qfilter };
 }

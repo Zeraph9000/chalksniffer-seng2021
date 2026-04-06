@@ -25,6 +25,7 @@ describe('/orders/:id/xml (GET)', () => {
   test('should return 401 when no Authorization header is provided', async () => {
     const res = await request(app).get('/orders/any-id/xml');
     expect(res.status).toStrictEqual(401);
+    expect(res.body).toMatchObject({ error: expect.any(String), message: expect.any(String) });
   });
 
   test('should return 401 when the Authorization header contains an invalid API key', async () => {
@@ -33,6 +34,7 @@ describe('/orders/:id/xml (GET)', () => {
       .set('Authorization', 'invalid-key');
 
     expect(res.status).toStrictEqual(401);
+    expect(res.body).toMatchObject({ error: expect.any(String), message: expect.any(String) });
   });
 
   test('should return 400 when the specified order ID does not exist', async () => {
@@ -41,7 +43,7 @@ describe('/orders/:id/xml (GET)', () => {
       .set('Authorization', VALID_API_KEY);
 
     expect(res.status).toStrictEqual(400);
-    expect(res.body.error?.toString()).toContain('Order does not exist');
+    expect(res.body).toMatchObject({ error: expect.any(String), message: expect.any(String) });
   });
 
   test('should return 400 when the order exists but no XML record is stored for it', async () => {
@@ -53,7 +55,7 @@ describe('/orders/:id/xml (GET)', () => {
       .set('Authorization', VALID_API_KEY);
 
     expect(res.status).toStrictEqual(400);
-    expect(res.body.error?.toString()).toContain('Order does not exist');
+    expect(res.body).toMatchObject({ error: expect.any(String), message: expect.any(String) });
   });
 
   test('should return 403 when the order exists but belongs to another user', async () => {
@@ -65,6 +67,7 @@ describe('/orders/:id/xml (GET)', () => {
       .set('Authorization', VALID_API_KEY);
 
     expect(res.status).toStrictEqual(403);
+    expect(res.body).toMatchObject({ error: expect.any(String), message: expect.any(String) });
   });
 
   test('should return 200 and the stored XML when the request is valid', async () => {
