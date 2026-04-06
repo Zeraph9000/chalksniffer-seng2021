@@ -130,13 +130,13 @@ describe('POST /orders (recurring creation)', () => {
 
 describe('POST /orders/recurring', () => {
   describe('successful processing [status:200]', () => {
-    test('returns 200 with empty object when no recurring orders exist [status:200]', async () => {
+    test('returns 200 with zero processed when no recurring orders exist [status:200]', async () => {
       const res = await request(app).post('/orders/recurring');
       expect(res.status).toStrictEqual(200);
-      expect(res.body).toStrictEqual({});
+      expect(res.body).toStrictEqual({ processed: 0, orderIds: [] });
     });
 
-    test('returns 200 with empty object after processing due recurring orders [status:200]', async () => {
+    test('returns 200 with processed count and order IDs after processing due recurring orders [status:200]', async () => {
       await request(app)
         .post('/orders')
         .set('Authorization', VALID_API_KEY)
@@ -144,7 +144,9 @@ describe('POST /orders/recurring', () => {
 
       const res = await request(app).post('/orders/recurring');
       expect(res.status).toStrictEqual(200);
-      expect(res.body).toStrictEqual({});
+      expect(res.body.processed).toStrictEqual(1);
+      expect(res.body.orderIds).toHaveLength(1);
+      expect(typeof res.body.orderIds[0]).toBe('string');
     });
   });
 
