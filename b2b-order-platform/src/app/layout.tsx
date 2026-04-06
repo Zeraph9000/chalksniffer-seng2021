@@ -4,6 +4,7 @@ import { Sidebar } from "@/components/sidebar";
 import { Toast } from "@/components/toast";
 import { getSessionOrNull } from "@/lib/session";
 import { Suspense } from "react";
+import { CartProvider } from "@/lib/cart-context";
 
 export const metadata: Metadata = {
   title: "Ledgr — Construction Supply Management",
@@ -21,17 +22,19 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className="bg-surface font-sans text-ink antialiased">
-        <Suspense>
-          <Toast />
-        </Suspense>
-        {hasSession ? (
-          <div className="flex h-screen">
-            <Sidebar role={session?.role ?? null} name={session?.name ?? ""} />
-            <main className="flex-1 overflow-y-auto px-8 py-8">{children}</main>
-          </div>
-        ) : (
-          <main>{children}</main>
-        )}
+        <CartProvider>
+          <Suspense>
+            <Toast />
+          </Suspense>
+          {hasSession ? (
+            <div className="flex h-screen">
+              <Sidebar role={session?.role ?? null} name={session?.name ?? ""} />
+              <main className="flex-1 overflow-y-auto px-8 py-8">{children}</main>
+            </div>
+          ) : (
+            <main>{children}</main>
+          )}
+        </CartProvider>
       </body>
     </html>
   );

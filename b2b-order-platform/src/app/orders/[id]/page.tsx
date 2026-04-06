@@ -12,6 +12,8 @@ export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [order, setOrder] = useState<Order | null>(null);
   const [link, setLink] = useState<OrderMapping | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [receipt, setReceipt] = useState<any>(null);
   const [role, setRole] = useState<"buyer" | "seller" | null>(null);
   const [loading, setLoading] = useState(true);
   const [markingPaid, setMarkingPaid] = useState(false);
@@ -27,10 +29,20 @@ export default function OrderDetailPage() {
       ]);
 
       if (orderRes.ok) setOrder(await orderRes.json());
-      if (linkRes.ok) setLink(await linkRes.json());
+      let linkData = null;
+      if (linkRes.ok) {
+        linkData = await linkRes.json();
+        setLink(linkData);
+      }
       if (sessionRes.ok) {
         const session = await sessionRes.json();
         setRole(session.role);
+      }
+
+      // Fetch receipt if available
+      if (linkData?.receiptAdviceId) {
+        const receiptRes = await fetch(`/api/receipt/${linkData.receiptAdviceId}`);
+        if (receiptRes.ok) setReceipt(await receiptRes.json());
       }
 
       setLoading(false);
@@ -206,11 +218,40 @@ export default function OrderDetailPage() {
         </table>
       </div>
 
-      {/* Receipt section — if received */}
-      {status === "received" && link?.receiptAdviceId && (
-        <div className="card p-4">
-          <p className="text-xs font-medium text-ink-faint">Receipt Advice</p>
-          <p className="mt-1 font-mono text-sm text-ink">{link.receiptAdviceId}</p>
+      {/* Receipt section */}
+      {receipt && (
+        <div className="card overflow-hidden">
+          <div className="border-b border-surface-border px-4 py-3">
+            <h2 className="text-sm font-semibold text-ink">Receipt Details</h2>
+          </div>
+          {receipt.note && (
+            <div className="px-4 py-3 border-b border-surface-border bg-amber-50">
+              <p className="text-xs font-medium text-amber-800">Receipt Note</p>
+              <p className="mt-1 text-sm text-amber-700">{receipt.note}</p>
+            </div>
+          )}
+          {receipt.receiptLines && receipt.receiptLines.length > 0 && (
+            <table className="min-w-full divide-y divide-surface-border">
+              <thead className="bg-surface-raised">
+                <tr>
+                  <th className="px-4 py-2 text-left text-xs font-semibold uppercase text-ink-faint">Item</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold uppercase text-ink-faint">Received</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold uppercase text-ink-faint">Short</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold uppercase text-ink-faint">Note</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-surface-border">
+                {receipt.receiptLines.map((line: { id: string; item?: { name?: string }; receivedQuantity?: number; receivedQuantityUnitCode?: string; shortQuantity?: number; note?: string }) => (
+                  <tr key={line.id}>
+                    <td className="px-4 py-2 text-sm text-ink">{line.item?.name || line.id}</td>
+                    <td className="px-4 py-2 text-sm font-mono text-ink">{line.receivedQuantity} {line.receivedQuantityUnitCode}</td>
+                    <td className="px-4 py-2 text-sm font-mono text-ink">{line.shortQuantity ? `${line.shortQuantity} short` : "—"}</td>
+                    <td className="px-4 py-2 text-sm text-ink-muted">{line.note || "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
 
@@ -224,7 +265,7 @@ export default function OrderDetailPage() {
         )}
         {role === "buyer" && status === "despatched" && (
           <Link href={`/orders/${id}/receive`} className="btn-primary">
-            Confirm Receipt
+            Process Receipt
           </Link>
         )}
         {/* Seller: needs_review = can despatch or request change */}

@@ -27,20 +27,44 @@ export default function CreateInvoicePage() {
   useEffect(() => {
     if (!orderId) return;
     async function loadOrder() {
-      const res = await fetch(`/api/orders/${orderId}`);
-      if (res.ok) {
-        const data: Order = await res.json();
+      const [orderRes, linkRes] = await Promise.all([
+        fetch(`/api/orders/${orderId}`),
+        fetch(`/api/links?orderId=${orderId}`),
+      ]);
+
+      if (orderRes.ok) {
+        const data: Order = await orderRes.json();
         setOrder(data);
         setCustomerId(data.buyerCustomerParty.party.partyIdentification || data.buyerCustomerParty.party.partyName);
+
+        // Check for receipt to use received quantities instead of ordered
+        let receiptLines: { id: string; receivedQuantity?: number; item?: { name?: string } }[] = [];
+        if (linkRes.ok) {
+          const link = await linkRes.json();
+          if (link.receiptAdviceId) {
+            const receiptRes = await fetch(`/api/receipt/${link.receiptAdviceId}`);
+            if (receiptRes.ok) {
+              const receipt = await receiptRes.json();
+              receiptLines = receipt.receiptLines || [];
+            }
+          }
+        }
+
         setLines(
-          data.orderLines.map((line) => ({
-            name: line.lineItem.item.name,
-            description: line.lineItem.item.description || "",
-            quantity: line.lineItem.quantity,
-            unit_price: line.lineItem.price.priceAmount,
-            unit_code: line.lineItem.unitCode || "EA",
-          }))
+          data.orderLines.map((line) => {
+            // Match receipt line by ID to get actual received quantity
+            const receiptLine = receiptLines.find((rl) => rl.id === line.lineItem.id);
+            const quantity = receiptLine?.receivedQuantity ?? line.lineItem.quantity;
+            return {
+              name: line.lineItem.item.name,
+              description: line.lineItem.item.description || "",
+              quantity,
+              unit_price: line.lineItem.price.priceAmount,
+              unit_code: line.lineItem.unitCode || "EA",
+            };
+          })
         );
+
         const due = new Date();
         due.setDate(due.getDate() + 30);
         setDueDate(due.toISOString().split("T")[0]);
