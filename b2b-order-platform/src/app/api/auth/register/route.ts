@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcrypt";
 import clientPromise from "@/lib/db";
+import { signIn } from "@/auth";
 import { UserRole } from "@/lib/types";
 
 export async function POST(request: NextRequest) {
@@ -77,6 +78,13 @@ export async function POST(request: NextRequest) {
       },
       lastminutepush: { apiKey: lmpData.apiKey },
       createdAt: new Date(),
+    });
+
+    // 4. Create Auth.js session
+    await signIn("credentials", {
+      email,
+      password,
+      redirect: false,
     });
 
     return NextResponse.json({ success: true, role });
