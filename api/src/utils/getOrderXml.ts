@@ -1,10 +1,7 @@
 import { apiKeyValidation, getUserId } from '../auth/auth';
 import OrderModel from '../models/order';
 import OrderXml from '../models/orderXml';
-
-type GetOrderXmlError = {
-  error: string;
-};
+import { ErrorObject } from '../types';
 
 type GetOrderXmlResult =
   | {
@@ -13,7 +10,7 @@ type GetOrderXmlResult =
   }
   | {
     status: 400 | 401 | 403;
-    body: GetOrderXmlError;
+    body: ErrorObject;
   };
 
 export async function getOrderXmlResponse(
@@ -23,7 +20,7 @@ export async function getOrderXmlResponse(
   if (!apiKey || !await apiKeyValidation(apiKey)) {
     return {
       status: 401,
-      body: { error: 'Invalid API key' },
+      body: { error: 'UNAUTHORIZED', message: 'Invalid API key' },
     };
   }
 
@@ -32,7 +29,7 @@ export async function getOrderXmlResponse(
   if (!order) {
     return {
       status: 400,
-      body: { error: 'Order does not exist' },
+      body: { error: 'INVALID_ORDER_ID', message: `Order with ID ${orderId} does not exist` },
     };
   }
 
@@ -41,7 +38,7 @@ export async function getOrderXmlResponse(
   if (userId !== order.userId) {
     return {
       status: 403,
-      body: { error: 'user does not own requested order' },
+      body: { error: 'FORBIDDEN', message: 'User does not own requested order' },
     };
   }
 
@@ -50,7 +47,7 @@ export async function getOrderXmlResponse(
   if (!orderXml) {
     return {
       status: 400,
-      body: { error: 'Order does not exist' },
+      body: { error: 'INVALID_ORDER_ID', message: `Order with ID ${orderId} does not exist` },
     };
   }
 

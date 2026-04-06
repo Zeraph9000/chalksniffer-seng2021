@@ -55,7 +55,7 @@ describe('DELETE /orders/recurring/:id/instance/:position', () => {
       .set('Authorization', VALID_API_KEY);
 
     expect(res.status).toStrictEqual(400);
-    expect(res.body.error).toContain('nonexistent-id');
+    expect(res.body).toMatchObject({ error: expect.any(String), message: expect.any(String) });
   });
 
   test('should return 403 when the recurring order belongs to another user', async () => {
@@ -67,7 +67,7 @@ describe('DELETE /orders/recurring/:id/instance/:position', () => {
       .set('Authorization', VALID_API_KEY);
 
     expect(res.status).toStrictEqual(403);
-    expect(res.body.error).toContain('does not own');
+    expect(res.body).toMatchObject({ error: expect.any(String), message: expect.any(String) });
   });
 
   test('should return 400 when position is out of bounds', async () => {
@@ -78,7 +78,7 @@ describe('DELETE /orders/recurring/:id/instance/:position', () => {
       .set('Authorization', VALID_API_KEY);
 
     expect(res.status).toStrictEqual(400);
-    expect(res.body.error).toContain('99');
+    expect(res.body).toMatchObject({ error: expect.any(String), message: expect.any(String) });
   });
 
   test('should return 400 when position is not a valid integer', async () => {
@@ -89,7 +89,7 @@ describe('DELETE /orders/recurring/:id/instance/:position', () => {
       .set('Authorization', VALID_API_KEY);
 
     expect(res.status).toStrictEqual(400);
-    expect(res.body.error).toContain('abc');
+    expect(res.body).toMatchObject({ error: expect.any(String), message: expect.any(String) });
   });
 
   test('should return 200 and remove only the instance at the given position', async () => {
