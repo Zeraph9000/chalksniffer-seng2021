@@ -4,10 +4,11 @@ import { MongoDBAdapter } from "@auth/mongodb-adapter";
 import bcrypt from "bcrypt";
 import clientPromise from "@/lib/db";
 import { User } from "@/lib/types";
+import authConfig from "./auth.config";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  ...authConfig,
   adapter: MongoDBAdapter(clientPromise),
-  session: { strategy: "jwt" },
   providers: [
     Credentials({
       credentials: {
@@ -59,29 +60,4 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
     }),
   ],
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        const u = user as unknown as {
-          role: string;
-          despatchSessionId: string;
-          despatchClientId: string;
-        };
-        token.role = u.role;
-        token.despatchSessionId = u.despatchSessionId;
-        token.despatchClientId = u.despatchClientId;
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      if (session.user) {
-        (session.user as unknown as { role: string }).role =
-          token.role as string;
-      }
-      return session;
-    },
-  },
-  pages: {
-    signIn: "/login",
-  },
 });
