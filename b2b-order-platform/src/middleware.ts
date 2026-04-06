@@ -5,14 +5,16 @@ import authConfig from "./auth.config";
 const { auth } = NextAuth(authConfig);
 
 const buyerOnlyRoutes = [
-  "/orders/create",
+  "/marketplace",
+  "/cart",
+  "/checkout",
   "/orders/*/receive",
-  "/orders/*/change",
   "/orders/*/cancel",
   "/orders/*/edit",
 ];
 
 const sellerOnlyRoutes = [
+  "/catalogue",
   "/despatch/create",
   "/invoices/create",
 ];

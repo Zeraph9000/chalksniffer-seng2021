@@ -19,6 +19,9 @@ export async function GET(request: NextRequest) {
   const data = await res.json();
   const idSet = new Set(orderIds);
   const filtered = (data.orders || []).filter((o: { id: string }) => idSet.has(o.id));
+  // Sort by mapping order (newest first — orderIds already sorted by createdAt desc)
+  const idOrder = new Map(orderIds.map((id: string, i: number) => [id, i]));
+  filtered.sort((a: { id: string }, b: { id: string }) => (idOrder.get(a.id) ?? 999) - (idOrder.get(b.id) ?? 999));
   const paginated = filtered.slice(offset, offset + limit);
   return NextResponse.json({ orders: paginated, totalOrders: filtered.length, limit, offset });
 }

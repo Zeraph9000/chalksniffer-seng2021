@@ -27,7 +27,6 @@ function StatCard({ label, value }: { label: string; value: string }) {
 }
 
 export function OrderStats({ stats }: { stats: Stats }) {
-  const isBuyer = true; // label adapts in parent if needed
   return (
     <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <StatCard

@@ -356,7 +356,7 @@ function OrdersPageInner() {
                 </tr>
               </thead>
               <tbody>
-                {paginated.map((order, i) => {
+                {paginated.map((order) => {
                   const isActionRequired = order.statusLabel === "Action Required";
                   return (
                     <tr

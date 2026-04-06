@@ -148,7 +148,7 @@ export default function ReceiveOrderPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <h1 className="text-2xl font-bold text-ink">Confirm Receipt</h1>
+      <h1 className="text-2xl font-bold text-ink">Process Receipt</h1>
       <p className="text-sm text-ink-muted">Order: <span className="font-mono">{id}</span></p>
 
       {order.delivery?.deliveryAddress && (
@@ -202,7 +202,7 @@ export default function ReceiveOrderPage() {
 
         <div className="flex gap-3">
           <button type="button" onClick={() => router.back()} className="btn-ghost flex-1">Cancel</button>
-          <button type="submit" disabled={submitting} className="btn-primary flex-1 disabled:opacity-50">{submitting ? "Confirming..." : "Confirm Receipt"}</button>
+          <button type="submit" disabled={submitting} className="btn-primary flex-1 disabled:opacity-50">{submitting ? "Processing..." : "Submit Receipt"}</button>
         </div>
       </form>
     </div>

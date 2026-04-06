@@ -18,6 +18,12 @@ export async function POST(request: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const body = await request.json();
   const res = await lastminutepush().post("/v1/invoices", body);
+  const contentType = res.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    const text = await res.text();
+    console.error("LMP non-JSON response:", res.status, text.slice(0, 200));
+    return NextResponse.json({ error: "Invoice service returned an unexpected response" }, { status: 502 });
+  }
   const data = await res.json();
   if (res.ok && body.order_reference && data.invoice?.invoice_id) {
     await setMapping(body.order_reference, { invoiceId: data.invoice.invoice_id });

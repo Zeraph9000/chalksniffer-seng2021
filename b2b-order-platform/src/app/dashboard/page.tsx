@@ -58,7 +58,7 @@ export default function DashboardPage() {
     async function load() {
       const [sessionRes, ordersRes, statsRes] = await Promise.all([
         fetch("/api/auth/session"),
-        fetch("/api/orders?limit=10"),
+        fetch("/api/orders?limit=100"),
         fetch("/api/orders/stats"),
       ]);
 
@@ -130,8 +130,8 @@ export default function DashboardPage() {
         <EmptyState
           title="No orders yet"
           description={isBuyer ? "Place your first material order to get started" : "Material orders from contractors will appear here"}
-          actionLabel={isBuyer ? "New Material Order" : undefined}
-          actionHref={isBuyer ? "/orders/create" : undefined}
+          actionLabel={isBuyer ? "Browse Marketplace" : undefined}
+          actionHref={isBuyer ? "/marketplace" : undefined}
         />
       ) : (
         <div className="space-y-4">

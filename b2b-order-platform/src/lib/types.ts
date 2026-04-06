@@ -46,6 +46,19 @@ export type OrderMapping = {
   createdAt: Date;
 };
 
+export type Product = {
+  _id?: string;
+  sellerEmail: string;
+  name: string;
+  description: string;
+  category: string;
+  unitCode: string;
+  unitPrice: number;
+  currency: string;
+  stock: number;
+  createdAt: Date;
+};
+
 // ============================================
 // Chalksniffer API Types
 // ============================================
