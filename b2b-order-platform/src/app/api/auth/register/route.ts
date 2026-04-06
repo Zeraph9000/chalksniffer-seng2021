@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     await fetch(`${process.env.DESPATCH_API_URL}/clients`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: email, password: hashedPassword }),
+      body: JSON.stringify({ username: email, email, password: hashedPassword }),
     });
 
     const despatchSessionRes = await fetch(
