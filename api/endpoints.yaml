@@ -456,6 +456,16 @@ paths:
               example:
                 error: FORBIDDEN
                 message: API key does not belong to the user
+        '400':
+          description: INVALID_LIMIT - Limit must be between 1 and 500</br>
+            INVALID_OFFSET - Offset must be greater than or equal to 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INVALID_LIMIT
+                message: Limit must be between 1 and 500 inclusive
         '500':
           description: Internal Server Error
           content:
