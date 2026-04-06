@@ -43,22 +43,25 @@ export async function GET() {
     }
   }
 
-  // Month to Date — total $ of orders placed this month
+  // Earned This Month — total $ of paid orders this month (seller only)
   const monthStart = new Date();
   monthStart.setDate(1);
   const monthStartStr = monthStart.toISOString().split("T")[0];
-  let monthToDate = 0;
-  for (const m of mappings) {
-    if (m.issueDate && m.issueDate >= monthStartStr) {
-      monthToDate += m.payableAmount ?? 0;
+  let earnedThisMonth = 0;
+  if (session.role === "seller") {
+    for (const m of mappings) {
+      if (m.status === "paid" && m.createdAt && new Date(m.createdAt).toISOString().split("T")[0] >= monthStartStr) {
+        earnedThisMonth += m.payableAmount ?? 0;
+      }
     }
   }
 
   return NextResponse.json({
+    role: session.role,
     actionRequired,
     outstandingValue,
     outstandingCurrency,
     overdue,
-    monthToDate,
+    earnedThisMonth,
   });
 }

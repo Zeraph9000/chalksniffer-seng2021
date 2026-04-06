@@ -22,8 +22,8 @@ export default function CartPage() {
         <h1 className="text-2xl font-bold text-ink">Your Cart</h1>
         <EmptyState
           title="Your cart is empty"
-          description="Browse the marketplace to add materials to your cart"
-          actionLabel="Browse Marketplace"
+          description="Browse the catalogue to add materials to your cart"
+          actionLabel="Browse Catalogue"
           actionHref="/marketplace"
         />
       </div>

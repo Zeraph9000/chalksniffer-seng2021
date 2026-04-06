@@ -8,11 +8,12 @@ import { EmptyState } from "@/components/empty-state";
 import { LoadingSpinner } from "@/components/loading-spinner";
 
 type Stats = {
+  role: string;
   actionRequired: number;
   outstandingValue: number;
   outstandingCurrency: string;
   overdue: number;
-  monthToDate: number;
+  earnedThisMonth: number;
 };
 
 type OrderWithMapping = OrderPaginated & { mapping?: OrderMapping };
@@ -130,7 +131,7 @@ export default function DashboardPage() {
         <EmptyState
           title="No orders yet"
           description={isBuyer ? "Place your first material order to get started" : "Material orders from contractors will appear here"}
-          actionLabel={isBuyer ? "Browse Marketplace" : undefined}
+          actionLabel={isBuyer ? "Browse Catalogue" : undefined}
           actionHref={isBuyer ? "/marketplace" : undefined}
         />
       ) : (

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserRole } from "@/lib/types";
-import { LayoutDashboard, ShoppingBag, FileText, LogOut, Store, ShoppingCart, Package } from "lucide-react";
+import { LayoutDashboard, ShoppingBag, FileText, LogOut, Layers, ShoppingCart, Package } from "lucide-react";
 
 type NavItem = {
   href: string;
@@ -21,7 +21,7 @@ export function Sidebar({ role, name }: { role: UserRole | null; name: string })
   const navItems: NavItem[] = isBuyer
     ? [
         { href: "/dashboard", label: "Dashboard", icon: <LayoutDashboard size={20} /> },
-        { href: "/marketplace", label: "Marketplace", icon: <Store size={20} /> },
+        { href: "/marketplace", label: "Catalogue", icon: <Layers size={20} /> },
         { href: "/cart", label: "Cart", icon: <ShoppingCart size={20} /> },
         { href: "/orders", label: "Orders", icon: <ShoppingBag size={20} /> },
         { href: "/invoices", label: "Invoices", icon: <FileText size={20} /> },

@@ -85,8 +85,8 @@ export default function CheckoutPage() {
         <h1 className="text-2xl font-bold text-ink">Checkout</h1>
         <EmptyState
           title="Your cart is empty"
-          description="Add materials from the marketplace before checking out"
-          actionLabel="Browse Marketplace"
+          description="Add materials from the catalogue before checking out"
+          actionLabel="Browse Catalogue"
           actionHref="/marketplace"
         />
       </div>

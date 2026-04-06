@@ -5,7 +5,8 @@ type Stats = {
   outstandingValue: number;
   outstandingCurrency: string;
   overdue: number;
-  monthToDate: number;
+  earnedThisMonth: number;
+  role: string;
 };
 
 function formatCurrency(amount: number, currency: string): string {
@@ -79,19 +80,20 @@ export function OrderStats({ stats }: { stats: Stats }) {
           </svg>
         }
       />
-      <StatCard
-        label="Month to Date"
-        value={formatCurrency(stats.monthToDate, stats.outstandingCurrency)}
-
-        bgColor="bg-semantic-success-muted"
-        valueColor="text-semantic-success"
-        icon={
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <path d="M3 14L7 10L10 13L17 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M13 6H17V10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        }
-      />
+      {stats.role === "seller" && (
+        <StatCard
+          label="Earned This Month"
+          value={formatCurrency(stats.earnedThisMonth, stats.outstandingCurrency)}
+          bgColor="bg-semantic-success-muted"
+          valueColor="text-semantic-success"
+          icon={
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M3 14L7 10L10 13L17 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M13 6H17V10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          }
+        />
+      )}
     </dl>
   );
 }

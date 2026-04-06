@@ -30,7 +30,7 @@ function formatCurrency(price: number, currency: string) {
   }).format(price);
 }
 
-export default function MarketplacePage() {
+export default function CataloguePage() {
   const { addItem, items } = useCart();
   const [products, setProducts] = useState<ProductListing[]>([]);
   const [loading, setLoading] = useState(true);
@@ -156,7 +156,7 @@ export default function MarketplacePage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-ink">Marketplace</h1>
+          <h1 className="text-2xl font-bold text-ink">Catalogue</h1>
           <p className="mt-1 text-sm text-ink-muted">Browse and order construction materials from suppliers</p>
         </div>
         <a href="/cart" className="btn-primary flex items-center gap-2 relative">
