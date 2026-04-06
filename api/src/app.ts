@@ -107,9 +107,9 @@ app.get('/orders/csv', async (req, res) => {
 app.post('/orders/recurring', async (_req: Request, res: Response) => {
   try {
     const result = await processAllRecurringOrders();
-    if (result) return res.status(400).json(result);
-    
-    res.status(200).json({});
+    if ('error' in result) return res.status(400).json(result);
+
+    res.status(200).json(result);
   } catch {
     res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'Failed to process recurring orders' });
   }

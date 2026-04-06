@@ -86,7 +86,7 @@ export async function deleteRecurringOrder(userId: string, id: string): Promise<
   return { message: `Recurring order ${id} deleted successfully` };
 }
 
-async function executeNextInstance(recurringOrderId: string): Promise<ErrorObject | void> {
+async function executeNextInstance(recurringOrderId: string): Promise<{ orderId: string } | ErrorObject | void> {
   // Atomically pop the first instance to prevent race conditions
   const recurringOrder = await RecurringOrderModel.findOneAndUpdate(
     { 'id': recurringOrderId, 'orderInstances.0': { $exists: true } },
@@ -142,6 +142,8 @@ async function executeNextInstance(recurringOrderId: string): Promise<ErrorObjec
       );
     }
   }
+
+  return { orderId: fullOrder.id };
 }
 
 export async function deleteRecurringOrderInstance(
@@ -366,16 +368,17 @@ export async function getRecurringOrder(userId: string, id: string) {
   };
 }
 
-export async function processAllRecurringOrders(): Promise<ErrorObject | void> {
+export async function processAllRecurringOrders(): Promise<{ processed: number; orderIds: string[] } | ErrorObject> {
   const recurringOrders = await RecurringOrderModel.find({
     'orderInstances.0': { $exists: true },
   });
 
-  const errors: ErrorObject[] = [];
+  const orderIds: string[] = [];
   for (const ro of recurringOrders) {
     const result = await executeNextInstance(ro.id);
-    if (result) errors.push(result);
+    if (result && 'error' in result) return result;
+    if (result && 'orderId' in result) orderIds.push(result.orderId);
   }
 
-  if (errors.length > 0) return errors[0];
+  return { processed: orderIds.length, orderIds };
 }
