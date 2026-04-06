@@ -26,7 +26,7 @@ describe('/orders/recommend', () => {
 
   test('should return 401 when the Authorization header contains an invalid API key', async () => {
     const res = await request(app)
-      .get('/order/recommend')
+      .get('/orders/recommend')
       .set('Authorization', 'invalid-key');
     expect(res.status).toStrictEqual(401);
     expect(res.body).toMatchObject({ error: expect.any(String), message: expect.any(String) });
@@ -34,7 +34,7 @@ describe('/orders/recommend', () => {
 
   test('should return 400 if user has no orders', async () => {
     const res = await request(app)
-      .get('/order/recommend')
+      .get('/orders/recommend')
       .set('Authorization', VALID_API_KEY);
 
     expect(res.status).toStrictEqual(400);
@@ -84,7 +84,7 @@ describe('/orders/recommend', () => {
     await createOrder(VALID_API_KEY, orderBody2);
 
     const res = await request(app)
-      .get('/order/recommend')
+      .get('/orders/recommend')
       .set('Authorization', VALID_API_KEY);
 
     expect(res.status).toStrictEqual(400);
@@ -135,7 +135,7 @@ describe('/orders/recommend', () => {
     await createOrder(VALID_API_KEY, orderBodyDiff);
 
     const res = await request(app)
-      .get('/order/recommend')
+      .get('/orders/recommend')
       .set('Authorization', VALID_API_KEY);
 
     // expect(res.status).toStrictEqual(200);
