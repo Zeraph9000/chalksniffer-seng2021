@@ -41,13 +41,6 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // 3. Provision external service credentials
-    const chalkRes = await fetch(
-      `${process.env.CHALKSNIFFER_API_URL}/auth/register`,
-      { method: "POST" }
-    );
-    if (!chalkRes.ok) throw new Error("Chalksniffer registration failed");
-    const chalkData = await chalkRes.json();
-
     await fetch(`${process.env.DESPATCH_API_URL}/clients`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -82,7 +75,6 @@ export async function POST(request: NextRequest) {
       email,
       password: hashedPassword,
       role,
-      chalksniffer: { apiKey: chalkData.apiKey },
       despatch: { email, password: hashedPassword },
       lastminutepush: { apiKey: lmpData.apiKey },
       createdAt: new Date(),
