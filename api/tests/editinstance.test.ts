@@ -72,6 +72,20 @@ describe('/orders/instance/:id (PUT)', () => {
     });
   });
 
+  describe('invalid position', () => {
+    test('should return 400 when position is out of range', async () => {
+      const recurringOrderId = await createRecurringOrder(VALID_API_KEY);
+
+      const res = await request(app)
+        .put(`/orders/recurring/${recurringOrderId}/instance/999`)
+        .set('Authorization', VALID_API_KEY)
+        .send({ note: 'test' });
+
+      expect(res.status).toStrictEqual(400);
+      expect(res.body.error).toContain('Invalid position');
+    });
+  });
+
   describe('empty instances', () => {
     test('should return 400 when recurring order has no pending instances', async () => {
       const recurringOrderId = await createRecurringOrder(VALID_API_KEY);

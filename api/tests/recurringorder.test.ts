@@ -90,6 +90,44 @@ describe('generateOrderInstances', () => {
   });
 });
 
+describe('POST /orders (recurring creation)', () => {
+  test('returns 400 when frequency is invalid', async () => {
+    const res = await request(app)
+      .post('/orders')
+      .set('Authorization', VALID_API_KEY)
+      .send({ ...buildValidOrderPayload(), recurring: true, frequency: 'Yearly', startDate: '2026-03-15' });
+
+    expect(res.status).toStrictEqual(400);
+    expect(res.body.errors).toEqual(expect.arrayContaining([
+      expect.objectContaining({ field: 'frequency' }),
+    ]));
+  });
+
+  test('returns 400 when startDate is missing', async () => {
+    const res = await request(app)
+      .post('/orders')
+      .set('Authorization', VALID_API_KEY)
+      .send({ ...buildValidOrderPayload(), recurring: true, frequency: 'Weekly' });
+
+    expect(res.status).toStrictEqual(400);
+    expect(res.body.errors).toEqual(expect.arrayContaining([
+      expect.objectContaining({ field: 'startDate' }),
+    ]));
+  });
+
+  test('returns 400 when startDate is not a valid date string', async () => {
+    const res = await request(app)
+      .post('/orders')
+      .set('Authorization', VALID_API_KEY)
+      .send({ ...buildValidOrderPayload(), recurring: true, frequency: 'Weekly', startDate: 'not-a-date' });
+
+    expect(res.status).toStrictEqual(400);
+    expect(res.body.errors).toEqual(expect.arrayContaining([
+      expect.objectContaining({ field: 'startDate' }),
+    ]));
+  });
+});
+
 describe('POST /orders/recurring', () => {
   describe('successful processing [status:200]', () => {
     test('returns 200 with empty object when no recurring orders exist [status:200]', async () => {
