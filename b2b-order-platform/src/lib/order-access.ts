@@ -23,6 +23,7 @@ export async function setMapping(
     buyerEmail: update.buyerEmail ?? existing?.buyerEmail ?? "",
     sellerEmail: update.sellerEmail ?? existing?.sellerEmail ?? "",
     status: "placed",
+    createdAt: existing?.createdAt ?? new Date(),
     ...existing,
     ...update,
   };
