@@ -11,6 +11,13 @@ export async function POST(request: NextRequest) {
     password: string;
   };
 
+  if (!email || !password) {
+    return NextResponse.json(
+      { error: "Missing required fields" },
+      { status: 400 }
+    );
+  }
+
   try {
     const client = await clientPromise;
     const db = client.db();
@@ -32,52 +39,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 2. Refresh external service credentials
-    const chalkRes = await fetch(
-      `${process.env.CHALKSNIFFER_API_URL}/auth/register`,
-      { method: "POST" }
-    );
-    if (!chalkRes.ok) throw new Error("Failed to connect to order service");
-    const chalkData = await chalkRes.json();
-
-    const despatchSessionRes = await fetch(
-      `${process.env.DESPATCH_API_URL}/sessions`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: email, password }),
-      }
-    );
-    if (!despatchSessionRes.ok) throw new Error("Invalid credentials");
-    const despatchSession = await despatchSessionRes.json();
-
-    const lmpRes = await fetch(
-      `${process.env.LASTMINUTEPUSH_API_URL}/v1/auth/register-demo`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      }
-    );
-    if (!lmpRes.ok) throw new Error("Failed to connect to invoice service");
-    const lmpData = await lmpRes.json();
-
-    // 3. Update user document with refreshed credentials
-    await db.collection("users").updateOne(
-      { email },
-      {
-        $set: {
-          chalksniffer: { apiKey: chalkData.apiKey },
-          despatch: {
-            sessionId: despatchSession.sessionId,
-            clientId: despatchSession.clientId,
-          },
-          lastminutepush: { apiKey: lmpData.apiKey },
-        },
-      }
-    );
-
-    // 4. Create Auth.js session via signIn
+    // 2. Create Auth.js session (this also refreshes the Despatch session
+    // inside the authorize callback using stored Despatch credentials)
     await signIn("credentials", {
       email,
       password,

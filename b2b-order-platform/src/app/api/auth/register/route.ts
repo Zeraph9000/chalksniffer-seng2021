@@ -13,6 +13,17 @@ export async function POST(request: NextRequest) {
     role: UserRole;
   };
 
+  if (!name || !email || !password || !role) {
+    return NextResponse.json(
+      { error: "Missing required fields" },
+      { status: 400 }
+    );
+  }
+
+  if (!["buyer", "seller"].includes(role)) {
+    return NextResponse.json({ error: "Invalid role" }, { status: 400 });
+  }
+
   try {
     const client = await clientPromise;
     const db = client.db();
@@ -26,7 +37,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 2. Provision external service credentials
+    // 2. Hash password first — the hash is also used as the Despatch API password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // 3. Provision external service credentials
     const chalkRes = await fetch(
       `${process.env.CHALKSNIFFER_API_URL}/auth/register`,
       { method: "POST" }
@@ -37,7 +51,7 @@ export async function POST(request: NextRequest) {
     await fetch(`${process.env.DESPATCH_API_URL}/clients`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: email, password }),
+      body: JSON.stringify({ username: email, password: hashedPassword }),
     });
 
     const despatchSessionRes = await fetch(
@@ -45,12 +59,11 @@ export async function POST(request: NextRequest) {
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: email, password }),
+        body: JSON.stringify({ username: email, password: hashedPassword }),
       }
     );
     if (!despatchSessionRes.ok)
       throw new Error("Despatch session creation failed");
-    const despatchSession = await despatchSessionRes.json();
 
     const lmpRes = await fetch(
       `${process.env.LASTMINUTEPUSH_API_URL}/v1/auth/register`,
@@ -63,24 +76,19 @@ export async function POST(request: NextRequest) {
     if (!lmpRes.ok) throw new Error("LastMinutePush registration failed");
     const lmpData = await lmpRes.json();
 
-    // 3. Hash password and create user
-    const hashedPassword = await bcrypt.hash(password, 10);
-
+    // 4. Create user with hashed password and Despatch credentials
     await db.collection("users").insertOne({
       name,
       email,
       password: hashedPassword,
       role,
       chalksniffer: { apiKey: chalkData.apiKey },
-      despatch: {
-        sessionId: despatchSession.sessionId,
-        clientId: despatchSession.clientId,
-      },
+      despatch: { email, password: hashedPassword },
       lastminutepush: { apiKey: lmpData.apiKey },
       createdAt: new Date(),
     });
 
-    // 4. Create Auth.js session
+    // 5. Create Auth.js session
     await signIn("credentials", {
       email,
       password,

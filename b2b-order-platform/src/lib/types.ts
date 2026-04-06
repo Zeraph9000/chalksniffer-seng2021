@@ -19,7 +19,7 @@ export type User = {
   password: string;
   role: UserRole;
   chalksniffer: { apiKey: string };
-  despatch: { sessionId: string; clientId: string };
+  despatch: { email: string; password: string };
   lastminutepush: { apiKey: string };
   createdAt: Date;
 };

@@ -27,11 +27,34 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const valid = await bcrypt.compare(password, user.password);
         if (!valid) return null;
 
+        // Create a fresh Despatch session using stored credentials
+        const despatchRes = await fetch(
+          `${process.env.DESPATCH_API_URL}/sessions`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              username: user.despatch.email,
+              password: user.despatch.password,
+            }),
+          }
+        );
+
+        let despatchSessionId = "";
+        let despatchClientId = "";
+        if (despatchRes.ok) {
+          const despatchSession = await despatchRes.json();
+          despatchSessionId = despatchSession.sessionId;
+          despatchClientId = despatchSession.clientId;
+        }
+
         return {
           id: user._id!.toString(),
           name: user.name,
           email: user.email,
           role: user.role,
+          despatchSessionId,
+          despatchClientId,
         };
       },
     }),
@@ -39,13 +62,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.role = (user as unknown as { role: string }).role;
+        const u = user as unknown as {
+          role: string;
+          despatchSessionId: string;
+          despatchClientId: string;
+        };
+        token.role = u.role;
+        token.despatchSessionId = u.despatchSessionId;
+        token.despatchClientId = u.despatchClientId;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as unknown as { role: string }).role = token.role as string;
+        (session.user as unknown as { role: string }).role =
+          token.role as string;
       }
       return session;
     },

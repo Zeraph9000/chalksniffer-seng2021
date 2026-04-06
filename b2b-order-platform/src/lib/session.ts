@@ -6,6 +6,13 @@ export async function getSessionOrNull(): Promise<SessionData | null> {
   const session = await auth();
   if (!session?.user?.email) return null;
 
+  const token = session as unknown as {
+    user: { email: string; name: string };
+    despatchSessionId?: string;
+    despatchClientId?: string;
+    role?: string;
+  };
+
   const client = await clientPromise;
   const db = client.db();
   const user = await db.collection<User>("users").findOne({
@@ -18,7 +25,10 @@ export async function getSessionOrNull(): Promise<SessionData | null> {
     role: user.role,
     name: user.name,
     chalksniffer: user.chalksniffer,
-    despatch: user.despatch,
+    despatch: {
+      sessionId: token.despatchSessionId ?? "",
+      clientId: token.despatchClientId ?? "",
+    },
     lastminutepush: user.lastminutepush,
   };
 }
