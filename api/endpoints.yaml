@@ -597,6 +597,42 @@ paths:
             application/json:
               schema:
                 type: object
+                properties:
+                  id:
+                    type: string
+                  userId:
+                    type: string
+                  frequency:
+                    type: string
+                    enum: [Daily, Weekly, Monthly]
+                  startDate:
+                    type: string
+                    format: date-time
+                  createdAt:
+                    type: string
+                    format: date-time
+                  order:
+                    $ref: '#/components/schemas/Order'
+                  orderInstances:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        scheduledDate:
+                          type: string
+                          format: date-time
+                      required:
+                        - id
+                        - scheduledDate
+                required:
+                  - id
+                  - userId
+                  - frequency
+                  - startDate
+                  - order
+                  - orderInstances
         '400':
           description: Bad Request - recurring order not found or validation failure
           content:
