@@ -29,11 +29,18 @@ const config: Config = {
           muted: "#475569",
           faint: "#94a3b8",
         },
-        stat: {
-          orange: "#f97316",
-          blue: "#3b82f6",
-          green: "#10b981",
-          purple: "#8b5cf6",
+        // Semantic colors — each color carries meaning
+        semantic: {
+          success: "#059669",        // paid, received, completed
+          "success-muted": "#ecfdf5",
+          warning: "#d97706",        // action required, attention
+          "warning-muted": "#fffbeb",
+          danger: "#dc2626",         // overdue, errors, cancellations
+          "danger-muted": "#fef2f2",
+          info: "#2563eb",           // in-transit, despatched, sent
+          "info-muted": "#eff6ff",
+          neutral: "#475569",        // awaiting review, draft
+          "neutral-muted": "#f1f5f9",
         },
       },
       fontFamily: {

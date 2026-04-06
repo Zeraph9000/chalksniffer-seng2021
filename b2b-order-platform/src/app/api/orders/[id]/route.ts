@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionOrNull } from "@/lib/session";
 import { chalksniffer } from "@/lib/api-clients";
-import { assertOrderAccess, getMapping, buyerEdited } from "@/lib/order-access";
+import { assertOrderAccess, getMapping, buyerEdited, setMapping } from "@/lib/order-access";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSessionOrNull();
@@ -25,7 +25,18 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   const body = await request.json();
   const res = await chalksniffer().put(`/orders/${id}`, body);
   const data = await res.json();
-  if (res.ok) await buyerEdited(id);
+  if (res.ok) {
+    await buyerEdited(id);
+    const payableAmount = data.anticipatedMonetaryTotal?.payableAmount
+      ?? data.orderLines?.reduce((sum: number, line: { lineItem: { price: { priceAmount: number }; quantity: number } }) =>
+        sum + line.lineItem.price.priceAmount * line.lineItem.quantity, 0)
+      ?? 0;
+    await setMapping(id, {
+      payableAmount,
+      documentCurrencyCode: data.documentCurrencyCode || "AUD",
+      issueDate: data.issueDate,
+    });
+  }
   return NextResponse.json(data, { status: res.status });
 }
 

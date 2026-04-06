@@ -66,7 +66,7 @@ export function Sidebar({ role, name }: { role: UserRole | null; name: string })
                   href={item.href}
                   className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium ${
                     isActive
-                      ? "bg-accent-buyer/10 text-accent-buyer"
+                      ? "bg-accent-buyer/15 text-accent-buyer"
                       : "text-ink-muted hover:bg-surface-hover hover:text-ink"
                   }`}
                 >

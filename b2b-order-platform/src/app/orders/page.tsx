@@ -365,7 +365,7 @@ function OrdersPageInner() {
                       className={`
                         group border-b border-surface-border last:border-0 cursor-pointer
                                                ${isActionRequired
-                          ? "bg-amber-50/20 hover:bg-amber-50/30"
+                          ? "bg-semantic-warning-muted/40 hover:bg-semantic-warning-muted/60"
                           : "hover:bg-surface-hover"
                         }
                       `}

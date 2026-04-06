@@ -116,7 +116,7 @@ export default function InvoiceDetailPage() {
           </div>
           <div>
             <p className="text-xs font-medium text-ink-faint">Payable</p>
-            <p className="mt-1 text-sm font-semibold font-mono text-emerald-600">{invoice.payable_amount} {invoice.currency}</p>
+            <p className="mt-1 text-sm font-semibold font-mono text-ink">{invoice.payable_amount} {invoice.currency}</p>
           </div>
         </div>
       </div>
@@ -143,7 +143,7 @@ export default function InvoiceDetailPage() {
                   <td className="px-4 py-2 text-sm text-ink font-mono">{item.quantity}</td>
                   <td className="px-4 py-2 text-sm text-ink font-mono">{item.unit_price}</td>
                   <td className="px-4 py-2 text-sm text-ink font-mono">{item.unit_code}</td>
-                  <td className="px-4 py-2 text-sm font-medium font-mono text-emerald-600">{item.line_total}</td>
+                  <td className="px-4 py-2 text-sm font-medium font-mono text-ink">{item.line_total}</td>
                 </tr>
               ))}
             </tbody>
@@ -157,7 +157,7 @@ export default function InvoiceDetailPage() {
           <button
             onClick={() => updateStatus("paid")}
             disabled={updating}
-            className="btn bg-emerald-100 border border-emerald-300 text-emerald-800 hover:bg-emerald-200 disabled:opacity-50"
+            className="btn bg-semantic-success-muted border border-emerald-300 text-semantic-success hover:bg-emerald-100 disabled:opacity-50"
           >
             {updating ? "Updating..." : "Mark as Paid"}
           </button>
