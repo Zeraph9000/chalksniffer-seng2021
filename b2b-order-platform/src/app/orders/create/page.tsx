@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { MATERIAL_CATEGORIES, PRIORITIES, SAMPLE_SITES, SUPPLIER_DIRECTORY } from "@/lib/construction-data";
+import { MATERIAL_CATEGORIES, PRIORITIES, SAMPLE_SITES } from "@/lib/construction-data";
 
 type LineItemForm = {
   name: string;
@@ -83,6 +83,15 @@ export default function CreateOrderPage() {
   const [loading, setLoading] = useState(false);
   const [site, setSite] = useState("");
   const [priority, setPriority] = useState("standard");
+  const [sellers, setSellers] = useState<{ name: string; email: string }[]>([]);
+  const [sellerEmail, setSellerEmail] = useState("");
+
+  useEffect(() => {
+    fetch("/api/users/sellers")
+      .then((res) => res.json())
+      .then((data) => setSellers(data))
+      .catch(() => {});
+  }, []);
 
   function updateLineItem(index: number, field: keyof LineItemForm, value: string | number) {
     setLineItems((items) =>
@@ -108,6 +117,7 @@ export default function CreateOrderPage() {
     setLoading(true);
 
     const orderBody = {
+      sellerEmail,
       issueDate,
       documentCurrencyCode: currencyCode,
       note: [
@@ -225,20 +235,22 @@ export default function CreateOrderPage() {
         <fieldset className="rounded-lg border border-surface-border bg-surface-raised p-4">
           <legend className="text-sm font-medium text-ink">Supplier</legend>
           <div className="mb-3">
-            <label className="input-label">Select from directory</label>
+            <label className="input-label">Select a registered supplier</label>
             <select
+              required
+              value={sellerEmail}
               onChange={(e) => {
-                const supplier = SUPPLIER_DIRECTORY.find(s => s.name === e.target.value);
-                if (supplier) {
-                  updateParty(setSeller, "partyName", supplier.name);
+                const selected = sellers.find(s => s.email === e.target.value);
+                setSellerEmail(e.target.value);
+                if (selected) {
+                  updateParty(setSeller, "partyName", selected.name);
                 }
               }}
               className="input mt-1"
-              defaultValue=""
             >
               <option value="">Choose a supplier...</option>
-              {SUPPLIER_DIRECTORY.map(s => (
-                <option key={s.name} value={s.name}>{s.name} — {s.specialty}</option>
+              {sellers.map(s => (
+                <option key={s.email} value={s.email}>{s.name}</option>
               ))}
             </select>
           </div>
