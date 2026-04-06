@@ -72,14 +72,14 @@ export default function LoginPage() {
         {/* Header */}
         <div className="mb-8 flex flex-col items-center text-center">
           <svg className="mb-3 h-12 w-12" viewBox="0 0 40 40" fill="none">
-            <path d="M4 36V12l10-8v32H4z" fill="#e55a2d" />
+            <path d="M4 36V12l10-8v32H4z" fill="#b34215" />
             <rect x="7" y="20" width="4" height="16" fill="white" />
-            <path d="M18 36V8l10-4v32H18z" fill="#e55a2d" />
+            <path d="M18 36V8l10-4v32H18z" fill="#b34215" />
             <rect x="21" y="16" width="4" height="6" fill="white" />
             <rect x="21" y="26" width="4" height="10" fill="white" />
-            <path d="M28 36V14l8 4v18H28z" fill="#e55a2d" />
+            <path d="M28 36V14l8 4v18H28z" fill="#b34215" />
           </svg>
-          <h1 className="text-3xl font-extrabold tracking-tight text-[#c4410a]">
+          <h1 className="text-3xl font-extrabold tracking-tight text-[#b34215]">
             Ledgr
           </h1>
           <p className="text-xs text-ink-faint mt-1">
@@ -100,9 +100,9 @@ export default function LoginPage() {
                 key={m}
                 type="button"
                 onClick={() => setMode(m)}
-                className={`flex-1 rounded-md py-2 text-sm font-medium transition-all ${
+                className={`flex-1 rounded-md py-2 text-sm font-medium ${
                   mode === m
-                    ? "bg-white text-ink shadow-sm"
+                    ? "bg-white text-ink"
                     : "text-ink-muted hover:text-ink"
                 }`}
               >
@@ -175,7 +175,7 @@ export default function LoginPage() {
                     <button
                       type="button"
                       onClick={() => setRole("buyer")}
-                      className={`rounded-lg border px-3 py-2.5 text-sm font-medium transition-all ${
+                      className={`rounded-lg border px-3 py-2.5 text-sm font-medium ${
                         role === "buyer"
                           ? "border-accent-primary bg-accent-primary-muted text-accent-primary"
                           : "border-surface-border text-ink-muted hover:text-ink"
@@ -186,7 +186,7 @@ export default function LoginPage() {
                     <button
                       type="button"
                       onClick={() => setRole("seller")}
-                      className={`rounded-lg border px-3 py-2.5 text-sm font-medium transition-all ${
+                      className={`rounded-lg border px-3 py-2.5 text-sm font-medium ${
                         role === "seller"
                           ? "border-accent-primary bg-accent-primary-muted text-accent-primary"
                           : "border-surface-border text-ink-muted hover:text-ink"

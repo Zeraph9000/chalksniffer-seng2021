@@ -34,7 +34,7 @@ export function Navbar({ role }: { role: UserRole | null }) {
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6">
         <div className="flex items-center gap-8">
           <Link href="/dashboard" className="flex items-center gap-2.5">
-            <div className={`h-2 w-2 rounded-full ${role === "buyer" ? "bg-accent-buyer shadow-lg shadow-accent-buyer/40" : "bg-accent-seller shadow-lg shadow-accent-seller/40"}`} />
+            <div className={`h-2 w-2 rounded-full ${role === "buyer" ? "bg-accent-buyer" : "bg-accent-seller"}`} />
             <span className="font-mono text-sm font-medium tracking-tight text-ink">
               B2B<span className="text-ink-faint">/</span>orders
             </span>
@@ -46,7 +46,7 @@ export function Navbar({ role }: { role: UserRole | null }) {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors duration-150 ${
+                  className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
                     isActive
                       ? role === "buyer"
                         ? "text-accent-buyer bg-accent-buyer/10"
@@ -64,7 +64,7 @@ export function Navbar({ role }: { role: UserRole | null }) {
           <RoleBadge role={role} />
           <button
             onClick={handleLogout}
-            className="text-xs font-medium text-ink-faint transition-colors hover:text-ink"
+            className="text-xs font-medium text-ink-faint hover:text-ink"
           >
             Sign out
           </button>

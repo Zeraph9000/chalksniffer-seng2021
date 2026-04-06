@@ -56,7 +56,7 @@ export function DataTable<T extends Record<string, any>>({
               <th
                 key={String(col.key)}
                 onClick={() => handleSort(col.key)}
-                className="cursor-pointer px-4 py-3 text-left text-xs font-medium uppercase text-ink-faint transition-colors hover:text-ink-muted"
+                className="cursor-pointer px-4 py-3 text-left text-xs font-medium uppercase text-ink-faint hover:text-ink-muted"
               >
                 {col.label}
                 {sortKey === col.key && (
@@ -73,7 +73,7 @@ export function DataTable<T extends Record<string, any>>({
             <tr
               key={i}
               onClick={() => onRowClick?.(row)}
-              className={`border-b border-surface-border/50 transition-colors duration-100 ${
+              className={`border-b border-surface-border/50 ${
                 onRowClick
                   ? "cursor-pointer hover:bg-surface-hover"
                   : ""

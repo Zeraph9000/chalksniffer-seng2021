@@ -10,7 +10,7 @@ type EmptyStateProps = {
 
 export function EmptyState({ title, description, actionLabel, actionHref }: EmptyStateProps) {
   return (
-    <section className="flex flex-col items-center justify-center rounded-xl border border-dashed border-surface-border bg-white py-16 text-center">
+    <section className="flex flex-col items-center justify-center rounded-lg border border-dashed border-surface-border bg-white py-16 text-center">
       <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-accent-primary-muted" aria-hidden="true">
         <Inbox size={24} className="text-accent-primary" />
       </div>

@@ -21,7 +21,7 @@ export function Toast() {
 
   return (
     <div
-      className="fixed top-4 right-4 z-50 animate-slide-down rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700 shadow-lg"
+      className="fixed top-4 right-4 z-50 animate-slide-down rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
       role="alert"
       aria-live="assertive"
     >
@@ -30,7 +30,7 @@ export function Toast() {
         <span>You don&apos;t have permission to access that page.</span>
         <button
           onClick={() => setVisible(false)}
-          className="ml-2 shrink-0 text-red-400 hover:text-red-600 transition-colors"
+          className="ml-2 shrink-0 text-red-400 hover:text-red-600"
           aria-label="Dismiss notification"
         >
           <X size={14} />

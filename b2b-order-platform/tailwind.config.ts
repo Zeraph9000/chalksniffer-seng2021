@@ -10,23 +10,23 @@ const config: Config = {
     extend: {
       colors: {
         surface: {
-          DEFAULT: "#f0f2f5",
+          DEFAULT: "#eef0f4",
           raised: "#ffffff",
-          overlay: "#f7f8fa",
-          border: "#e2e6ed",
-          hover: "#f0f2f5",
+          overlay: "#f5f6f8",
+          border: "#d5d9e2",
+          hover: "#eef0f4",
         },
         accent: {
-          primary: "#e55a2d",
-          "primary-muted": "#fef2ee",
-          buyer: "#e55a2d",
-          "buyer-muted": "#fef2ee",
-          seller: "#2563eb",
+          primary: "#b34215",
+          "primary-muted": "#fdf0eb",
+          buyer: "#b34215",
+          "buyer-muted": "#fdf0eb",
+          seller: "#1d4ed8",
           "seller-muted": "#eff6ff",
         },
         ink: {
-          DEFAULT: "#1e293b",
-          muted: "#64748b",
+          DEFAULT: "#0f172a",
+          muted: "#475569",
           faint: "#94a3b8",
         },
         stat: {
@@ -37,7 +37,7 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['"Plus Jakarta Sans"', "system-ui", "sans-serif"],
+        sans: ['"DM Sans"', "system-ui", "sans-serif"],
         mono: ['"JetBrains Mono"', "monospace"],
       },
       keyframes: {

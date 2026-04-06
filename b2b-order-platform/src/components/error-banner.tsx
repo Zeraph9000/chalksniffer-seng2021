@@ -20,7 +20,7 @@ export function ErrorBanner({
       {onDismiss && (
         <button
           onClick={onDismiss}
-          className="shrink-0 text-red-400 hover:text-red-600 transition-colors"
+          className="shrink-0 text-red-400 hover:text-red-600"
           aria-label="Dismiss error"
         >
           <X size={16} />

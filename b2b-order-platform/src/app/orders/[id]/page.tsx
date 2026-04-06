@@ -87,7 +87,7 @@ export default function OrderDetailPage() {
 
       {/* Seller note banner */}
       {link?.sellerNote && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
           <p className="text-sm font-medium text-amber-800">Supplier Note</p>
           <p className="mt-1 text-sm text-amber-700">{link.sellerNote}</p>
         </div>
@@ -97,13 +97,13 @@ export default function OrderDetailPage() {
       {status === "placed" && link && (
         isBuyer ? (
           link.buyerStatus === "under_review" ? (
-            <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3">
+            <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
               <p className="text-sm text-blue-700">Your order has been submitted and is awaiting supplier review.</p>
             </div>
           ) : null
         ) : (
           link.sellerStatus === "under_review" ? (
-            <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3">
+            <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
               <p className="text-sm text-blue-700">Waiting for the contractor to update the order.</p>
             </div>
           ) : null
@@ -198,7 +198,7 @@ export default function OrderDetailPage() {
           <tfoot className="border-t-2 border-surface-border bg-surface-raised">
             <tr>
               <td colSpan={3} className="px-4 py-3 text-right text-sm font-semibold text-ink">Order Total</td>
-              <td className="px-4 py-3 text-right font-mono text-sm font-bold text-emerald-600">
+              <td className="px-4 py-3 text-right font-mono text-sm font-bold text-ink">
                 {orderTotal.toFixed(2)} {order.documentCurrencyCode}
               </td>
             </tr>

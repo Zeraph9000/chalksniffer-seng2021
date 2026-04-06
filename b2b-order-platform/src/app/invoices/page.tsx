@@ -50,7 +50,7 @@ export default function InvoicesPage() {
               tabIndex={0}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); window.location.href = `/invoices/${inv.invoice_id}`; } }}
               aria-label={`Invoice ${inv.invoice_id}, ${inv.status}, ${inv.payable_amount} ${inv.currency}`}
-              className="card flex cursor-pointer items-center justify-between px-5 py-4 hover:bg-surface-hover transition-colors focus:outline-none focus:ring-2 focus:ring-accent-primary/30"
+              className="card flex cursor-pointer items-center justify-between px-5 py-4 hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-accent-primary/30"
             >
               <div className="flex items-center gap-4">
                 <span className={statusClass(inv.status)}>{inv.status}</span>
@@ -61,7 +61,7 @@ export default function InvoicesPage() {
                   </p>
                 </div>
               </div>
-              <p className="text-sm font-semibold font-mono text-emerald-600">{inv.payable_amount} {inv.currency}</p>
+              <p className="text-sm font-semibold font-mono text-ink">{inv.payable_amount} {inv.currency}</p>
             </div>
           ))}
         </div>

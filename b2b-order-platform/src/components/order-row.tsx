@@ -33,7 +33,7 @@ export function OrderRow({
       tabIndex={0}
       onClick={handleClick}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleClick(); } }}
-      className="flex items-center justify-between px-4 py-3.5 hover:bg-surface-hover transition-colors cursor-pointer border-b border-surface-border last:border-b-0 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-accent-primary/30"
+      className="flex items-center justify-between px-4 py-3.5 hover:bg-surface-hover cursor-pointer border-b border-surface-border last:border-b-0 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-accent-primary/30"
       aria-label={`Order from ${counterparty}, ${order.payableAmount} ${order.documentCurrencyCode}, status ${statusLabel}`}
     >
       <div>

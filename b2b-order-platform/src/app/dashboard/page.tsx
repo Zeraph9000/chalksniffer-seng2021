@@ -8,24 +8,22 @@ import { EmptyState } from "@/components/empty-state";
 import { LoadingSpinner } from "@/components/loading-spinner";
 
 type Stats = {
-  total: number;
   actionRequired: number;
-  awaitingReview: number;
-  despatched: number;
-  received: number;
-  invoiced: number;
-  paid: number;
+  outstandingValue: number;
+  outstandingCurrency: string;
+  overdue: number;
+  monthToDate: number;
 };
 
 type OrderWithMapping = OrderPaginated & { mapping?: OrderMapping };
 
 const PIPELINE_SECTIONS = [
-  { key: "actionRequired", label: "Action Required", color: "bg-amber-50 border-amber-200 text-amber-800" },
-  { key: "awaitingReview", label: "Awaiting Review", color: "bg-blue-50 border-blue-200 text-blue-800" },
-  { key: "despatched", label: "Despatched", color: "bg-blue-50 border-blue-200 text-blue-800" },
-  { key: "received", label: "Received", color: "bg-emerald-50 border-emerald-200 text-emerald-800" },
-  { key: "invoiced", label: "Awaiting Payment", color: "bg-violet-50 border-violet-200 text-violet-800" },
-  { key: "paid", label: "Paid", color: "bg-emerald-50 border-emerald-200 text-emerald-800" },
+  { key: "actionRequired", label: "Action Required", stripe: "bg-amber-600" },
+  { key: "awaitingReview", label: "Awaiting Review", stripe: "bg-slate-500" },
+  { key: "despatched", label: "Despatched", stripe: "bg-blue-600" },
+  { key: "received", label: "Received", stripe: "bg-emerald-600" },
+  { key: "invoiced", label: "Awaiting Payment", stripe: "bg-purple-600" },
+  { key: "paid", label: "Paid", stripe: "bg-emerald-600" },
 ];
 
 function getStatusLabel(mapping: OrderMapping | undefined, role: string): string {
@@ -117,7 +115,7 @@ export default function DashboardPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-ink">
-          {userName ? `G'day, ${userName}` : isBuyer ? "Contractor Dashboard" : "Supplier Dashboard"}
+          {userName ? `Welcome, ${userName}` : isBuyer ? "Contractor Dashboard" : "Supplier Dashboard"}
         </h1>
         <p className="mt-1 text-sm text-ink-muted">
           {isBuyer
@@ -142,8 +140,10 @@ export default function DashboardPage() {
             if (!sectionOrders || sectionOrders.length === 0) return null;
             return (
               <div key={section.key} className="card overflow-hidden">
-                <div className={`px-4 py-2 text-sm font-medium border-b ${section.color}`}>
-                  {section.label} ({sectionOrders.length})
+                <div className="flex items-center gap-2 border-b border-surface-border bg-surface-overlay px-4 py-2">
+                  <span className={`w-[3px] h-4 rounded-sm ${section.stripe}`} />
+                  <span className="text-sm font-semibold text-ink-muted">{section.label}</span>
+                  <span className="ml-auto text-xs font-mono text-ink-faint">{sectionOrders.length}</span>
                 </div>
                 {sectionOrders.map((order) => (
                   <OrderRow

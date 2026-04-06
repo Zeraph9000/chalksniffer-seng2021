@@ -247,7 +247,7 @@ export default function EditOrderPage() {
                   key={p.id}
                   type="button"
                   onClick={() => setPriority(p.id)}
-                  className={`rounded-lg border px-3 py-2 text-sm font-medium transition-all ${
+                  className={`rounded-lg border px-3 py-2 text-sm font-medium ${
                     priority === p.id ? p.color : "border-surface-border text-ink-muted"
                   }`}
                 >
