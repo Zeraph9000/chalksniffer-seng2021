@@ -7,7 +7,7 @@ export type UserRole = "buyer" | "seller";
 export type SessionData = {
   role: UserRole;
   name: string;
-  chalksniffer: { apiKey: string };
+  email: string;
   despatch: { sessionId: string; clientId: string };
   lastminutepush: { apiKey: string };
 };
@@ -18,9 +18,19 @@ export type User = {
   email: string;
   password: string;
   role: UserRole;
-  chalksniffer: { apiKey: string };
   despatch: { email: string; password: string };
   lastminutepush: { apiKey: string };
+  createdAt: Date;
+};
+
+export type OrderMapping = {
+  orderId: string;
+  buyerEmail: string;
+  sellerEmail: string;
+  status: "placed" | "despatched" | "received" | "invoiced";
+  despatchDocumentId?: string;
+  receiptAdviceId?: string;
+  invoiceId?: string;
   createdAt: Date;
 };
 
@@ -469,11 +479,3 @@ export type InvoiceDetail = InvoiceSummary & {
 // ============================================
 // Cross-API Order Linking
 // ============================================
-
-export type OrderLink = {
-  orderId: string;
-  despatchDocumentId?: string;
-  receiptAdviceId?: string;
-  invoiceId?: string;
-  status: "placed" | "despatched" | "received" | "invoiced";
-};
