@@ -3,6 +3,12 @@
     "fast-xml-parser": "^5.4.2"
   },
   "devDependencies": {
-    "@types/jest": "^30.0.0"
+    "@types/cors": "^2.8.19",
+    "@types/jest": "^30.0.0",
+    "@types/swagger-ui-express": "^4.1.8",
+    "@types/yamljs": "^0.2.34",
+    "cors": "^2.8.6",
+    "swagger-ui-express": "^5.0.1",
+    "yamljs": "^0.3.0"
   }
 }
