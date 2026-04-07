@@ -104,8 +104,10 @@ app.get('/orders/csv', async (req, res) => {
   }
 });
 
-app.post('/orders/recurring', async (_req: Request, res: Response) => {
+app.post('/orders/recurring', async (req: Request, res: Response) => {
   try {
+    const uID = await getUserIdFromApiKey(req);
+    if ('error' in uID) return handleError(res, uID);
     const result = await processAllRecurringOrders();
     if ('error' in result) return res.status(400).json(result);
 
