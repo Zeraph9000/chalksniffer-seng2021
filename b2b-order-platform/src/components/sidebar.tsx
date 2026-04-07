@@ -82,14 +82,17 @@ export function Sidebar({ role, name }: { role: UserRole | null; name: string })
       {/* Footer — account */}
       <div className="border-t border-surface-border p-3">
         <div className="flex items-center justify-between rounded-lg px-3 py-2">
-          <div className="flex items-center gap-2">
+          <Link
+            href="/profile"
+            className="flex items-center gap-2 hover:opacity-80"
+          >
             <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium text-white ${
               isBuyer ? "bg-accent-buyer" : "bg-accent-seller"
             }`}>
               {(name || "U").charAt(0).toUpperCase()}
             </div>
             <span className="text-xs font-medium text-ink-muted">{name || role}</span>
-          </div>
+          </Link>
           <button
             onClick={handleLogout}
             className="text-ink-faint hover:text-ink"
