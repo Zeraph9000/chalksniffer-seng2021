@@ -75,7 +75,7 @@
       "unitCode": "m³",
       "unitPrice": 20,
       "currency": "AUD",
-      "stock": 20,
+      "stock": 18,
       "createdAt": "2026-04-06T20:10:54.470Z"
     },
     {
@@ -99,7 +99,7 @@
       "unitCode": "m³",
       "unitPrice": 185,
       "currency": "AUD",
-      "stock": 300,
+      "stock": 299,
       "createdAt": "2026-03-20T00:00:00.000Z"
     },
     {
@@ -195,7 +195,7 @@
       "unitCode": "lm",
       "unitPrice": 4.2,
       "currency": "AUD",
-      "stock": 10000,
+      "stock": 9999,
       "createdAt": "2026-03-18T00:00:00.000Z"
     },
     {
@@ -219,7 +219,7 @@
       "unitCode": "m²",
       "unitPrice": 28,
       "currency": "AUD",
-      "stock": 3000,
+      "stock": 2999,
       "createdAt": "2026-03-18T00:00:00.000Z"
     },
     {
@@ -255,7 +255,7 @@
       "unitCode": "lm",
       "unitPrice": 55,
       "currency": "AUD",
-      "stock": 400,
+      "stock": 399,
       "createdAt": "2026-03-18T00:00:00.000Z"
     },
     {
@@ -387,136 +387,131 @@
       "unitCode": "EA",
       "unitPrice": 198,
       "currency": "AUD",
-      "stock": 80,
+      "stock": 78,
       "createdAt": "2026-03-22T00:00:00.000Z"
     }
   ],
   "orderMappings": [
     {
-      "_id": "69d3e9a178d46792d7282838",
-      "orderId": "6c7026f7-166d-4613-97bb-bfd5b0aab084",
+      "_id": "69d4456ec57db7496a0f8941",
+      "orderId": "89c1dc9a-c6cd-4724-89b3-887a72c252f2",
       "buyerEmail": "parham@gmail.com",
-      "sellerEmail": "andrew@gmail.com",
+      "sellerEmail": "sarah@boralaustralia.com.au",
       "status": "paid",
       "buyerStatus": "under_review",
       "sellerStatus": "needs_review",
-      "despatchDocumentId": "5c79fc6e-182a-4f71-965c-e0236eeba999",
-      "receiptAdviceId": "ca18a5bc-7050-45df-af1b-2fda263a2020",
-      "invoiceId": "INV-20260402-55ECFD87",
+      "despatchDocumentId": "a8d92c23-7acf-4a23-864f-bd281cb30f4f",
+      "receiptAdviceId": "bfdb425b-71fc-4140-9bb9-17c912dbfe89",
+      "invoiceId": "INV-20260402-13A5EBD9",
+      "payableAmount": 8250,
+      "documentCurrencyCode": "AUD",
+      "issueDate": "2026-03-28",
       "createdAt": "2026-03-28T00:00:00.000Z"
     },
     {
-      "_id": "69d3e9a178d46792d7282839",
-      "orderId": "9d3d6dfe-142d-421d-b45a-1cafcd09a3c8",
+      "_id": "69d4456ec57db7496a0f8942",
+      "orderId": "4fbabbee-2d98-4f07-a446-9c1e86c098b2",
       "buyerEmail": "parham@gmail.com",
-      "sellerEmail": "andrew@gmail.com",
-      "status": "paid",
+      "sellerEmail": "mike@bluescope.com.au",
+      "status": "invoiced",
       "buyerStatus": "under_review",
       "sellerStatus": "needs_review",
-      "despatchDocumentId": "1073d655-573c-4505-b4f7-de1aa66d6b11",
-      "receiptAdviceId": "e5b68466-d9cd-41e4-ab4f-8268ce6006f6",
-      "invoiceId": "INV-20260406-F4F87053",
+      "despatchDocumentId": "d9ed02ef-5766-402f-b870-2cc02b34ffc6",
+      "receiptAdviceId": "c3558884-6af6-42b8-b62b-75cd0b4470a0",
+      "invoiceId": "INV-20260406-062AD273",
+      "payableAmount": 12800,
+      "documentCurrencyCode": "AUD",
+      "issueDate": "2026-03-30",
       "createdAt": "2026-03-30T00:00:00.000Z"
     },
     {
-      "_id": "69d3e9a178d46792d728283a",
-      "orderId": "92e2efbf-9df7-431e-99b3-f79836f15e7a",
+      "_id": "69d4456ec57db7496a0f8943",
+      "orderId": "426ea853-35f8-403d-8db7-8cc6a3380806",
       "buyerEmail": "parham@gmail.com",
       "sellerEmail": "andrew@gmail.com",
       "status": "received",
       "buyerStatus": "under_review",
       "sellerStatus": "needs_review",
-      "despatchDocumentId": "6c82ccb8-3cc7-48e4-8bbe-0516b0c94c8a",
+      "despatchDocumentId": "d2561362-cbf0-488c-8246-b3cd27627701",
+      "payableAmount": 3280,
+      "documentCurrencyCode": "AUD",
+      "issueDate": "2026-04-02",
       "createdAt": "2026-04-02T00:00:00.000Z",
-      "receiptAdviceId": "4b5955aa-e140-448c-a58c-1aa1b57ae6d6"
+      "receiptAdviceId": "ac4680e5-56ba-44cc-8094-9bcf481d02ef"
     },
     {
-      "_id": "69d3e9a178d46792d728283b",
-      "orderId": "c1b736d5-5958-4e02-bf32-eb24a81d4d7d",
-      "buyerEmail": "parham@gmail.com",
-      "sellerEmail": "andrew@gmail.com",
-      "status": "despatched",
-      "buyerStatus": "under_review",
-      "sellerStatus": "needs_review",
-      "sellerNote": null,
-      "createdAt": "2026-04-05T00:00:00.000Z",
-      "despatchDocumentId": "5bcf255d-d221-4f19-8c88-0508de3a8907"
-    },
-    {
-      "_id": "69d3e9a178d46792d728283c",
-      "orderId": "f07148bc-fb86-48d7-b951-2866f512304b",
-      "buyerEmail": "parham@gmail.com",
-      "sellerEmail": "andrew@gmail.com",
-      "status": "despatched",
-      "buyerStatus": "under_review",
-      "sellerStatus": "needs_review",
-      "createdAt": "2026-04-06T00:00:00.000Z",
-      "despatchDocumentId": "243b6369-e9a7-43da-bcc2-09864af0205e"
-    },
-    {
-      "_id": "69d3ea81d4ffb2447a7c27af",
-      "orderId": "60185e04-261a-4985-b2bb-ad2296680927",
+      "_id": "69d4456ec57db7496a0f8944",
+      "orderId": "bfd4a2c6-fdfd-4b81-af52-fd48a3ecfd5d",
       "buyerEmail": "parham@gmail.com",
       "sellerEmail": "andrew@gmail.com",
       "status": "placed",
+      "buyerStatus": "needs_review",
+      "sellerStatus": "under_review",
+      "sellerNote": "We only have 40 hard hats in stock currently. Can you adjust the order to 40 or wait until next week for the remaining 10?",
+      "payableAmount": 2850,
+      "documentCurrencyCode": "AUD",
+      "issueDate": "2026-04-05",
+      "createdAt": "2026-04-05T00:00:00.000Z"
+    },
+    {
+      "_id": "69d4456ec57db7496a0f8945",
+      "orderId": "34e7bb9b-78df-4a54-ab85-ae2c0c64829f",
+      "buyerEmail": "parham@gmail.com",
+      "sellerEmail": "mike@bluescope.com.au",
+      "status": "placed",
       "buyerStatus": "under_review",
       "sellerStatus": "needs_review",
+      "payableAmount": 84000,
+      "documentCurrencyCode": "AUD",
+      "issueDate": "2026-04-06",
       "createdAt": "2026-04-06T00:00:00.000Z"
     },
     {
-      "_id": "69d3ea81d4ffb2447a7c27b0",
-      "orderId": "a56cc039-cd42-4ed0-99c3-2cec828a63d7",
+      "_id": "69d4456ec57db7496a0f8946",
+      "orderId": "415f6719-b09e-4a37-b785-cf8cce7de62b",
       "buyerEmail": "parham@gmail.com",
-      "sellerEmail": "andrew@gmail.com",
+      "sellerEmail": "sarah@boralaustralia.com.au",
       "status": "placed",
       "buyerStatus": "under_review",
       "sellerStatus": "needs_review",
+      "payableAmount": 6600,
+      "documentCurrencyCode": "AUD",
+      "issueDate": "2026-04-07",
       "createdAt": "2026-04-07T00:00:00.000Z"
     },
     {
-      "_id": "69d3ea81d4ffb2447a7c27b1",
-      "orderId": "5b8d2bfb-f3d3-42df-99a2-ba8d8e66cafd",
-      "buyerEmail": "parham@gmail.com",
-      "sellerEmail": "andrew@gmail.com",
-      "status": "placed",
-      "buyerStatus": "under_review",
-      "sellerStatus": "needs_review",
-      "createdAt": "2026-04-07T00:00:00.000Z"
-    },
-    {
-      "_id": "69d3ea81d4ffb2447a7c27b2",
-      "orderId": "33c85062-eb77-4530-a443-32616a36a780",
+      "_id": "69d4456ec57db7496a0f8947",
+      "orderId": "b172d196-bafb-4379-a2cf-9ae73f96d574",
       "buyerEmail": "parham@gmail.com",
       "sellerEmail": "andrew@gmail.com",
       "status": "despatched",
       "buyerStatus": "under_review",
       "sellerStatus": "needs_review",
-      "despatchDocumentId": "b42f9ead-3db4-459e-84e5-35f8f417b065",
-      "createdAt": "2026-04-01T00:00:00.000Z"
+      "payableAmount": 6300,
+      "documentCurrencyCode": "AUD",
+      "issueDate": "2026-04-07",
+      "createdAt": "2026-04-07T00:00:00.000Z",
+      "despatchDocumentId": "0b1f20a0-a76f-458f-b577-cf0b8f8b2339"
     },
     {
-      "_id": "69d3ea81d4ffb2447a7c27b3",
-      "orderId": "a1714e78-77ec-47e6-b9d8-d56d3ee34808",
+      "_id": "69d445df0cc5970109daac77",
+      "orderId": "463101f2-7c0c-4b0c-bf2a-174d77ba8497",
       "buyerEmail": "parham@gmail.com",
       "sellerEmail": "andrew@gmail.com",
-      "status": "despatched",
+      "status": "placed",
       "buyerStatus": "under_review",
       "sellerStatus": "needs_review",
-      "despatchDocumentId": "994aadfc-a086-400c-acce-bbf615f117f6",
-      "createdAt": "2026-04-03T00:00:00.000Z"
+      "createdAt": "2026-04-06T23:46:39.586Z"
     },
     {
-      "_id": "69d3ea81d4ffb2447a7c27b4",
-      "orderId": "d99cd463-09d4-4d07-bfac-be8416f30805",
+      "_id": "69d445e00cc5970109daac78",
+      "orderId": "3f87b649-0a88-469c-afa9-d6d7bb865ec4",
       "buyerEmail": "parham@gmail.com",
-      "sellerEmail": "andrew@gmail.com",
-      "status": "paid",
+      "sellerEmail": "mike@bluescope.com.au",
+      "status": "placed",
       "buyerStatus": "under_review",
       "sellerStatus": "needs_review",
-      "despatchDocumentId": "d73e515d-a2f7-4c85-9371-d72d03875b37",
-      "receiptAdviceId": "a5175017-db24-4498-9bf2-eebf36231c3d",
-      "invoiceId": "INV-20260326-9CBD0FE8",
-      "createdAt": "2026-03-20T00:00:00.000Z"
+      "createdAt": "2026-04-06T23:46:40.875Z"
     }
   ]
 }

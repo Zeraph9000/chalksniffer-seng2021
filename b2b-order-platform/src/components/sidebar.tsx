@@ -44,14 +44,14 @@ export function Sidebar({ role, name }: { role: UserRole | null; name: string })
       <div className="flex h-16 items-center justify-center">
         <Link href="/dashboard" className="flex items-center gap-2.5">
           <svg className="h-8 w-8" viewBox="0 0 40 40" fill="none">
-            <path d="M4 36V12l10-8v32H4z" fill="#b34215" />
+            <path d="M4 36V12l10-8v32H4z" fill="#d4531e" />
             <rect x="7" y="20" width="4" height="16" fill="white" />
-            <path d="M18 36V8l10-4v32H18z" fill="#b34215" />
+            <path d="M18 36V8l10-4v32H18z" fill="#d4531e" />
             <rect x="21" y="16" width="4" height="6" fill="white" />
             <rect x="21" y="26" width="4" height="10" fill="white" />
-            <path d="M28 36V14l8 4v18H28z" fill="#b34215" />
+            <path d="M28 36V14l8 4v18H28z" fill="#d4531e" />
           </svg>
-          <span className="text-2xl font-extrabold tracking-tight text-[#b34215]">Ledgr</span>
+          <span className="text-2xl font-extrabold tracking-tight text-[#d4531e]">Ledgr</span>
         </Link>
       </div>
 

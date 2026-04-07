@@ -18,22 +18,30 @@ type Stats = {
 
 type OrderWithMapping = OrderPaginated & { mapping?: OrderMapping };
 
-const PIPELINE_SECTIONS = [
-  { key: "actionRequired", label: "Action Required", stripe: "bg-semantic-warning" },
-  { key: "awaitingReview", label: "Awaiting Review", stripe: "bg-semantic-neutral" },
-  { key: "despatched", label: "Despatched", stripe: "bg-semantic-info" },
-  { key: "received", label: "Received", stripe: "bg-semantic-success" },
-  { key: "invoiced", label: "Awaiting Payment", stripe: "bg-purple-600" },
-  { key: "paid", label: "Paid", stripe: "bg-semantic-success" },
-];
+function getPipelineSections(role: "buyer" | "seller") {
+  return role === "seller"
+    ? [
+        { key: "actionRequired", label: "Ready to Despatch", stripe: "bg-semantic-warning" },
+        { key: "awaitingReview", label: "Awaiting Contractor", stripe: "bg-semantic-neutral" },
+        { key: "despatched", label: "Despatched", stripe: "bg-semantic-info" },
+        { key: "received", label: "Ready to Invoice", stripe: "bg-semantic-success" },
+        { key: "invoiced", label: "Awaiting Payment", stripe: "bg-purple-600" },
+        { key: "paid", label: "Paid", stripe: "bg-semantic-success" },
+      ]
+    : [
+        { key: "actionRequired", label: "Change Requested", stripe: "bg-semantic-warning" },
+        { key: "awaitingReview", label: "Awaiting Supplier", stripe: "bg-semantic-neutral" },
+        { key: "despatched", label: "In Transit", stripe: "bg-semantic-info" },
+        { key: "received", label: "Received", stripe: "bg-semantic-success" },
+        { key: "invoiced", label: "Payment Due", stripe: "bg-purple-600" },
+        { key: "paid", label: "Paid", stripe: "bg-semantic-success" },
+      ];
+}
 
-function getStatusLabel(mapping: OrderMapping | undefined, role: string): string {
+function getStatusLabel(mapping: OrderMapping | undefined): string {
   if (!mapping) return "Placed";
-  if (mapping.status === "placed") {
-    const myStatus = role === "buyer" ? mapping.buyerStatus : mapping.sellerStatus;
-    return myStatus === "needs_review" ? "Action Required" : "Awaiting Review";
-  }
-  if (mapping.status === "invoiced") return "Awaiting Payment";
+  if (mapping.status === "placed") return "Placed";
+  if (mapping.status === "invoiced") return "Invoiced";
   if (mapping.status === "paid") return "Paid";
   return mapping.status.charAt(0).toUpperCase() + mapping.status.slice(1);
 }
@@ -101,8 +109,9 @@ export default function DashboardPage() {
 
   const isBuyer = role === "buyer";
 
+  const pipelineSections = getPipelineSections(role || "buyer");
   const grouped: Record<string, OrderWithMapping[]> = {};
-  for (const section of PIPELINE_SECTIONS) {
+  for (const section of pipelineSections) {
     grouped[section.key] = [];
   }
   for (const order of orders) {
@@ -136,7 +145,7 @@ export default function DashboardPage() {
         />
       ) : (
         <div className="space-y-4">
-          {PIPELINE_SECTIONS.map((section) => {
+          {pipelineSections.map((section) => {
             const sectionOrders = grouped[section.key];
             if (!sectionOrders || sectionOrders.length === 0) return null;
             return (
@@ -151,7 +160,7 @@ export default function DashboardPage() {
                     key={order.id}
                     order={order}
                     role={role || "buyer"}
-                    statusLabel={getStatusLabel(order.mapping, role || "buyer")}
+                    statusLabel={getStatusLabel(order.mapping)}
                   />
                 ))}
               </div>

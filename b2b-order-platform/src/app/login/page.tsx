@@ -72,14 +72,14 @@ export default function LoginPage() {
         {/* Header */}
         <div className="mb-8 flex flex-col items-center text-center">
           <svg className="mb-3 h-12 w-12" viewBox="0 0 40 40" fill="none">
-            <path d="M4 36V12l10-8v32H4z" fill="#b34215" />
+            <path d="M4 36V12l10-8v32H4z" fill="#d4531e" />
             <rect x="7" y="20" width="4" height="16" fill="white" />
-            <path d="M18 36V8l10-4v32H18z" fill="#b34215" />
+            <path d="M18 36V8l10-4v32H18z" fill="#d4531e" />
             <rect x="21" y="16" width="4" height="6" fill="white" />
             <rect x="21" y="26" width="4" height="10" fill="white" />
-            <path d="M28 36V14l8 4v18H28z" fill="#b34215" />
+            <path d="M28 36V14l8 4v18H28z" fill="#d4531e" />
           </svg>
-          <h1 className="text-3xl font-extrabold tracking-tight text-[#b34215]">
+          <h1 className="text-3xl font-extrabold tracking-tight text-[#d4531e]">
             Ledgr
           </h1>
           <p className="text-xs text-ink-faint mt-1">
