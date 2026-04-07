@@ -131,7 +131,9 @@ describe('POST /orders (recurring creation)', () => {
 describe('POST /orders/recurring', () => {
   describe('successful processing [status:200]', () => {
     test('returns 200 with zero processed when no recurring orders exist [status:200]', async () => {
-      const res = await request(app).post('/orders/recurring');
+      const res = await request(app)
+        .post('/orders/recurring')
+        .set('Authorization', VALID_API_KEY);
       expect(res.status).toStrictEqual(200);
       expect(res.body).toStrictEqual({ processed: 0, orderIds: [] });
     });
@@ -142,7 +144,9 @@ describe('POST /orders/recurring', () => {
         .set('Authorization', VALID_API_KEY)
         .send({ ...buildValidOrderPayload(), recurring: true, frequency: 'Daily', startDate: '2024-01-01' });
 
-      const res = await request(app).post('/orders/recurring');
+      const res = await request(app)
+        .post('/orders/recurring')
+        .set('Authorization', VALID_API_KEY);
       expect(res.status).toStrictEqual(200);
       expect(res.body.processed).toStrictEqual(1);
       expect(res.body.orderIds).toHaveLength(1);
@@ -154,7 +158,9 @@ describe('POST /orders/recurring', () => {
     test('using invalid order data for a recurring order instance [status:400]', async () => {
       await seedInvalidRecurringOrder();
 
-      const res = await request(app).post('/orders/recurring');
+      const res = await request(app)
+        .post('/orders/recurring')
+        .set('Authorization', VALID_API_KEY);
       expect(res.status).toStrictEqual(400);
       expect(res.body).toStrictEqual({
         error: expect.any(String),
