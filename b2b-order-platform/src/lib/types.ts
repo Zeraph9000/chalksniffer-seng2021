@@ -8,6 +8,7 @@ export type SessionData = {
   role: UserRole;
   name: string;
   email: string;
+  userId: string;
 };
 
 export type UserAddress = {
@@ -34,8 +35,8 @@ export type PreDespatchStatus = "needs_review" | "under_review";
 
 export type OrderMapping = {
   orderId: string;
-  buyerEmail: string;
-  sellerEmail: string;
+  buyerId: string;
+  sellerId: string;
   status: "placed" | "despatched" | "received" | "invoiced" | "paid";
   buyerStatus: PreDespatchStatus;
   sellerStatus: PreDespatchStatus;

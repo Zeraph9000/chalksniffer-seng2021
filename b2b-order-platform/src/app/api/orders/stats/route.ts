@@ -10,12 +10,12 @@ export async function GET() {
   const client = await clientPromise;
   const db = client.db();
 
-  const emailField = session.role === "buyer" ? "buyerEmail" : "sellerEmail";
+  const idField = session.role === "buyer" ? "buyerId" : "sellerId";
   const statusField = session.role === "buyer" ? "buyerStatus" : "sellerStatus";
 
   const mappings = await db
     .collection<OrderMapping>("orderMappings")
-    .find({ [emailField]: session.email })
+    .find({ [idField]: session.userId })
     .toArray();
 
   // Requires Attention — orders where you need to act

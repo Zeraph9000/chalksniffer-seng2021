@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionOrNull } from "@/lib/session";
 import { chalksniffer } from "@/lib/api-clients";
 import { setMapping, getOrderIdsForUser } from "@/lib/order-access";
+import clientPromise from "@/lib/db";
+import { User } from "@/lib/types";
 
 export async function GET(request: NextRequest) {
   const session = await getSessionOrNull();
@@ -10,7 +12,7 @@ export async function GET(request: NextRequest) {
   const status = searchParams.get("status") || undefined;
   const limit = Number(searchParams.get("limit") || "20");
   const offset = Number(searchParams.get("offset") || "0");
-  const orderIds = await getOrderIdsForUser(session.email, session.role, status);
+  const orderIds = await getOrderIdsForUser(session.userId, session.role, status);
   if (orderIds.length === 0) {
     return NextResponse.json({ orders: [], totalOrders: 0, limit, offset });
   }
@@ -32,6 +34,14 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const { sellerEmail, ...orderBody } = body;
   if (!sellerEmail) return NextResponse.json({ error: "sellerEmail is required" }, { status: 400 });
+
+  // Resolve seller's userId from their email
+  const client = await clientPromise;
+  const db = client.db();
+  const sellerUser = await db.collection<User>("users").findOne({ email: sellerEmail });
+  if (!sellerUser) return NextResponse.json({ error: "Seller not found" }, { status: 400 });
+  const sellerId = sellerUser._id!.toString();
+
   const res = await chalksniffer().post("/orders", orderBody);
   const data = await res.json();
   if (res.ok && data.id) {
@@ -40,7 +50,7 @@ export async function POST(request: NextRequest) {
         sum + line.lineItem.price.priceAmount * line.lineItem.quantity, 0)
       ?? 0;
     await setMapping(data.id, {
-      orderId: data.id, buyerEmail: session.email, sellerEmail,
+      orderId: data.id, buyerId: session.userId, sellerId,
       buyerStatus: "under_review", sellerStatus: "needs_review",
       payableAmount,
       documentCurrencyCode: data.documentCurrencyCode || "AUD",

@@ -18,5 +18,6 @@ export async function getSessionOrNull(): Promise<SessionData | null> {
     role: user.role,
     name: user.name,
     email: user.email,
+    userId: user._id!.toString(),
   };
 }

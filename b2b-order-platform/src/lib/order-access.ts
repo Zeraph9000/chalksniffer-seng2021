@@ -20,8 +20,8 @@ export async function setMapping(
 
   const mapping: OrderMapping = {
     orderId,
-    buyerEmail: update.buyerEmail ?? existing?.buyerEmail ?? "",
-    sellerEmail: update.sellerEmail ?? existing?.sellerEmail ?? "",
+    buyerId: update.buyerId ?? existing?.buyerId ?? "",
+    sellerId: update.sellerId ?? existing?.sellerId ?? "",
     status: "placed",
     buyerStatus: update.buyerStatus ?? existing?.buyerStatus ?? "under_review",
     sellerStatus: update.sellerStatus ?? existing?.sellerStatus ?? "needs_review",
@@ -60,7 +60,7 @@ export async function getMappingByDespatch(despatchDocumentId: string): Promise<
 }
 
 export async function getOrderIdsForUser(
-  email: string,
+  userId: string,
   role: string,
   status?: string
 ): Promise<string[]> {
@@ -68,8 +68,8 @@ export async function getOrderIdsForUser(
   const db = client.db();
 
   const filter: Record<string, string> = role === "buyer"
-    ? { buyerEmail: email }
-    : { sellerEmail: email };
+    ? { buyerId: userId }
+    : { sellerId: userId };
 
   if (status) {
     filter.status = status;
@@ -85,17 +85,17 @@ export async function getOrderIdsForUser(
 }
 
 export async function assertOrderAccess(
-  email: string,
+  userId: string,
   role: string,
   orderId: string
 ): Promise<void> {
   const mapping = await getMapping(orderId);
   if (!mapping) return;
 
-  if (role === "buyer" && mapping.buyerEmail !== email) {
+  if (role === "buyer" && mapping.buyerId !== userId) {
     throw new Error("Access denied");
   }
-  if (role === "seller" && mapping.sellerEmail !== email) {
+  if (role === "seller" && mapping.sellerId !== userId) {
     throw new Error("Access denied");
   }
 }

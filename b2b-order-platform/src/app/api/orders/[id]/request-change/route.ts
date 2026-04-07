@@ -15,7 +15,7 @@ export async function POST(
 
   const { id } = await params;
   try {
-    await assertOrderAccess(session.email, session.role, id);
+    await assertOrderAccess(session.userId, session.role, id);
   } catch {
     return NextResponse.json({ error: "Access denied" }, { status: 403 });
   }

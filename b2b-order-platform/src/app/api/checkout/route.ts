@@ -101,8 +101,8 @@ export async function POST(request: NextRequest) {
     if (res.ok && data.id) {
       await setMapping(data.id, {
         orderId: data.id,
-        buyerEmail: session.email,
-        sellerEmail,
+        buyerId: session.userId,
+        sellerId: seller._id!.toString(),
         buyerStatus: "under_review",
         sellerStatus: "needs_review",
       });
