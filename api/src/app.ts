@@ -358,8 +358,47 @@ app.put('/stores/:storeId', async (req, res) => {
         return res.status(400).json( { error: updStore.error, message: updStore.message } );
       }
 
+      await store.save();
+
       return res.status(200).json(updStore);
 
+
+  } catch {
+    res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'An unexpected error occurred' });
+  }
+});
+
+app.put('/stores/:storeId/status', async (req, res) => {
+  try {
+      const authResult = await getUserIdFromApiKey(req);
+      if ('error' in authResult) return handleError(res, authResult);
+
+      const status = req.body;
+
+      if (status.status != 'active' && status.status != 'paused' && status.status != 'closed') {
+        return res.status(400).json( { error: 'Bad Request', message: 'Invalid status value' } )
+      }
+
+      const storeId = req.params.storeId;
+
+      const store = await StoreModel.findOne( { storeId } );
+
+      if (!store) {
+        return res.status(404).json({ error: 'Not Found', message: 'Store does not exist' });
+      }
+      if (authResult.userId != store.userId ) {
+        return res.status(403).json( { error: 'FORBIDDEN', message: 'This store does not belong to you' } );
+      }
+
+      const now: Date = new Date();
+
+      store.status = status.status;
+
+      store.updatedAt = now;
+
+      await store.save();
+
+      return res.status(200).json(store)
 
   } catch {
     res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'An unexpected error occurred' });
