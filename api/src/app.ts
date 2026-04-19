@@ -12,7 +12,7 @@ import { handleError } from './utils/httpErrors';
 import { deleteOrder, createOrder, updateOrder, listOrders, getOrder, getOrderCSV } from './orders/orderService';
 import { editRecurringOrder, createRecurringOrder, deleteRecurringOrder, deleteRecurringOrderInstance, editInstance, getRecurringOrder, getRecurringOrderInstance, processAllRecurringOrders } from './orders/recurringOrderService';
 import { getApiKeyFromAuthorizationHeader, getUserIdFromApiKey } from './utils/serverHelpers';
-import { createStore } from './stores/storeService';
+import { createStore, editStore } from './stores/storeService';
 import StoreModel from './models/store';
 
 const app = express();
@@ -328,13 +328,38 @@ app.get('/stores/:storeId', async (req, res) => {
     if ('error' in authResult) return handleError(res, authResult);
 
     const storeId = req.params.storeId;
-    
+
     const store = await StoreModel.findOne( { storeId } );
-    if (store) {
+    if (!store) {
       return res.status(404).json({ error: 'Not Found', message: 'Store does not exist' });
     } else {
       return res.status(200).json(store);
     }
+
+  } catch {
+    res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'An unexpected error occurred' });
+  }
+});
+
+app.put('/stores/:storeId', async (req, res) => {
+  try {
+      const authResult = await getUserIdFromApiKey(req);
+      if ('error' in authResult) return handleError(res, authResult);
+      const storeId = req.params.storeId
+      let store = await StoreModel.findOne({ storeId });
+      if (!store) {
+        return res.status(404).json({ error: 'Not Found', message: 'Store does not exist' });
+      }
+      if (authResult.userId != store.userId ) {
+        return res.status(403).json( { error: 'FORBIDDEN', message: 'This store does not belong to you' } );
+      }
+      const updStore = await editStore(store, req.body);
+      if ('error' in updStore) {
+        return res.status(400).json( { error: updStore.error, message: updStore.message } );
+      }
+
+      return res.status(200).json(updStore);
+
 
   } catch {
     res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'An unexpected error occurred' });

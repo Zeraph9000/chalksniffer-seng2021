@@ -274,6 +274,16 @@ type store = {
   updatedAt?: string | Date | null | undefined;
 };
 
+type UpdateStoreRequest = {
+  storeName?: string;
+  description?: string;
+  logoUrl?: string;
+  bannerUrl?: string;
+  location?: string;
+  category?: string;
+  status?: StoreStatus;
+};
+
 type storesList = {
   stores: store[];
 };
@@ -312,5 +322,6 @@ export type {
   PaginationParams,
   StoreStatus,
   store,
-  storesList
+  storesList,
+  UpdateStoreRequest
 };
