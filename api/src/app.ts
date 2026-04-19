@@ -13,6 +13,7 @@ import { deleteOrder, createOrder, updateOrder, listOrders, getOrder, getOrderCS
 import { editRecurringOrder, createRecurringOrder, deleteRecurringOrder, deleteRecurringOrderInstance, editInstance, getRecurringOrder, getRecurringOrderInstance, processAllRecurringOrders } from './orders/recurringOrderService';
 import { getApiKeyFromAuthorizationHeader, getUserIdFromApiKey } from './utils/serverHelpers';
 import { createStore } from './stores/storeService';
+import StoreModel from './models/store';
 
 const app = express();
 app.use(cors());
@@ -307,6 +308,18 @@ app.post('/stores', async (req, res) => {
   } catch {
     res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'An unexpected error occurred' });
   }
+});
+
+//Add filters later if possible
+app.get('/stores', async (req, res) => {
+    try {
+      const authResult = await getUserIdFromApiKey(req);
+      if ('error' in authResult) return handleError(res, authResult);
+      const stores = await StoreModel.find({});
+      return res.status(200).json(stores);
+    } catch {
+      res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'An unexpected error occurred' });
+    }
 });
 
 export default app;

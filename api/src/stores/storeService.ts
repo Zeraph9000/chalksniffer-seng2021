@@ -13,7 +13,7 @@ export async function createStore(
   const storeBodyCheck = validateStore(body);
   if (!storeBodyCheck.res) {
     ret = {
-      error: 'BAD REQUEST',
+      error: 'INVALID STORE BODY',
       message: 'Invalid request body / missing required fields'
     } as ErrorObject
   }
