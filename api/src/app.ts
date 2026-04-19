@@ -315,7 +315,7 @@ app.get('/stores', async (req, res) => {
     try {
       const authResult = await getUserIdFromApiKey(req);
       if ('error' in authResult) return handleError(res, authResult);
-      const stores = await StoreModel.find({});
+      const stores = await StoreModel.find({ status: { $ne: 'closed' } });
       return res.status(200).json(stores);
     } catch {
       res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'An unexpected error occurred' });
