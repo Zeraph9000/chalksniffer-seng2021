@@ -258,6 +258,22 @@ type PaginationParams = {
   filter?: OrderFilter;
 };
 
+type StoreStatus = "active" | "paused" | "closed";
+
+type stores = {
+  storeId: string;
+  userId: string;
+  storeName: string;
+  description: string;
+  logoUrl?: string;
+  bannerUrl?: string;
+  location?: string;
+  category?: string;
+  status: StoreStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type {
   Period,
   DocumentReference,
@@ -290,4 +306,5 @@ export type {
   OrderFilter,
   OrderList,
   PaginationParams,
+  stores
 };
