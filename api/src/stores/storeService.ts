@@ -35,14 +35,14 @@ export async function createStore(
         storeName: body.storeName!,
         description: body.description!,
         status: body.status!,
-        logoUrl: body.logoUrl!,
-        bannerUrl: body.bannerUrl!,
-        location: body.location!,
-        category: body.category!,
+        logoUrl: body.logoUrl,
+        bannerUrl: body.bannerUrl,
+        location: body.location,
+        category: body.category,
         createdAt: body.createdAt!,
         updatedAt: body.updatedAt!
     }
-    
+
     await StoreModel.create(newStore);
     
     ret = newStore as store;
