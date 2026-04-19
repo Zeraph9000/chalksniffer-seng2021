@@ -7,11 +7,12 @@ import { router as authRouter } from './auth/auth';
 import OrderModel from './models/order';
 import { parsePagedQuery } from './utils/orderHelpers';
 import { getOrderXmlResponse } from './utils/getOrderXml';
-import { editOrderFmt } from './types';
+import { editOrderFmt, store } from './types';
 import { handleError } from './utils/httpErrors';
 import { deleteOrder, createOrder, updateOrder, listOrders, getOrder, getOrderCSV } from './orders/orderService';
 import { editRecurringOrder, createRecurringOrder, deleteRecurringOrder, deleteRecurringOrderInstance, editInstance, getRecurringOrder, getRecurringOrderInstance, processAllRecurringOrders } from './orders/recurringOrderService';
 import { getApiKeyFromAuthorizationHeader, getUserIdFromApiKey } from './utils/serverHelpers';
+import { createStore } from './stores/storeService';
 
 const app = express();
 app.use(cors());
@@ -280,6 +281,29 @@ app.put('/orders/recurring/:id/instance/:position', async (req, res) => {
 
     const result = await editInstance(req.params.id, authResult.userId, Number(req.params.position), req.body);
     return res.status(result.status).json(result.body);
+  } catch {
+    res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'An unexpected error occurred' });
+  }
+});
+
+app.post('/stores', async (req, res) => {
+  try {
+    const authResult = await getUserIdFromApiKey(req);
+    if ('error' in authResult) return handleError(res, authResult);
+    const userId = authResult.userId;
+    let store_details = req.body as store
+    const store = await createStore(userId, store_details)
+    if ('error' in store) {
+      if (store.error == 'CONFLICT') {
+        return res.status(409).json({ error: store.error, message: store.message });
+      }
+      if (store.error == 'BAD REQUEST') {
+        return res.status(400).json({ error: store.error, message: store.message });
+      }
+    }
+
+    return res.status(200).json(store)
+
   } catch {
     res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'An unexpected error occurred' });
   }

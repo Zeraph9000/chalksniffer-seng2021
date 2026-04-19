@@ -11,7 +11,7 @@
 import fs from 'fs';
 import path from 'path';
 import { XMLParser } from 'fast-xml-parser';
-import { Order, Address, Party, DocumentReference, TaxCategory, TaxSubtotal, TaxTotal, AllowanceCharge, PaymentMeans, Delivery, LineItem, Period } from '../types';
+import { Order, Address, Party, DocumentReference, TaxCategory, TaxSubtotal, TaxTotal, AllowanceCharge, PaymentMeans, Delivery, LineItem, Period, store } from '../types';
 
 // ---------------------------------------------------------------------------
 // Primitive validators (date, time, currency, country)
@@ -311,9 +311,45 @@ function validateOrder(order: Order): ValidationResult {
   return { res: errors.length === 0, errors };
 }
 
+function validateStore(store: Partial<store>): ValidationResult {
+  const errors: ValidationError[] = [];
+
+  if (!store.storeName || store.storeName.trim() === '') {
+    errors.push({ field: 'storeName', message: 'required' });
+  }
+
+  if (!store.description || store.description.trim() === '') {
+    errors.push({ field: 'description', message: 'required' });
+  }
+
+  if (!store.status) {
+    errors.push({ field: 'status', message: 'required' });
+  } else if (!['active', 'paused', 'closed'].includes(store.status)) {
+    errors.push({ field: 'status', message: 'must be one of: active, paused, closed' });
+  }
+
+  if (store.logoUrl != null && typeof store.logoUrl !== 'string') {
+    errors.push({ field: 'logoUrl', message: 'must be a string' });
+  }
+
+  if (store.bannerUrl != null && typeof store.bannerUrl !== 'string') {
+    errors.push({ field: 'bannerUrl', message: 'must be a string' });
+  }
+
+  if (store.location != null && typeof store.location !== 'string') {
+    errors.push({ field: 'location', message: 'must be a string' });
+  }
+
+  if (store.category != null && typeof store.category !== 'string') {
+    errors.push({ field: 'category', message: 'must be a string' });
+  }
+
+  return { res: errors.length === 0, errors };
+}
+
 // ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
 
-export { dateValidation, timeValidation, currencyValidation, validateOrder };
+export { dateValidation, timeValidation, currencyValidation, validateOrder, validateStore };
 export type { ValidationError, ValidationResult };
