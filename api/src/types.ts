@@ -265,13 +265,13 @@ type store = {
   userId: string;
   storeName: string;
   description: string;
-  logoUrl?: string;
-  bannerUrl?: string;
-  location?: string;
-  category?: string;
+  logoUrl?: string | undefined;
+  bannerUrl?: string | undefined;
+  location?: string | undefined;
+  category?: string | undefined;
   status: StoreStatus;
-  createdAt?: string | Date | null;
-  updatedAt?: string | Date | null;
+  createdAt?: string | Date | null | undefined;
+  updatedAt?: string | Date | null | undefined;
 };
 
 type storesList = {
