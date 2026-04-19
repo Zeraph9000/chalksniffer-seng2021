@@ -405,4 +405,24 @@ app.put('/stores/:storeId/status', async (req, res) => {
   }
 });
 
+app.get('/stores/me', async (req, res) => {
+  try {
+    const authResult = await getUserIdFromApiKey(req);
+    if ('error' in authResult) return handleError(res, authResult);
+
+    const userId = authResult.userId
+
+    const store = await StoreModel.findOne( { userId } );
+
+    if (!store) {
+      return res.status(404).json({ error: 'Not Found', message: 'You don\'t own a store'} );
+    } else {
+      return res.status(200).json(store);
+    }
+
+  } catch {
+    res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'An unexpected error occurred' });
+  }
+});
+
 export default app;
