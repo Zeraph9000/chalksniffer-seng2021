@@ -1,7 +1,6 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
-import swaggerUiDist from 'swagger-ui-dist';
 import YAML from 'yamljs';
 import path from 'path';
 import { router as authRouter } from './auth/auth';
@@ -23,13 +22,12 @@ const yamlPath = process.env.VERCEL
   ? path.join(process.cwd(), 'api/endpoints.yaml')
   : path.join(__dirname, '../endpoints.yaml');
 const swaggerDocument = YAML.load(yamlPath);
-const swaggerUiDistPath = swaggerUiDist.getAbsoluteFSPath();
 const swaggerUiOptions = {
   explorer: true,
   customCss: '.swagger-ui .opblock .opblock-summary-path-description-wrapper { align-items: center; display: flex; flex-wrap: wrap; gap: 0 10px; padding: 0 10px; width: 100%; }',
   customCssUrl: 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.0.0/swagger-ui.min.css',
 };
-app.use('/docs', express.static(swaggerUiDistPath, { index: false }), swaggerUi.serve, swaggerUi.setup(swaggerDocument, swaggerUiOptions));
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, swaggerUiOptions));
 
 app.use(express.json());
 app.use('/auth', authRouter);
