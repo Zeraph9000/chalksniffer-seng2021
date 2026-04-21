@@ -28,7 +28,12 @@ export default function NewProduct() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...basics, options, variants }),
     });
-    if (res.ok) router.push("/dashboard/products");
+    if (res.ok) {
+      // Invalidate the server-rendered product list so the new product shows up
+      // immediately without a manual refresh.
+      router.refresh();
+      router.push("/dashboard/products");
+    }
     else {
       const d = await res.json();
       setErr(d.message || d.error);

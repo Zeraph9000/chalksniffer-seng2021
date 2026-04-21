@@ -47,7 +47,10 @@ export default function EditProduct() {
         available: product.available,
       }),
     });
-    if (res.ok) router.push("/dashboard/products");
+    if (res.ok) {
+      router.refresh();
+      router.push("/dashboard/products");
+    }
     else {
       const d = await res.json();
       setErr(d.message || d.error);
@@ -57,6 +60,7 @@ export default function EditProduct() {
   async function archive() {
     if (!product || !confirm("Archive this product?")) return;
     await fetch(`/api/products/${product.productId}`, { method: "DELETE" });
+    router.refresh();
     router.push("/dashboard/products");
   }
 

@@ -68,14 +68,21 @@ export default function OrderDetail() {
       </section>
 
       {mapping.status === "despatched" && (
-        <button
-          type="button"
-          disabled={busy}
-          onClick={confirmReceipt}
-          className="w-full py-4 bg-green-600 text-white rounded text-lg font-semibold disabled:opacity-50"
-        >
-          I received my order
-        </button>
+        <section className="space-y-3">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={confirmReceipt}
+            className="w-full py-4 bg-green-600 text-white rounded text-lg font-semibold disabled:opacity-50"
+          >
+            I received my order
+          </button>
+          <p className="text-xs text-ink-muted text-center">
+            In the normal flow the delivery driver confirms receipt on the buyer&apos;s behalf
+            after signature at handover. This button is available for manual confirmation if the
+            driver hasn&apos;t done it yet.
+          </p>
+        </section>
       )}
       {mapping.status === "received" && <p className="text-gray-600">Generating invoice...</p>}
       {mapping.status === "invoiced" && (
