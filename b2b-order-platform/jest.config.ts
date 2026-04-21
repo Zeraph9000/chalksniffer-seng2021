@@ -2,17 +2,18 @@ import type { Config } from "jest";
 
 const config: Config = {
   testEnvironment: "node",
-  roots: ["<rootDir>/tests"],
+  roots: ["<rootDir>/tests", "<rootDir>/src"],
   transform: {
-    "^.+\\.(t|j)sx?$": ["@swc/jest", {}],
+    "^.+\\.(t|j)sx?$": ["@swc/jest", { jsc: { transform: { react: { runtime: "automatic" } } } }],
   },
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
+    "\\.(css|less|scss)$": "<rootDir>/tests/__mocks__/style-mock.js",
   },
+  setupFilesAfterEach: ["<rootDir>/tests/jest.setup.ts"],
   testTimeout: 20000,
   testPathIgnorePatterns: [
     "/node_modules/",
-    // TODO: migrate tests/store-service.test.ts from node:test to Jest, then drop this entry
     "<rootDir>/tests/store-service.test.ts",
   ],
 };
