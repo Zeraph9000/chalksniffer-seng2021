@@ -26,7 +26,7 @@ export function StoreTopNav({ shop, active = "shop", user, cartCount = 0 }: Stor
   return (
     <header
       className="h-16 flex items-center gap-5 px-6 border-b border-line-2 bg-paper relative"
-      style={shop.brand ? ({ ["--brand" as any]: shop.brand } as React.CSSProperties) : undefined}
+      style={shop.brand ? ({ "--brand": shop.brand } as React.CSSProperties) : undefined}
     >
       <span aria-hidden className="absolute top-0 left-0 right-0 h-[3px] bg-brand" />
       <Link href={base} className="inline-flex items-center gap-[10px]">

@@ -267,7 +267,7 @@ export default async function Storefront({ params }: { params: { slug: string } 
             </p>
           ) : (
             <p className="font-display text-[22px] leading-[1.35] tracking-[-.01em] text-ink-3 m-0 mt-[10px] mb-5 max-w-[640px]">
-              {store.storeName} hasn't written a description yet.
+              {store.storeName} hasn&apos;t written a description yet.
             </p>
           )}
         </div>

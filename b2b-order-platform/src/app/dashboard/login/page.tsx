@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ArrowLeft, ArrowRight, Eye, EyeOff } from "lucide-react";
@@ -15,6 +15,14 @@ function safeNext(next: string | null, fallback: string): string {
 }
 
 export default function SellerLoginPage() {
+  return (
+    <Suspense>
+      <SellerLoginPageInner />
+    </Suspense>
+  );
+}
+
+function SellerLoginPageInner() {
   const params = useSearchParams();
   const next = safeNext(params.get("next"), "/dashboard");
 

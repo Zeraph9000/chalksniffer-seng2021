@@ -189,11 +189,11 @@ function HardcodedFeaturedPanel() {
       className="border border-line rounded-[10px] bg-paper overflow-hidden flex flex-col"
       style={
         {
-          ["--brand" as any]: "#b97e29",
-          ["--brand-ink" as any]: "#2a1a08",
-          ["--brand-soft" as any]: "#f4e2b8",
-          ["--brand-surface" as any]: "#1a1208",
-          ["--brand-contrast" as any]: "#f7eacb",
+          "--brand": "#b97e29",
+          "--brand-ink": "#2a1a08",
+          "--brand-soft": "#f4e2b8",
+          "--brand-surface": "#1a1208",
+          "--brand-contrast": "#f7eacb",
         } as React.CSSProperties
       }
     >

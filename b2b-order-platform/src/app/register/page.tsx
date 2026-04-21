@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, Eye, EyeOff } from "lucide-react";
@@ -41,6 +41,14 @@ function scorePassword(pw: string): { score: number; label: string; color: strin
 }
 
 export default function RegisterPage() {
+  return (
+    <Suspense>
+      <RegisterPageInner />
+    </Suspense>
+  );
+}
+
+function RegisterPageInner() {
   const params = useSearchParams();
   const next = safeNext(params.get("next"), "/");
   const initialRole: Role = params.get("role") === "seller" ? "seller" : "buyer";
