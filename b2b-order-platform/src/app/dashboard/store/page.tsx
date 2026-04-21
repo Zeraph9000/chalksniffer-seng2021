@@ -1,109 +1,62 @@
-"use client";
-import { useEffect, useState } from "react";
+import { redirect } from "next/navigation";
+import clientPromise from "@/lib/db";
+import { getSessionOrNull } from "@/lib/session";
 import type { Store } from "@/lib/types";
-import { ImageUpload } from "@/components/image-upload";
+import { DashboardShell } from "@/components/ledgr/dashboard-shell";
+import { StoreEditForm } from "./store-edit-form";
 
-export default function StoreEditor() {
-  const [store, setStore] = useState<Partial<Store>>({ status: "active" });
-  const [existing, setExisting] = useState<Store | null>(null);
-  const [msg, setMsg] = useState<string | null>(null);
-  const [shareUrl, setShareUrl] = useState<string | null>(null);
+function monogramFrom(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "–";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
 
-  useEffect(() => {
-    fetch("/api/stores/me").then(async (r) => {
-      if (r.ok) {
-        const s = (await r.json()) as Store;
-        setExisting(s);
-        setStore(s);
+export default async function StoreEditPage() {
+  const session = await getSessionOrNull();
+  if (!session || session.role !== "seller") redirect("/dashboard/login");
+
+  const client = await clientPromise;
+  const db = client.db();
+  const store = await db.collection<Store>("stores").findOne({ userId: session.userId });
+
+  const initials = monogramFrom(session.name);
+  const sidebarStore = store
+    ? {
+        monogram: monogramFrom(store.storeName),
+        name: store.storeName,
+        status: store.status,
+        slug: store.slug,
       }
-    });
-  }, []);
+    : {
+        monogram: "--",
+        name: "New store",
+        status: "closed" as const,
+      };
 
-  useEffect(() => {
-    if (!existing) return setShareUrl(null);
-    if (typeof window === "undefined") return;
-    const path = existing.slug ?? existing.storeId;
-    setShareUrl(`${window.location.origin}/store/${path}`);
-  }, [existing]);
-
-  async function save() {
-    const url = existing ? `/api/stores/${existing.storeId}` : `/api/stores`;
-    const method = existing ? "PUT" : "POST";
-    const res = await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(store),
-    });
-    if (res.ok) {
-      setMsg("Saved.");
-      const s = (await res.json()) as Store;
-      setExisting(s);
-    } else {
-      const d = await res.json();
-      setMsg(d.message || d.error);
-    }
-  }
+  // Strip mongo _id (non-serialisable) before passing to client component
+  const initial = store
+    ? {
+        storeId: store.storeId,
+        userId: store.userId,
+        slug: store.slug ?? "",
+        storeName: store.storeName,
+        description: store.description ?? "",
+        logoUrl: store.logoUrl ?? "",
+        bannerUrl: store.bannerUrl ?? "",
+        location: store.location ?? "",
+        category: store.category ?? "",
+        status: store.status,
+      }
+    : null;
 
   return (
-    <main className="max-w-xl mx-auto p-8">
-      <h1 className="text-2xl font-bold mb-6">{existing ? "Edit store" : "Create store"}</h1>
-      {shareUrl && (
-        <div className="mb-6 p-3 bg-blue-50 rounded">
-          Your storefront URL: <code>{shareUrl}</code>{" "}
-          <button type="button" onClick={() => navigator.clipboard.writeText(shareUrl)} className="underline text-sm">
-            Copy
-          </button>
-        </div>
-      )}
-      <div className="space-y-3">
-        <input placeholder="Store name" value={store.storeName ?? ""} onChange={(e) => setStore({ ...store, storeName: e.target.value })} className="w-full border rounded px-3 py-2" />
-        <textarea placeholder="Description" value={store.description ?? ""} onChange={(e) => setStore({ ...store, description: e.target.value })} className="w-full border rounded px-3 py-2" />
-        <div>
-          <input
-            placeholder="store-slug (e.g. acme-bakery)"
-            value={store.slug ?? ""}
-            onChange={(e) => setStore({ ...store, slug: e.target.value })}
-            pattern="^[a-z0-9]+(-[a-z0-9]+)*$"
-            minLength={2}
-            maxLength={64}
-            className="w-full border rounded px-3 py-2"
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            Your storefront will be at /store/&lt;slug&gt;. Lowercase, numbers, and hyphens only.
-          </p>
-        </div>
-        <input placeholder="Category (e.g. bakery)" value={store.category ?? ""} onChange={(e) => setStore({ ...store, category: e.target.value })} className="w-full border rounded px-3 py-2" />
-        <input placeholder="Location" value={store.location ?? ""} onChange={(e) => setStore({ ...store, location: e.target.value })} className="w-full border rounded px-3 py-2" />
-        <div>
-          <label className="text-sm font-medium block mb-1">Store logo</label>
-          <ImageUpload
-            kind="logo"
-            value={store.logoUrl ?? null}
-            onChange={(url) => setStore({ ...store, logoUrl: url ?? undefined })}
-            label="Logo"
-          />
-        </div>
-        <div>
-          <label className="text-sm font-medium block mb-1">Store banner</label>
-          <ImageUpload
-            kind="banner"
-            value={store.bannerUrl ?? null}
-            onChange={(url) => setStore({ ...store, bannerUrl: url ?? undefined })}
-            label="Banner"
-          />
-        </div>
-        <select
-          value={store.status ?? "active"}
-          onChange={(e) => setStore({ ...store, status: e.target.value as Store["status"] })}
-          className="w-full border rounded px-3 py-2"
-        >
-          <option value="active">Active</option>
-          <option value="paused">Paused</option>
-          <option value="closed">Closed</option>
-        </select>
-      </div>
-      <button type="button" onClick={save} className="mt-4 px-6 py-2 bg-black text-white rounded">Save</button>
-      {msg && <p className="mt-3 text-sm">{msg}</p>}
-    </main>
+    <DashboardShell
+      store={sidebarStore}
+      user={{ name: session.name, initials }}
+      active="store"
+    >
+      <StoreEditForm initial={initial} />
+    </DashboardShell>
   );
 }
