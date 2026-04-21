@@ -66,6 +66,7 @@ export function VariantGridEditor({
           <tr>
             {options.map((o) => <th key={o.name} className="text-left pb-2">{o.name}</th>)}
             <th className="text-left pb-2">Price</th>
+            <th className="text-left pb-2" title="Optional 'was' price — shown struck-through on the storefront when higher than Price.">Compare at</th>
             <th className="text-left pb-2">Stock</th>
             <th className="text-left pb-2">SKU</th>
           </tr>
@@ -76,6 +77,18 @@ export function VariantGridEditor({
               {options.map((o) => <td key={o.name} className="py-2">{v.optionValues[o.name]}</td>)}
               <td className="py-2">
                 <input type="number" value={v.price} onChange={(e) => update(i, { price: Number(e.target.value) })} className="border rounded px-2 py-1 w-24" />
+              </td>
+              <td className="py-2">
+                <input
+                  type="number"
+                  value={v.compareAtPrice ?? ""}
+                  placeholder="—"
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    update(i, { compareAtPrice: raw === "" ? undefined : Number(raw) });
+                  }}
+                  className="border rounded px-2 py-1 w-24"
+                />
               </td>
               <td className="py-2">
                 <input type="number" value={v.stock} onChange={(e) => update(i, { stock: Number(e.target.value) })} className="border rounded px-2 py-1 w-20" />

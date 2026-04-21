@@ -75,6 +75,7 @@ export type ProductVariant = {
   variantId: string;
   optionValues: Record<string, string>;
   price: number;
+  compareAtPrice?: number;  // "was" price; show struck-through when > price
   stock: number;
   sku?: string;
   imageUrl?: string;

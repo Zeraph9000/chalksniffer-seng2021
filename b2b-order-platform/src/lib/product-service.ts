@@ -59,6 +59,9 @@ export function validateProductPayload(body: ProductCreateRequest, partial = fal
     variants.forEach((v, i) => {
       if (v.price < 0) errors.push({ field: `variants[${i}].price`, message: "must be >= 0" });
       if (v.stock < 0) errors.push({ field: `variants[${i}].stock`, message: "must be >= 0" });
+      if (v.compareAtPrice !== undefined && v.compareAtPrice < 0) {
+        errors.push({ field: `variants[${i}].compareAtPrice`, message: "must be >= 0" });
+      }
       const keys = Object.keys(v.optionValues);
       if (keys.length !== optionNames.length || !optionNames.every((n) => keys.includes(n))) {
         errors.push({ field: "variants", message: "option keys must match product options" });
@@ -107,6 +110,7 @@ export async function createProduct(
       variantId: crypto.randomUUID(),
       optionValues: v.optionValues,
       price: v.price,
+      compareAtPrice: v.compareAtPrice,
       stock: v.stock,
       sku: v.sku,
       imageUrl: v.imageUrl,
@@ -150,6 +154,7 @@ export async function updateProduct(
       ...(("variantId" in v && v.variantId) ? { variantId: v.variantId } : {}),
       optionValues: v.optionValues,
       price: v.price,
+      compareAtPrice: v.compareAtPrice,
       stock: v.stock,
       sku: v.sku,
       imageUrl: v.imageUrl,
@@ -176,6 +181,7 @@ export async function updateProduct(
       variantId: matched?.variantId ?? crypto.randomUUID(),
       optionValues: v.optionValues,
       price: v.price,
+      compareAtPrice: v.compareAtPrice,
       stock: v.stock,
       sku: v.sku,
       imageUrl: v.imageUrl,
