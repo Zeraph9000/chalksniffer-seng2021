@@ -22,12 +22,12 @@ export const chalksniffer = {
     return { ok: true, data };
   },
   async getOrder(id: string): Promise<Json | null> {
-    const res = await call("GET", `/orders/${id}`);
+    const res = await call("GET", `/orders/${encodeURIComponent(id)}`);
     if (!res.ok) return null;
     return res.json();
   },
   async getOrderXml(id: string): Promise<string | null> {
-    const res = await fetch(`${BASE_URL}/orders/${id}/xml`, { headers: { Authorization: API_KEY } });
+    const res = await fetch(`${BASE_URL}/orders/${encodeURIComponent(id)}/xml`, { headers: { Authorization: API_KEY } });
     if (!res.ok) return null;
     return res.text();
   },

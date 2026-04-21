@@ -2,7 +2,6 @@ import crypto from "crypto";
 
 const BASE_URL = process.env.DESPATCH_BASE_URL || "https://devex.cloud.tcore.network";
 const API_KEY = process.env.DESPATCH_API_KEY || "";
-const MOCK = process.env.MOCK_EXTERNAL === "1";
 
 type Json = Record<string, unknown>;
 
@@ -12,7 +11,7 @@ function mockUuid(prefix: string): string {
 
 export const despatch = {
   async createDespatchAdvice(advice: Json): Promise<{ ok: true; uuid: string } | { ok: false; status: number }> {
-    if (MOCK) return { ok: true, uuid: mockUuid("despatch-mock") };
+    if (process.env.MOCK_EXTERNAL === "1") return { ok: true, uuid: mockUuid("despatch-mock") };
     const res = await fetch(`${BASE_URL}/despatch-advice`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Api-Key": API_KEY },
@@ -20,10 +19,12 @@ export const despatch = {
     });
     if (!res.ok) return { ok: false, status: res.status };
     const data = await res.json().catch(() => ({}));
-    return { ok: true, uuid: (data as { uuid?: string }).uuid || "" };
+    const uuid = (data as { uuid?: string }).uuid;
+    if (!uuid) return { ok: false, status: 502 };
+    return { ok: true, uuid };
   },
   async createReceiptAdvice(advice: Json): Promise<{ ok: true; uuid: string } | { ok: false; status: number }> {
-    if (MOCK) return { ok: true, uuid: mockUuid("receipt-mock") };
+    if (process.env.MOCK_EXTERNAL === "1") return { ok: true, uuid: mockUuid("receipt-mock") };
     const res = await fetch(`${BASE_URL}/receipt-advice`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Api-Key": API_KEY },
@@ -31,6 +32,8 @@ export const despatch = {
     });
     if (!res.ok) return { ok: false, status: res.status };
     const data = await res.json().catch(() => ({}));
-    return { ok: true, uuid: (data as { uuid?: string }).uuid || "" };
+    const uuid = (data as { uuid?: string }).uuid;
+    if (!uuid) return { ok: false, status: 502 };
+    return { ok: true, uuid };
   },
 };

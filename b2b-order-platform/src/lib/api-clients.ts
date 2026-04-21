@@ -1,3 +1,8 @@
+/**
+ * @deprecated This file exists only during the Phase 5 checkout migration.
+ * Use `@/lib/chalksniffer-client`, `@/lib/despatch-client`, or `@/lib/invoice-client` instead.
+ * This file will be deleted in Phase 5 once all callers have been migrated.
+ */
 const CHALKSNIFFER_URL = process.env.CHALKSNIFFER_API_URL!;
 const DESPATCH_URL = process.env.DESPATCH_API_URL!;
 const LASTMINUTEPUSH_URL = process.env.LASTMINUTEPUSH_API_URL!;
