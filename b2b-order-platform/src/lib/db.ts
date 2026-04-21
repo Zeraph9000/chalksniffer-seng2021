@@ -17,13 +17,19 @@ function getClientPromise(): Promise<MongoClient> {
       _mongoClientPromise?: Promise<MongoClient>;
     };
     if (!globalWithMongo._mongoClientPromise) {
-      globalWithMongo._mongoClientPromise = new MongoClient(uri, options).connect();
+      globalWithMongo._mongoClientPromise = new MongoClient(uri, options).connect().catch((error) => {
+        globalWithMongo._mongoClientPromise = undefined;
+        throw error;
+      });
     }
     return globalWithMongo._mongoClientPromise;
   }
 
   if (!clientPromise) {
-    clientPromise = new MongoClient(uri, options).connect();
+    clientPromise = new MongoClient(uri, options).connect().catch((error) => {
+      clientPromise = undefined;
+      throw error;
+    });
   }
   return clientPromise;
 }

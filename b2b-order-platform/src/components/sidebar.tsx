@@ -3,7 +3,17 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserRole } from "@/lib/types";
-import { LayoutDashboard, ShoppingBag, FileText, LogOut, Layers, ShoppingCart, Package } from "lucide-react";
+import {
+  LayoutDashboard,
+  ShoppingBag,
+  FileText,
+  LogOut,
+  Store,
+  ShoppingCart,
+  Package,
+  Truck,
+} from "lucide-react";
+import { getHomeHref, getPrimaryNavigation } from "./navigation";
 
 type NavItem = {
   href: string;
@@ -17,32 +27,33 @@ export function Sidebar({ role, name }: { role: UserRole | null; name: string })
   if (!role) return null;
 
   const isBuyer = role === "buyer";
-
-  const navItems: NavItem[] = isBuyer
-    ? [
-        { href: "/dashboard", label: "Dashboard", icon: <LayoutDashboard size={20} /> },
-        { href: "/marketplace", label: "Catalogue", icon: <Layers size={20} /> },
-        { href: "/cart", label: "Cart", icon: <ShoppingCart size={20} /> },
-        { href: "/orders", label: "Orders", icon: <ShoppingBag size={20} /> },
-        { href: "/invoices", label: "Invoices", icon: <FileText size={20} /> },
-      ]
-    : [
-        { href: "/dashboard", label: "Dashboard", icon: <LayoutDashboard size={20} /> },
-        { href: "/catalogue", label: "Catalogue", icon: <Package size={20} /> },
-        { href: "/orders", label: "Orders", icon: <ShoppingBag size={20} /> },
-        { href: "/invoices", label: "Invoices", icon: <FileText size={20} /> },
-      ];
+  const iconByHref: Record<string, React.ReactNode> = {
+    "/marketplace": <Store size={20} />,
+    "/cart": <ShoppingCart size={20} />,
+    "/orders": <ShoppingBag size={20} />,
+    "/invoices": <FileText size={20} />,
+    "/dashboard": <LayoutDashboard size={20} />,
+    "/dashboard/store": <Store size={20} />,
+    "/dashboard/products": <Package size={20} />,
+    "/dashboard/orders": <ShoppingBag size={20} />,
+    "/despatch": <Truck size={20} />,
+  };
+  const navItems: NavItem[] = getPrimaryNavigation(role).map((item) => ({
+    ...item,
+    icon: iconByHref[item.href],
+  }));
+  const homeHref = getHomeHref(role);
 
   async function handleLogout() {
-    await fetch("/api/auth/logout", { method: "POST" });
-    window.location.href = "/login";
+    await fetch("/api/auth/logout?role=seller", { method: "POST" });
+    window.location.href = "/dashboard/login";
   }
 
   return (
     <aside className="flex h-screen w-60 shrink-0 flex-col border-r border-surface-border bg-white">
       {/* Logo */}
       <div className="flex h-16 items-center justify-center">
-        <Link href="/dashboard" className="flex items-center gap-2.5">
+        <Link href={homeHref} className="flex items-center gap-2.5">
           <svg className="h-8 w-8" viewBox="0 0 40 40" fill="none">
             <path d="M4 36V12l10-8v32H4z" fill="#d4531e" />
             <rect x="7" y="20" width="4" height="16" fill="white" />

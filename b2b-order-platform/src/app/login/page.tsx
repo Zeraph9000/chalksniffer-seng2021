@@ -1,15 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { UserRole } from "@/lib/types";
+import { useSearchParams } from "next/navigation";
+
+function safeNext(next: string | null, fallback: string): string {
+  if (!next || !next.startsWith("/") || next.startsWith("//")) return fallback;
+  return next;
+}
 
 export default function LoginPage() {
+  const params = useSearchParams();
+  const next = safeNext(params.get("next"), "/");
+
   const [mode, setMode] = useState<"login" | "register">("login");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<UserRole>("buyer");
   const [companyName, setCompanyName] = useState("");
   const [abn, setAbn] = useState("");
   const [streetName, setStreetName] = useState("");
@@ -23,25 +30,13 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    const endpoint =
-      mode === "register" ? "/api/auth/register" : "/api/auth/login";
-
+    const endpoint = mode === "register" ? "/api/auth/register" : "/api/auth/login";
     const payload =
       mode === "register"
         ? {
-            name,
-            email,
-            password,
-            role,
-            companyName,
-            abn,
-            phone,
-            address: {
-              streetName,
-              cityName,
-              postalZone,
-              country: "AU",
-            },
+            name, email, password, role: "buyer",
+            companyName, abn, phone,
+            address: { streetName, cityName, postalZone, country: "AU" },
           }
         : { email, password };
 
@@ -52,13 +47,11 @@ export default function LoginPage() {
         body: JSON.stringify(payload),
       });
       const data = await res.json();
-
       if (!res.ok) {
         setError(data.error || "Something went wrong");
         return;
       }
-
-      window.location.href = "/dashboard";
+      window.location.href = next;
     } catch {
       setError("Network error");
     } finally {
@@ -69,7 +62,6 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-surface px-4">
       <div className="w-full max-w-md">
-        {/* Header */}
         <div className="mb-8 flex flex-col items-center text-center">
           <svg className="mb-3 h-12 w-12" viewBox="0 0 40 40" fill="none">
             <path d="M4 36V12l10-8v32H4z" fill="#d4531e" />
@@ -79,21 +71,13 @@ export default function LoginPage() {
             <rect x="21" y="26" width="4" height="10" fill="white" />
             <path d="M28 36V14l8 4v18H28z" fill="#d4531e" />
           </svg>
-          <h1 className="text-3xl font-extrabold tracking-tight text-[#d4531e]">
-            Ledgr
-          </h1>
-          <p className="text-xs text-ink-faint mt-1">
-            Construction Supply Management
-          </p>
+          <h1 className="text-3xl font-extrabold tracking-tight text-[#d4531e]">Ledgr</h1>
           <p className="mt-2 text-sm text-ink-muted">
-            {mode === "register"
-              ? "Set up your business account to manage orders"
-              : "Welcome back"}
+            {mode === "register" ? "Create your buyer account" : "Welcome back"}
           </p>
         </div>
 
         <div className="card p-6">
-          {/* Mode toggle */}
           <div className="mb-6 flex rounded-lg bg-surface p-1">
             {(["login", "register"] as const).map((m) => (
               <button
@@ -101,9 +85,7 @@ export default function LoginPage() {
                 type="button"
                 onClick={() => setMode(m)}
                 className={`flex-1 rounded-md py-2 text-sm font-medium ${
-                  mode === m
-                    ? "bg-white text-ink"
-                    : "text-ink-muted hover:text-ink"
+                  mode === m ? "bg-white text-ink" : "text-ink-muted hover:text-ink"
                 }`}
               >
                 {m === "register" ? "Register" : "Login"}
@@ -111,156 +93,58 @@ export default function LoginPage() {
             ))}
           </div>
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === "register" && (
               <>
                 <div>
                   <label className="input-label">Full Name</label>
-                  <input
-                    type="text"
-                    required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="input"
-                    autoComplete="name"
-                  />
+                  <input type="text" required value={name} onChange={(e) => setName(e.target.value)} className="input" autoComplete="name" />
                 </div>
-
                 <div>
                   <label className="input-label">Phone</label>
-                  <input
-                    type="tel"
-                    required
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="input"
-                    autoComplete="tel"
-                  />
+                  <input type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} className="input" autoComplete="tel" />
                 </div>
               </>
             )}
-
             <div>
               <label className="input-label">Email</label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="input"
-                autoComplete="email"
-              />
+              <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="input" autoComplete="email" />
             </div>
-
             <div>
               <label className="input-label">Password</label>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="input"
-                autoComplete={
-                  mode === "register" ? "new-password" : "current-password"
-                }
-              />
+              <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="input" autoComplete={mode === "register" ? "new-password" : "current-password"} />
             </div>
 
             {mode === "register" && (
               <>
-                <div>
-                  <label className="input-label mb-2 block">Role</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setRole("buyer")}
-                      className={`rounded-lg border px-3 py-2.5 text-sm font-medium ${
-                        role === "buyer"
-                          ? "border-accent-primary bg-accent-primary-muted text-accent-primary"
-                          : "border-surface-border text-ink-muted hover:text-ink"
-                      }`}
-                    >
-                      Contractor
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setRole("seller")}
-                      className={`rounded-lg border px-3 py-2.5 text-sm font-medium ${
-                        role === "seller"
-                          ? "border-accent-primary bg-accent-primary-muted text-accent-primary"
-                          : "border-surface-border text-ink-muted hover:text-ink"
-                      }`}
-                    >
-                      Supplier
-                    </button>
-                  </div>
-                </div>
-
                 <fieldset className="rounded-lg border border-surface-border p-4">
                   <legend className="text-sm font-medium text-ink px-1">Business Details</legend>
                   <div className="mt-2 space-y-3">
                     <div>
                       <label className="input-label">Company Name</label>
-                      <input
-                        type="text"
-                        required
-                        value={companyName}
-                        onChange={(e) => setCompanyName(e.target.value)}
-                        className="input mt-1"
-                        autoComplete="organization"
-                      />
+                      <input type="text" required value={companyName} onChange={(e) => setCompanyName(e.target.value)} className="input mt-1" autoComplete="organization" />
                     </div>
                     <div>
                       <label className="input-label">ABN</label>
-                      <input
-                        type="text"
-                        required
-                        value={abn}
-                        onChange={(e) => setAbn(e.target.value)}
-                        className="input mt-1"
-                        placeholder="11 digit ABN"
-                      />
+                      <input type="text" required value={abn} onChange={(e) => setAbn(e.target.value)} className="input mt-1" placeholder="11 digit ABN" />
                     </div>
                   </div>
                 </fieldset>
-
                 <fieldset className="rounded-lg border border-surface-border p-4">
-                  <legend className="text-sm font-medium text-ink px-1">Business Address</legend>
+                  <legend className="text-sm font-medium text-ink px-1">Delivery Address</legend>
                   <div className="mt-2 space-y-3">
                     <div>
                       <label className="input-label">Street Address</label>
-                      <input
-                        type="text"
-                        required
-                        value={streetName}
-                        onChange={(e) => setStreetName(e.target.value)}
-                        className="input mt-1"
-                        autoComplete="street-address"
-                      />
+                      <input type="text" required value={streetName} onChange={(e) => setStreetName(e.target.value)} className="input mt-1" autoComplete="street-address" />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="input-label">City</label>
-                        <input
-                          type="text"
-                          required
-                          value={cityName}
-                          onChange={(e) => setCityName(e.target.value)}
-                          className="input mt-1"
-                          autoComplete="address-level2"
-                        />
+                        <input type="text" required value={cityName} onChange={(e) => setCityName(e.target.value)} className="input mt-1" autoComplete="address-level2" />
                       </div>
                       <div>
                         <label className="input-label">Postal Code</label>
-                        <input
-                          type="text"
-                          required
-                          value={postalZone}
-                          onChange={(e) => setPostalZone(e.target.value)}
-                          className="input mt-1"
-                          autoComplete="postal-code"
-                        />
+                        <input type="text" required value={postalZone} onChange={(e) => setPostalZone(e.target.value)} className="input mt-1" autoComplete="postal-code" />
                       </div>
                     </div>
                   </div>
@@ -274,16 +158,8 @@ export default function LoginPage() {
               </p>
             )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full btn-primary disabled:opacity-50"
-            >
-              {loading
-                ? "Please wait..."
-                : mode === "register"
-                  ? "Create Account"
-                  : "Sign In"}
+            <button type="submit" disabled={loading} className="w-full btn-primary disabled:opacity-50">
+              {loading ? "Please wait..." : mode === "register" ? "Create Account" : "Sign In"}
             </button>
           </form>
         </div>
@@ -297,6 +173,9 @@ export default function LoginPage() {
           >
             {mode === "register" ? "Sign in" : "Create one"}
           </button>
+        </p>
+        <p className="mt-6 text-center text-xs text-ink-faint">
+          Selling on Ledgr? <a className="underline" href="/dashboard/login">Seller sign in</a>
         </p>
       </div>
     </div>

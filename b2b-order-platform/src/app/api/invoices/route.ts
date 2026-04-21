@@ -1,33 +1,52 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import clientPromise from "@/lib/db";
 import { getSessionOrNull } from "@/lib/session";
-import { lastminutepush } from "@/lib/api-clients";
-import { setMapping } from "@/lib/order-access";
+import type { OrderMapping, Store } from "@/lib/types";
 
-export async function GET(request: NextRequest) {
+/**
+ * List invoices for the authenticated user.
+ *
+ * - Seller: all invoices generated for their store's orders.
+ * - Buyer:  all invoices on their own past orders.
+ *
+ * This list is built from our OrderMapping (only includes orders that
+ * successfully produced an invoiceId). Detail/PDF for a specific invoice hits
+ * LastMinutePush via the [id] passthrough.
+ */
+export async function GET() {
   const session = await getSessionOrNull();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const { searchParams } = request.nextUrl;
-  const query = searchParams.toString();
-  const res = await lastminutepush().get(`/v1/invoices${query ? `?${query}` : ""}`);
-  const data = await res.json();
-  return NextResponse.json(data, { status: res.status });
-}
+  if (!session) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
 
-export async function POST(request: NextRequest) {
-  const session = await getSessionOrNull();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const body = await request.json();
-  const res = await lastminutepush().post("/v1/invoices", body);
-  const contentType = res.headers.get("content-type") || "";
-  if (!contentType.includes("application/json")) {
-    const text = await res.text();
-    console.error("LMP non-JSON response:", res.status, text.slice(0, 200));
-    return NextResponse.json({ error: "Invoice service returned an unexpected response" }, { status: 502 });
+  const client = await clientPromise;
+  const db = client.db();
+
+  let filter: Record<string, unknown>;
+  if (session.role === "seller") {
+    const store = await db.collection<Store>("stores").findOne({ userId: session.userId });
+    if (!store) return NextResponse.json({ items: [] });
+    filter = { storeId: store.storeId, invoiceId: { $exists: true } };
+  } else {
+    filter = { buyerId: session.userId, invoiceId: { $exists: true } };
   }
-  const data = await res.json();
-  if (res.ok && body.order_reference && data.invoice?.invoice_id) {
-    await setMapping(body.order_reference, { invoiceId: data.invoice.invoice_id });
-    await lastminutepush().post(`/v1/invoices/${data.invoice.invoice_id}/status`, { status: "sent" });
-  }
-  return NextResponse.json(data, { status: res.status });
+
+  const mappings = await db
+    .collection<OrderMapping>("orderMappings")
+    .find(filter)
+    .sort({ createdAt: -1 })
+    .toArray();
+
+  const items = mappings.map((m) => ({
+    invoice_id: m.invoiceId,
+    status: "issued" as const,
+    order_reference: m.orderId,
+    issue_date: m.issueDate,
+    due_date: null,
+    payable_amount: m.payableAmount,
+    currency: m.documentCurrencyCode,
+    buyer_name: m.buyerName,
+    buyer_email: m.buyerEmail,
+    created_at: m.createdAt,
+  }));
+
+  return NextResponse.json({ items });
 }

@@ -1,52 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionOrNull } from "@/lib/session";
-import { chalksniffer } from "@/lib/api-clients";
-import { assertOrderAccess, getMapping, buyerEdited, setMapping } from "@/lib/order-access";
+import clientPromise from "@/lib/db";
+import { authorizeOrderAccess } from "@/lib/order-access";
+import { chalksniffer } from "@/lib/chalksniffer-client";
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getSessionOrNull();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const { id } = await params;
-  try { await assertOrderAccess(session.userId, session.role, id); } catch { return NextResponse.json({ error: "Access denied" }, { status: 403 }); }
-  const res = await chalksniffer().get(`/orders/${id}`);
-  const data = await res.json();
-  return NextResponse.json(data, { status: res.status });
-}
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+  const token = request.nextUrl.searchParams.get("t");
+  const client = await clientPromise;
+  const db = client.db();
 
-export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getSessionOrNull();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const { id } = await params;
-  try { await assertOrderAccess(session.userId, session.role, id); } catch { return NextResponse.json({ error: "Access denied" }, { status: 403 }); }
-  const mapping = await getMapping(id);
-  if (session.role !== "buyer" || mapping?.status !== "placed") {
-    return NextResponse.json({ error: "Cannot edit this order" }, { status: 403 });
-  }
-  const body = await request.json();
-  const res = await chalksniffer().put(`/orders/${id}`, body);
-  const data = await res.json();
-  if (res.ok) {
-    await buyerEdited(id);
-    const payableAmount = data.anticipatedMonetaryTotal?.payableAmount
-      ?? data.orderLines?.reduce((sum: number, line: { lineItem: { price: { priceAmount: number }; quantity: number } }) =>
-        sum + line.lineItem.price.priceAmount * line.lineItem.quantity, 0)
-      ?? 0;
-    await setMapping(id, {
-      payableAmount,
-      documentCurrencyCode: data.documentCurrencyCode || "AUD",
-      issueDate: data.issueDate,
-    });
-  }
-  return NextResponse.json(data, { status: res.status });
-}
+  const auth = await authorizeOrderAccess(db, params.id, token);
+  if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getSessionOrNull();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const { id } = await params;
-  try { await assertOrderAccess(session.userId, session.role, id); } catch { return NextResponse.json({ error: "Access denied" }, { status: 403 }); }
-  const res = await chalksniffer().delete(`/orders/${id}`);
-  if (res.status === 204) return new NextResponse(null, { status: 204 });
-  const data = await res.json();
-  return NextResponse.json(data, { status: res.status });
+  const ubl = await chalksniffer.getOrder(params.id);
+  return NextResponse.json({ mapping: auth.mapping, role: auth.role, order: ubl });
 }

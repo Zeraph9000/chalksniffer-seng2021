@@ -1,64 +1,49 @@
-import NextAuth from "next-auth";
-import { NextResponse } from "next/server";
-import authConfig from "./auth.config";
+import { NextRequest, NextResponse } from "next/server";
 
-const { auth } = NextAuth(authConfig);
+// Edge runtime cannot import @/auth.buyer or @/auth.seller (bcrypt/mongodb).
+// Read cookies directly.
+const BUYER_COOKIE = "chalk.buyer";
+const SELLER_COOKIE = "chalk.seller";
 
-const buyerOnlyRoutes = [
-  "/marketplace",
-  "/cart",
-  "/checkout",
-  "/orders/*/receive",
-  "/orders/*/cancel",
-  "/orders/*/edit",
-];
-
-const sellerOnlyRoutes = [
-  "/catalogue",
-  "/despatch/create",
-  "/invoices/create",
-];
-
-const publicRoutes = ["/login"];
-
-function matchesPattern(pathname: string, patterns: string[]): boolean {
-  return patterns.some((pattern) => {
-    const regex = new RegExp(
-      "^" + pattern.replace(/\*/g, "[^/]+") + "$"
-    );
-    return regex.test(pathname);
-  });
+function safeNext(next: string | null, fallback: string): string {
+  if (!next || !next.startsWith("/") || next.startsWith("//")) return fallback;
+  return next;
 }
 
-export default auth((req) => {
+export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  const hasBuyer = !!req.cookies.get(BUYER_COOKIE);
+  const hasSeller = !!req.cookies.get(SELLER_COOKIE);
 
-  if (publicRoutes.includes(pathname) || pathname.startsWith("/api/")) {
-    return NextResponse.next();
+  // Seller area requires seller cookie.
+  if (pathname.startsWith("/dashboard") && pathname !== "/dashboard/login") {
+    if (!hasSeller) {
+      const url = new URL("/dashboard/login", req.url);
+      url.searchParams.set("next", pathname);
+      return NextResponse.redirect(url);
+    }
   }
 
-  const user = req.auth?.user as { role?: string } | undefined;
-  if (!user?.role) {
-    return NextResponse.redirect(new URL("/login", req.url));
+  // Already logged in? Skip login pages.
+  if (pathname === "/login" && hasBuyer) {
+    const next = safeNext(req.nextUrl.searchParams.get("next"), "/");
+    return NextResponse.redirect(new URL(next, req.url));
+  }
+  if (pathname === "/dashboard/login" && hasSeller) {
+    const next = safeNext(req.nextUrl.searchParams.get("next"), "/dashboard");
+    return NextResponse.redirect(new URL(next, req.url));
   }
 
-  const role = user.role;
-
-  if (role === "seller" && matchesPattern(pathname, buyerOnlyRoutes)) {
-    const url = new URL("/dashboard", req.url);
-    url.searchParams.set("error", "unauthorized");
-    return NextResponse.redirect(url);
-  }
-
-  if (role === "buyer" && matchesPattern(pathname, sellerOnlyRoutes)) {
-    const url = new URL("/dashboard", req.url);
-    url.searchParams.set("error", "unauthorized");
+  // /profile is a buyer-only account page.
+  if (pathname === "/profile" && !hasBuyer) {
+    const url = new URL("/login", req.url);
+    url.searchParams.set("next", pathname);
     return NextResponse.redirect(url);
   }
 
   return NextResponse.next();
-});
+}
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/dashboard/:path*", "/login", "/dashboard/login", "/profile"],
 };

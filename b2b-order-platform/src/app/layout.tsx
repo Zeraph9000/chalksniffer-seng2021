@@ -16,8 +16,15 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getSessionOrNull();
-  const hasSession = !!session?.role;
+  let session: Awaited<ReturnType<typeof getSessionOrNull>> = null;
+  try {
+    session = await getSessionOrNull();
+  } catch (error) {
+    console.error("Failed to load session in layout:", error);
+  }
+  // Sidebar is seller-only. Buyers and guests see full-width content; their
+  // navigation lives inside each storefront (store-scoped) per product spec.
+  const isSeller = session?.role === "seller";
 
   return (
     <html lang="en">
@@ -26,7 +33,7 @@ export default async function RootLayout({
           <Suspense>
             <Toast />
           </Suspense>
-          {hasSession ? (
+          {isSeller ? (
             <div className="flex h-screen">
               <Sidebar role={session?.role ?? null} name={session?.name ?? ""} />
               <main className="flex-1 overflow-y-auto px-8 py-8">{children}</main>

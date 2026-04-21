@@ -19,7 +19,7 @@ export type UserAddress = {
 };
 
 export type User = {
-  _id?: string;
+  _id?: import("mongodb").ObjectId;
   name: string;
   email: string;
   password: string;
@@ -31,36 +31,87 @@ export type User = {
   createdAt: Date;
 };
 
-export type PreDespatchStatus = "needs_review" | "under_review";
+export type OrderStatus =
+  | "placed" | "paid" | "despatched" | "received" | "invoiced" | "cancelled";
+
+export type StatusEvent = {
+  status: OrderStatus;
+  at: Date;
+  byUserId?: string | null;
+  note?: string;
+};
 
 export type OrderMapping = {
+  _id?: string;
   orderId: string;
-  buyerId: string;
+  storeId: string;
   sellerId: string;
-  status: "placed" | "despatched" | "received" | "invoiced" | "paid";
-  buyerStatus: PreDespatchStatus;
-  sellerStatus: PreDespatchStatus;
-  sellerNote?: string;
+  buyerId: string | null;
+  buyerEmail: string;
+  buyerName: string;
+  buyerAddress: UserAddress;
+  buyerPhone: string;
+  note?: string;
+  status: OrderStatus;
+  statusHistory: StatusEvent[];
+  stripePaymentIntentId?: string;
   despatchDocumentId?: string;
   receiptAdviceId?: string;
   invoiceId?: string;
-  payableAmount?: number;
-  documentCurrencyCode?: string;
-  issueDate?: string;
+  guestAccessToken?: string;
+  payableAmount: number;
+  documentCurrencyCode: string;
+  issueDate: string;
   createdAt: Date;
+  updatedAt: Date;
+};
+
+export type ProductOption = {
+  name: string;
+  values: string[];
+};
+
+export type ProductVariant = {
+  variantId: string;
+  optionValues: Record<string, string>;
+  price: number;
+  compareAtPrice?: number;  // "was" price; show struck-through when > price
+  stock: number;
+  sku?: string;
+  imageUrl?: string;
 };
 
 export type Product = {
   _id?: string;
-  sellerEmail: string;
+  productId: string;
+  storeId: string;
   name: string;
   description: string;
   category: string;
+  imageUrl: string;
   unitCode: string;
-  unitPrice: number;
   currency: string;
-  stock: number;
+  available: boolean;
+  options: ProductOption[];
+  variants: ProductVariant[];
   createdAt: Date;
+  updatedAt: Date;
+};
+
+export type ProductCreateRequest = {
+  name: string;
+  description: string;
+  category: string;
+  imageUrl: string;
+  unitCode: string;
+  currency: string;
+  options?: ProductOption[];
+  variants: Omit<ProductVariant, "variantId">[];
+};
+
+export type ProductUpdateRequest = Partial<Omit<ProductCreateRequest, "variants">> & {
+  available?: boolean;
+  variants?: ProductVariant[];
 };
 
 export type StoreStatus = "active" | "paused" | "closed";
@@ -69,6 +120,7 @@ export type Store = {
   _id?: string;
   storeId: string;
   userId: string;
+  slug?: string;
   storeName: string;
   description: string;
   logoUrl?: string;
@@ -83,6 +135,7 @@ export type Store = {
 export type StoreCreateRequest = {
   storeName?: string;
   description?: string;
+  slug?: string;
   logoUrl?: string;
   bannerUrl?: string;
   location?: string;
@@ -287,6 +340,11 @@ export type RecurringOrder = {
   orderInstances: RecurringOrderInstance[];
   createdAt?: string;
   updatedAt?: string;
+};
+
+export type RecurringOrderUpdate = {
+  frequency?: Frequency;
+  startDate?: string;
 };
 
 // ============================================

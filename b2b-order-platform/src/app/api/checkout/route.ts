@@ -1,121 +1,137 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionOrNull } from "@/lib/session";
 import clientPromise from "@/lib/db";
-import { chalksniffer } from "@/lib/api-clients";
-import { setMapping } from "@/lib/order-access";
-import { Product, User } from "@/lib/types";
+import { getBuyerSessionOrNull } from "@/lib/buyer-session";
+import { getProduct, reserveVariantStock, restoreVariantStock } from "@/lib/product-service";
+import { createMapping, isOrderServiceError } from "@/lib/order-service";
+import { chalksniffer } from "@/lib/chalksniffer-client";
+import { stripePlaceholder } from "@/lib/stripe-placeholder";
+import { generateGuestToken } from "@/lib/guest-token";
+import { buildUblOrder } from "@/lib/ubl-builder";
+import { Product, Store, User, UserAddress } from "@/lib/types";
 import { ObjectId } from "mongodb";
 
+type CartItem = { productId: string; variantId: string; qty: number; unitPriceSnapshot: number };
+
+type CheckoutBody = {
+  items: CartItem[];
+  buyer: { name: string; email: string; phone: string; address: UserAddress; companyName?: string; abn?: string };
+  note?: string;
+  asGuest?: boolean;
+  recurring?: { frequency: "Daily" | "Weekly" | "Monthly"; startDate: string };
+};
+
 export async function POST(request: NextRequest) {
-  const session = await getSessionOrNull();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.role !== "buyer") return NextResponse.json({ error: "Buyers only" }, { status: 403 });
+  // Storefront treats seller sessions as anon; only buyer sessions count.
+  const buyerSession = await getBuyerSessionOrNull();
+  const body = (await request.json()) as CheckoutBody;
 
-  const body = await request.json();
-  const { buyerDetails, deliveryAddress, deliveryDate, note, items } = body as {
-    buyerDetails: { companyName?: string; partyName?: string; abn: string; address: { streetName: string; cityName: string; postalZone: string; country: string }; email?: string; name?: string };
-    deliveryAddress: { streetName: string; cityName: string; postalZone: string; country: string };
-    deliveryDate: string;
-    note?: string;
-    items: { productId: string; quantity: number }[];
-  };
-
-  if (!items || items.length === 0) {
-    return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
+  if (!body.items || body.items.length === 0) {
+    return NextResponse.json({ error: "EMPTY_CART", message: "cart is empty" }, { status: 400 });
+  }
+  if (!body.buyer?.email || !body.buyer?.name || !body.buyer?.phone || !body.buyer?.address) {
+    return NextResponse.json({ error: "MISSING_BUYER_INFO", message: "buyer info required" }, { status: 400 });
   }
 
   const client = await clientPromise;
   const db = client.db();
 
-  const productIds = items.map((i) => new ObjectId(i.productId));
-  const products = await db.collection("products").find({ _id: { $in: productIds } }).toArray();
-  const productMap = new Map(products.map((p) => [p._id!.toString(), p as unknown as Product]));
+  // Resolve products + enforce single-store rule
+  const products: Product[] = [];
+  for (const it of body.items) {
+    const p = await getProduct(db, it.productId);
+    if (!p) return NextResponse.json({ error: "PRODUCT_NOT_FOUND", message: it.productId }, { status: 400 });
+    products.push(p);
+  }
+  const storeIds = new Set(products.map(p => p.storeId));
+  if (storeIds.size !== 1) {
+    return NextResponse.json({ error: "CART_MULTI_STORE", message: "cart contains items from multiple stores" }, { status: 400 });
+  }
+  const storeId = products[0].storeId;
+  const store = await db.collection<Store>("stores").findOne({ storeId });
+  if (!store) return NextResponse.json({ error: "STORE_NOT_FOUND", message: "store missing" }, { status: 400 });
+  if (store.status !== "active") {
+    return NextResponse.json({ error: "STORE_NOT_ACTIVE", message: `store is ${store.status}` }, { status: 400 });
+  }
 
-  const stockErrors: string[] = [];
-  for (const item of items) {
-    const product = productMap.get(item.productId);
-    if (!product) { stockErrors.push(`Product ${item.productId} not found`); continue; }
-    if (product.stock < item.quantity) {
-      stockErrors.push(`${product.name}: requested ${item.quantity}, only ${product.stock} available`);
+  // Seller's user doc. store.userId is a string representation of the seller's ObjectId.
+  let sellerObjectId: ObjectId;
+  try {
+    sellerObjectId = new ObjectId(store.userId);
+  } catch {
+    return NextResponse.json({ error: "SELLER_NOT_FOUND", message: "invalid seller reference" }, { status: 500 });
+  }
+  const seller = await db.collection<User>("users").findOne({ _id: sellerObjectId });
+  if (!seller) return NextResponse.json({ error: "SELLER_NOT_FOUND", message: "seller missing" }, { status: 500 });
+
+  // Reserve stock atomically; if any reservation fails, roll back previously-reserved items.
+  const reserved: { productId: string; variantId: string; qty: number }[] = [];
+  for (let i = 0; i < body.items.length; i++) {
+    const it = body.items[i];
+    const ok = await reserveVariantStock(db, it.productId, it.variantId, it.qty);
+    if (!ok) {
+      for (const r of reserved) await restoreVariantStock(db, r.productId, r.variantId, r.qty);
+      return NextResponse.json({ error: "OUT_OF_STOCK", message: `${products[i].name} out of stock` }, { status: 409 });
     }
-  }
-  if (stockErrors.length > 0) {
-    return NextResponse.json({ error: "Insufficient stock", details: stockErrors }, { status: 400 });
+    reserved.push({ productId: it.productId, variantId: it.variantId, qty: it.qty });
   }
 
-  const sellerGroups = new Map<string, { product: Product; quantity: number }[]>();
-  for (const item of items) {
-    const product = productMap.get(item.productId)!;
-    const group = sellerGroups.get(product.sellerEmail) || [];
-    group.push({ product, quantity: item.quantity });
-    sellerGroups.set(product.sellerEmail, group);
+  // Build UBL payload + call Chalksniffer
+  const ubl = buildUblOrder({
+    store,
+    sellerInfo: { companyName: seller.companyName ?? store.storeName, abn: seller.abn ?? "", address: seller.address },
+    buyer: {
+      name: body.buyer.name, email: body.buyer.email, phone: body.buyer.phone,
+      address: body.buyer.address,
+      companyName: body.buyer.companyName ?? null, abn: body.buyer.abn ?? null,
+    },
+    items: body.items.map((it, i) => ({
+      product: products[i], variantId: it.variantId, qty: it.qty, unitPriceSnapshot: it.unitPriceSnapshot,
+    })),
+    note: body.note,
+    issueDate: new Date().toISOString().split("T")[0],
+  });
+
+  const orderPayload = {
+    ...(ubl as unknown as Record<string, unknown>),
+    ...(body.recurring ? { recurring: body.recurring } : {}),
+  };
+  const csRes = await chalksniffer.createOrder(orderPayload);
+  if (!csRes.ok) {
+    for (const r of reserved) await restoreVariantStock(db, r.productId, r.variantId, r.qty);
+    return NextResponse.json({ error: "CHALKSNIFFER_FAILED", message: "order service unavailable" }, { status: 503 });
   }
 
-  const sellerEmails = Array.from(sellerGroups.keys());
-  const sellers = await db.collection<User>("users").find({ email: { $in: sellerEmails } }).toArray();
-  const sellerProfileMap = new Map(sellers.map((s) => [s.email, s]));
+  const orderId = (csRes.data as { id: string }).id;
+  const payable = body.items.reduce((s, it) => s + it.qty * it.unitPriceSnapshot, 0);
+  const isGuest = !buyerSession || body.asGuest;
+  const guestToken = isGuest ? generateGuestToken() : undefined;
+  const buyerId = isGuest ? null : buyerSession.userId;
 
-  const createdOrders: string[] = [];
+  // Create the Stripe placeholder intent first so the OrderMapping has its ID from the start.
+  const intent = stripePlaceholder.createPaymentIntent(payable, products[0].currency);
 
-  for (const [sellerEmail, groupItems] of Array.from(sellerGroups.entries())) {
-    const seller = sellerProfileMap.get(sellerEmail);
-    if (!seller) continue;
-
-    const orderBody = {
-      issueDate: new Date().toISOString().split("T")[0],
-      documentCurrencyCode: groupItems[0].product.currency || "AUD",
-      note: note || undefined,
-      buyerCustomerParty: {
-        party: {
-          partyName: buyerDetails.companyName || buyerDetails.partyName || "",
-          partyIdentification: buyerDetails.abn,
-          postalAddress: buyerDetails.address,
-        },
-      },
-      sellerSupplierParty: {
-        party: {
-          partyName: seller.companyName,
-          partyIdentification: seller.abn,
-          postalAddress: seller.address,
-        },
-      },
-      delivery: {
-        deliveryAddress: deliveryAddress,
-        requestedDeliveryPeriod: { startDate: deliveryDate, endDate: deliveryDate },
-      },
-      orderLines: groupItems.map((gi: { product: Product; quantity: number }, index: number) => ({
-        lineItem: {
-          id: String(index + 1),
-          quantity: gi.quantity,
-          unitCode: gi.product.unitCode,
-          price: { priceAmount: gi.product.unitPrice, currencyID: gi.product.currency || "AUD" },
-          item: { name: gi.product.name, description: gi.product.description || undefined },
-        },
-      })),
-    };
-
-    const res = await chalksniffer().post("/orders", orderBody);
-    const data = await res.json();
-    console.log("Checkout order response:", res.status, data.id || "NO ID", JSON.stringify(data).slice(0, 200));
-
-    if (res.ok && data.id) {
-      await setMapping(data.id, {
-        orderId: data.id,
-        buyerId: session.userId,
-        sellerId: seller._id!.toString(),
-        buyerStatus: "under_review",
-        sellerStatus: "needs_review",
-      });
-      createdOrders.push(data.id);
-
-      for (const gi of groupItems) {
-        await db.collection("products").updateOne(
-          { _id: new ObjectId(gi.product._id!) },
-          { $inc: { stock: -gi.quantity } }
-        );
-      }
-    }
+  const mappingResult = await createMapping(db, {
+    orderId, storeId, sellerId: store.userId,
+    buyerId,
+    buyerEmail: body.buyer.email, buyerName: body.buyer.name, buyerPhone: body.buyer.phone,
+    buyerAddress: body.buyer.address,
+    note: body.note,
+    payableAmount: payable, documentCurrencyCode: products[0].currency, issueDate: ubl.issueDate,
+    stripePaymentIntentId: intent.id,
+    guestAccessToken: guestToken,
+  });
+  if (isOrderServiceError(mappingResult)) {
+    for (const r of reserved) await restoreVariantStock(db, r.productId, r.variantId, r.qty);
+    return NextResponse.json({ error: mappingResult.error, message: mappingResult.message }, { status: mappingResult.status });
   }
 
-  return NextResponse.json({ orders: createdOrders });
+  return NextResponse.json({
+    orderId,
+    paymentIntentId: intent.id,
+    clientSecret: intent.clientSecret,
+    total: payable,
+    currency: products[0].currency,
+    guestAccessToken: guestToken,
+    statusUrl: guestToken ? `/orders/${orderId}?t=${guestToken}` : `/orders/${orderId}`,
+  }, { status: 201 });
 }

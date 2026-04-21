@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserRole } from "@/lib/types";
 import { RoleBadge } from "./role-badge";
+import { getHomeHref, getPrimaryNavigation } from "./navigation";
 
 export function Navbar({ role }: { role: UserRole | null }) {
   const pathname = usePathname();
@@ -15,25 +16,14 @@ export function Navbar({ role }: { role: UserRole | null }) {
 
   if (!role) return null;
 
-  const buyerLinks = [
-    { href: "/dashboard", label: "Dashboard" },
-    { href: "/orders", label: "Orders" },
-    { href: "/invoices", label: "Invoices" },
-  ];
-
-  const sellerLinks = [
-    { href: "/dashboard", label: "Dashboard" },
-    { href: "/orders", label: "Orders" },
-    { href: "/invoices", label: "Invoices" },
-  ];
-
-  const links = role === "buyer" ? buyerLinks : sellerLinks;
+  const links = getPrimaryNavigation(role);
+  const homeHref = getHomeHref(role);
 
   return (
     <nav className="sticky top-0 z-40 border-b border-surface-border bg-surface/80 backdrop-blur-xl">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6">
         <div className="flex items-center gap-8">
-          <Link href="/dashboard" className="flex items-center gap-2.5">
+          <Link href={homeHref} className="flex items-center gap-2.5">
             <div className={`h-2 w-2 rounded-full ${role === "buyer" ? "bg-accent-buyer" : "bg-accent-seller"}`} />
             <span className="font-mono text-sm font-medium tracking-tight text-ink">
               B2B<span className="text-ink-faint">/</span>orders

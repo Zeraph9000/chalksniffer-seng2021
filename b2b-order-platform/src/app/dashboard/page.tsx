@@ -1,173 +1,77 @@
-"use client";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import clientPromise from "@/lib/db";
+import { getSessionOrNull } from "@/lib/session";
+import type { Store, OrderMapping } from "@/lib/types";
 
-import { useEffect, useState } from "react";
-import { OrderPaginated, OrderMapping } from "@/lib/types";
-import { OrderRow } from "@/components/order-row";
-import { OrderStats } from "@/components/order-stats";
-import { EmptyState } from "@/components/empty-state";
-import { LoadingSpinner } from "@/components/loading-spinner";
+export default async function SellerDashboard() {
+  const session = await getSessionOrNull();
+  if (!session || session.role !== "seller") redirect("/dashboard/login");
 
-type Stats = {
-  role: string;
-  actionRequired: number;
-  outstandingValue: number;
-  outstandingCurrency: string;
-  overdue: number;
-  earnedThisMonth: number;
-};
+  const client = await clientPromise;
+  const db = client.db();
+  const store = await db.collection<Store>("stores").findOne({ userId: session.userId });
 
-type OrderWithMapping = OrderPaginated & { mapping?: OrderMapping };
-
-function getPipelineSections(role: "buyer" | "seller") {
-  return role === "seller"
-    ? [
-        { key: "actionRequired", label: "Ready to Despatch", stripe: "bg-semantic-warning" },
-        { key: "awaitingReview", label: "Awaiting Contractor", stripe: "bg-semantic-neutral" },
-        { key: "despatched", label: "Despatched", stripe: "bg-semantic-info" },
-        { key: "received", label: "Ready to Invoice", stripe: "bg-semantic-success" },
-        { key: "invoiced", label: "Awaiting Payment", stripe: "bg-purple-600" },
-        { key: "paid", label: "Paid", stripe: "bg-semantic-success" },
-      ]
-    : [
-        { key: "actionRequired", label: "Change Requested", stripe: "bg-semantic-warning" },
-        { key: "awaitingReview", label: "Awaiting Supplier", stripe: "bg-semantic-neutral" },
-        { key: "despatched", label: "In Transit", stripe: "bg-semantic-info" },
-        { key: "received", label: "Received", stripe: "bg-semantic-success" },
-        { key: "invoiced", label: "Payment Due", stripe: "bg-purple-600" },
-        { key: "paid", label: "Paid", stripe: "bg-semantic-success" },
-      ];
-}
-
-function getStatusLabel(mapping: OrderMapping | undefined): string {
-  if (!mapping) return "Placed";
-  if (mapping.status === "placed") return "Placed";
-  if (mapping.status === "invoiced") return "Invoiced";
-  if (mapping.status === "paid") return "Paid";
-  return mapping.status.charAt(0).toUpperCase() + mapping.status.slice(1);
-}
-
-function getSectionKey(mapping: OrderMapping | undefined, role: string): string {
-  if (!mapping) return "actionRequired";
-  if (mapping.status === "placed") {
-    const myStatus = role === "buyer" ? mapping.buyerStatus : mapping.sellerStatus;
-    return myStatus === "needs_review" ? "actionRequired" : "awaitingReview";
-  }
-  if (mapping.status === "invoiced") return "invoiced";
-  return mapping.status;
-}
-
-export default function DashboardPage() {
-  const [role, setRole] = useState<"buyer" | "seller" | null>(null);
-  const [userName, setUserName] = useState("");
-  const [orders, setOrders] = useState<OrderWithMapping[]>([]);
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function load() {
-      const [sessionRes, ordersRes, statsRes] = await Promise.all([
-        fetch("/api/auth/session"),
-        fetch("/api/orders?limit=100"),
-        fetch("/api/orders/stats"),
-      ]);
-
-      if (!sessionRes.ok) {
-        window.location.href = "/login";
-        return;
-      }
-
-      const session = await sessionRes.json();
-      setRole(session.role);
-      setUserName(session.name || "");
-
-      if (statsRes.ok) {
-        setStats(await statsRes.json());
-      }
-
-      if (ordersRes.ok) {
-        const data = await ordersRes.json();
-        const orderList: OrderPaginated[] = data.orders || [];
-
-        const mappingPromises = orderList.map((o) =>
-          fetch(`/api/links?orderId=${o.id}`).then((r) => r.ok ? r.json() : null)
-        );
-        const mappings = await Promise.all(mappingPromises);
-
-        setOrders(
-          orderList.map((o, i) => ({ ...o, mapping: mappings[i] || undefined }))
-        );
-      }
-
-      setLoading(false);
-    }
-    load();
-  }, []);
-
-  if (loading) {
-    return <LoadingSpinner message="Loading dashboard..." />;
+  if (!store) {
+    return (
+      <main className="max-w-2xl mx-auto p-8">
+        <h1 className="text-2xl font-bold mb-4">Welcome, {session.name}</h1>
+        <p className="mb-4">You don&apos;t have a store yet. Create one to start selling.</p>
+        <Link href="/dashboard/store" className="inline-block px-6 py-2 bg-black text-white rounded">
+          Create store
+        </Link>
+      </main>
+    );
   }
 
-  const isBuyer = role === "buyer";
+  const all = await db
+    .collection<OrderMapping>("orderMappings")
+    .find({ storeId: store.storeId })
+    .toArray();
 
-  const pipelineSections = getPipelineSections(role || "buyer");
-  const grouped: Record<string, OrderWithMapping[]> = {};
-  for (const section of pipelineSections) {
-    grouped[section.key] = [];
-  }
-  for (const order of orders) {
-    const key = getSectionKey(order.mapping, role || "buyer");
-    if (grouped[key]) {
-      grouped[key].push(order);
-    }
-  }
+  const counts = {
+    awaitingDespatch: all.filter((o) => o.status === "paid").length,
+    despatched: all.filter((o) => o.status === "despatched").length,
+    awaitingConfirmation: all.filter((o) => o.status === "despatched").length,
+    completed: all.filter((o) => o.status === "invoiced").length,
+    cancelled: all.filter((o) => o.status === "cancelled").length,
+  };
 
   return (
-    <div className="space-y-8">
-      <div className="rounded-lg border border-surface-border bg-gradient-to-r from-accent-buyer/5 to-transparent p-6">
-        <h1 className="text-2xl font-bold text-ink">
-          {userName ? `Welcome, ${userName}` : isBuyer ? "Contractor Dashboard" : "Supplier Dashboard"}
-        </h1>
-        <p className="mt-1 text-sm text-ink-muted">
-          {isBuyer
-            ? "Order materials, track deliveries, and manage invoices."
-            : "Fulfil material orders, manage despatches, and invoice contractors."}
-        </p>
-      </div>
+    <main className="max-w-5xl mx-auto p-8">
+      <h1 className="text-2xl font-bold mb-2">Dashboard</h1>
+      <p className="text-gray-600 mb-8">{store.storeName}</p>
 
-      {stats && <OrderStats stats={stats} />}
+      <section className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+        <StatCard label="Awaiting despatch" value={counts.awaitingDespatch} />
+        <StatCard label="Despatched" value={counts.despatched} />
+        <StatCard label="Completed" value={counts.completed} />
+        <StatCard label="Cancelled" value={counts.cancelled} />
+      </section>
 
-      {orders.length === 0 ? (
-        <EmptyState
-          title="No orders yet"
-          description={isBuyer ? "Place your first material order to get started" : "Material orders from contractors will appear here"}
-          actionLabel={isBuyer ? "Browse Catalogue" : undefined}
-          actionHref={isBuyer ? "/marketplace" : undefined}
-        />
-      ) : (
-        <div className="space-y-4">
-          {pipelineSections.map((section) => {
-            const sectionOrders = grouped[section.key];
-            if (!sectionOrders || sectionOrders.length === 0) return null;
-            return (
-              <div key={section.key} className="card overflow-hidden">
-                <div className="flex items-center gap-2 border-b border-surface-border bg-surface-overlay px-4 py-2">
-                  <span className={`w-[3px] h-4 rounded-sm ${section.stripe}`} />
-                  <span className="text-sm font-semibold text-ink-muted">{section.label}</span>
-                  <span className="ml-auto text-xs font-mono text-ink-faint">{sectionOrders.length}</span>
-                </div>
-                {sectionOrders.map((order) => (
-                  <OrderRow
-                    key={order.id}
-                    order={order}
-                    role={role || "buyer"}
-                    statusLabel={getStatusLabel(order.mapping)}
-                  />
-                ))}
-              </div>
-            );
-          })}
-        </div>
-      )}
+      <nav className="grid md:grid-cols-3 gap-4">
+        <DashLink href="/dashboard/store" title="Store settings" desc="Name, description, logo, banner, status" />
+        <DashLink href="/dashboard/products" title="Products" desc="Catalogue + variants" />
+        <DashLink href="/dashboard/orders" title="Orders" desc="View and manage incoming orders" />
+      </nav>
+    </main>
+  );
+}
+
+function StatCard({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="border rounded p-4">
+      <div className="text-xs uppercase text-gray-500">{label}</div>
+      <div className="text-2xl font-bold">{value}</div>
     </div>
+  );
+}
+
+function DashLink({ href, title, desc }: { href: string; title: string; desc: string }) {
+  return (
+    <Link href={href} className="block border rounded-lg p-5 hover:shadow-md">
+      <div className="font-semibold">{title}</div>
+      <div className="text-sm text-gray-600">{desc}</div>
+    </Link>
   );
 }

@@ -1,55 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionOrNull } from "@/lib/session";
-import { lastminutepush } from "@/lib/api-clients";
+import clientPromise from "@/lib/db";
+import { authorizeOrderAccess } from "@/lib/order-access";
+import { invoiceApi } from "@/lib/invoice-client";
+import type { OrderMapping } from "@/lib/types";
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getSessionOrNull();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+/**
+ * Fetch a single invoice from LastMinutePush.
+ * Authorises via the OrderMapping that owns `invoiceId` — buyer (session or
+ * guest token) or the owning seller can read. Anyone else → 404 (no leak).
+ */
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+  const token = request.nextUrl.searchParams.get("t");
+  const client = await clientPromise;
+  const db = client.db();
 
-  const { id } = await params;
-  const accept = request.headers.get("accept");
-  const headers: Record<string, string> = accept === "application/xml" ? { Accept: "application/xml" } : {};
-  const res = await lastminutepush().get(`/v1/invoices/${id}`, headers);
+  const mapping = await db
+    .collection<OrderMapping>("orderMappings")
+    .findOne({ invoiceId: params.id });
+  if (!mapping) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
 
-  if (accept === "application/xml") {
-    const text = await res.text();
-    return new NextResponse(text, {
-      status: res.status,
-      headers: { "Content-Type": "application/xml" },
-    });
-  }
+  const auth = await authorizeOrderAccess(db, mapping.orderId, token);
+  if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-  const data = await res.json();
-  return NextResponse.json(data, { status: res.status });
-}
+  const invoice = await invoiceApi.getInvoice(params.id);
+  if (!invoice) return NextResponse.json({ error: "UPSTREAM_UNAVAILABLE" }, { status: 502 });
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getSessionOrNull();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const { id } = await params;
-  const body = await request.json();
-  const res = await lastminutepush().put(`/v1/invoices/${id}`, body);
-  const data = await res.json();
-  return NextResponse.json(data, { status: res.status });
-}
-
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getSessionOrNull();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const { id } = await params;
-  const res = await lastminutepush().delete(`/v1/invoices/${id}`);
-  if (res.status === 204) return new NextResponse(null, { status: 204 });
-  const data = await res.json();
-  return NextResponse.json(data, { status: res.status });
+  return NextResponse.json(invoice);
 }
