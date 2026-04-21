@@ -1,7 +1,5 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import clientPromise from "@/lib/db";
-import { listActiveStores } from "@/lib/store-service";
 import { MarketplaceTopNav } from "@/components/ledgr/marketplace-top-nav";
 import { MarketplaceFooter } from "@/components/ledgr/marketplace-footer";
 import { Button } from "@/components/ui/button";
@@ -36,19 +34,7 @@ const CATEGORIES: Array<{ label: string; key: keyof typeof CATEGORY_DOTS | "all"
   { label: "Vintage", key: "vintage" },
 ];
 
-function monogramFor(name: string) {
-  return name
-    .split(/\s+/)
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-}
-
 export default async function Landing() {
-  const client = await clientPromise;
-  const db = client.db();
-  const stores = await listActiveStores(db, 6);
   const session = await getSessionOrNull().catch(() => null);
 
   return (
