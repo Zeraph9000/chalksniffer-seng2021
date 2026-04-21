@@ -79,6 +79,65 @@ describe("validateProductPayload", () => {
     });
     expect(result.valid).toBe(false);
   });
+
+  test("rejects empty imageUrls", () => {
+    const result = validateProductPayload({
+      name: "X",
+      description: "x",
+      category: "y",
+      imageUrls: [],
+      unitCode: "each",
+      currency: "AUD",
+      options: [],
+      variants: [{ optionValues: {}, price: 1, stock: 1 }],
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.field === "imageUrls")).toBe(true);
+  });
+
+  test("rejects more than 8 imageUrls", () => {
+    const result = validateProductPayload({
+      name: "X",
+      description: "x",
+      category: "y",
+      imageUrls: new Array(9).fill("https://example.com/x.jpg"),
+      unitCode: "each",
+      currency: "AUD",
+      options: [],
+      variants: [{ optionValues: {}, price: 1, stock: 1 }],
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.field === "imageUrls")).toBe(true);
+  });
+
+  test("rejects blank imageUrl entries", () => {
+    const result = validateProductPayload({
+      name: "X",
+      description: "x",
+      category: "y",
+      imageUrls: ["https://example.com/x.jpg", ""],
+      unitCode: "each",
+      currency: "AUD",
+      options: [],
+      variants: [{ optionValues: {}, price: 1, stock: 1 }],
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.field === "imageUrls")).toBe(true);
+  });
+
+  test("accepts 1-8 non-empty imageUrls", () => {
+    const result = validateProductPayload({
+      name: "X",
+      description: "x",
+      category: "y",
+      imageUrls: ["https://example.com/x.jpg"],
+      unitCode: "each",
+      currency: "AUD",
+      options: [],
+      variants: [{ optionValues: {}, price: 1, stock: 1 }],
+    });
+    expect(result.valid).toBe(true);
+  });
 });
 
 describe("createProduct", () => {
