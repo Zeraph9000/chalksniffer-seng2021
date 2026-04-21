@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/db";
-import { getSessionOrNull } from "@/lib/session";
+import { getBuyerSessionOrNull } from "@/lib/buyer-session";
 import { getProduct, reserveVariantStock, restoreVariantStock } from "@/lib/product-service";
 import { createMapping, isOrderServiceError } from "@/lib/order-service";
 import { chalksniffer } from "@/lib/chalksniffer-client";
@@ -18,7 +18,8 @@ type CheckoutBody = {
 };
 
 export async function POST(request: NextRequest) {
-  const session = await getSessionOrNull();
+  // Storefront treats seller sessions as anon; only buyer sessions count.
+  const buyerSession = await getBuyerSessionOrNull();
   const body = (await request.json()) as CheckoutBody;
 
   if (!body.items || body.items.length === 0) {
@@ -95,11 +96,9 @@ export async function POST(request: NextRequest) {
 
   const orderId = (csRes.data as { id: string }).id;
   const payable = body.items.reduce((s, it) => s + it.qty * it.unitPriceSnapshot, 0);
-  const guestToken = (!session || body.asGuest) ? generateGuestToken() : undefined;
-
-  // Determine if session user is a seller — sellers can also buy as themselves.
-  // Per the auth matrix, authed buyers go in as buyerId; guests are null.
-  const buyerId = (!session || body.asGuest) ? null : session.userId;
+  const isGuest = !buyerSession || body.asGuest;
+  const guestToken = isGuest ? generateGuestToken() : undefined;
+  const buyerId = isGuest ? null : buyerSession.userId;
 
   // Create the Stripe placeholder intent first so the OrderMapping has its ID from the start.
   const intent = stripePlaceholder.createPaymentIntent(payable, products[0].currency);
