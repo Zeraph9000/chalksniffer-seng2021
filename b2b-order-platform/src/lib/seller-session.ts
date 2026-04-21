@@ -14,5 +14,6 @@ export async function getSellerSessionOrNull(): Promise<SessionData | null> {
     name: user.name,
     email: user.email,
     userId: user._id!.toString(),
+    avatarUrl: user.avatarUrl,
   };
 }

@@ -3,6 +3,7 @@ import type { Store, Product } from "@/lib/types";
 import { ProductCard } from "@/components/product-card";
 import { getStoreBySlug, backfillSlugIfMissing } from "@/lib/store-service";
 import { notFound } from "next/navigation";
+import { transformedImageUrl } from "@/lib/image-url";
 
 export default async function Storefront({ params }: { params: { slug: string } }) {
   const client = await clientPromise;
@@ -27,13 +28,13 @@ export default async function Storefront({ params }: { params: { slug: string } 
       <section className="relative">
         {store.bannerUrl && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={store.bannerUrl} alt="" className="w-full h-48 object-cover" />
+          <img src={transformedImageUrl(store.bannerUrl, "banner")} alt="" className="w-full h-48 object-cover" />
         )}
         <div className="max-w-6xl mx-auto px-8 -mt-12 flex items-end gap-4">
           {store.logoUrl && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={store.logoUrl}
+              src={transformedImageUrl(store.logoUrl, "logo")}
               alt={store.storeName}
               className="w-24 h-24 rounded-full object-cover border-4 border-white bg-white"
             />

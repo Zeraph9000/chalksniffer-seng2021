@@ -5,6 +5,7 @@ import { useCart } from "@/lib/cart-context";
 import { VariantPicker } from "@/components/variant-picker";
 import { ReplaceCartModal } from "@/components/replace-cart-modal";
 import type { Product, ProductVariant, Store } from "@/lib/types";
+import { transformedImageUrl } from "@/lib/image-url";
 
 export function ProductDetailClient({ store, product }: { store: Store; product: Product }) {
   const [variant, setVariant] = useState<ProductVariant | null>(null);
@@ -27,7 +28,7 @@ export function ProductDetailClient({ store, product }: { store: Store; product:
       variantId: variant.variantId,
       name: product.name,
       variantLabel,
-      imageUrl: variant.imageUrl ?? product.imageUrl,
+      imageUrl: variant.imageUrl ?? product.imageUrls[0],
       unitCode: product.unitCode,
       unitPriceSnapshot: variant.price,
       currency: product.currency,
@@ -51,7 +52,7 @@ export function ProductDetailClient({ store, product }: { store: Store; product:
       variantId: variant.variantId,
       name: product.name,
       variantLabel,
-      imageUrl: variant.imageUrl ?? product.imageUrl,
+      imageUrl: variant.imageUrl ?? product.imageUrls[0],
       unitCode: product.unitCode,
       unitPriceSnapshot: variant.price,
       currency: product.currency,
@@ -72,7 +73,13 @@ export function ProductDetailClient({ store, product }: { store: Store; product:
     <div className="max-w-4xl mx-auto py-4 grid md:grid-cols-2 gap-8">
       <div>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={variant?.imageUrl ?? product.imageUrl} alt={product.name} className="w-full aspect-square object-cover rounded-lg" />
+        <img
+          src={variant?.imageUrl
+            ? transformedImageUrl(variant.imageUrl, "product")
+            : transformedImageUrl(product.imageUrls[0], "product")}
+          alt={product.name}
+          className="w-full aspect-square object-cover rounded-lg"
+        />
       </div>
       <div>
         <div className="text-sm text-gray-500 uppercase">{product.category}</div>

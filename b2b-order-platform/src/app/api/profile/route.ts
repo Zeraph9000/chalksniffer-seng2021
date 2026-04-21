@@ -28,13 +28,14 @@ export async function PUT(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { name, email, phone, companyName, abn, address } = body as {
+  const { name, email, phone, companyName, abn, address, avatarUrl } = body as {
     name?: string;
     email?: string;
     phone?: string;
     companyName?: string;
     abn?: string;
     address?: { streetName?: string; cityName?: string; postalZone?: string; country?: string };
+    avatarUrl?: string | null;
   };
 
   const client = await clientPromise;
@@ -48,28 +49,35 @@ export async function PUT(request: NextRequest) {
     }
   }
 
-  // Build update object from provided fields only
-  const update: Record<string, unknown> = {};
-  if (name !== undefined) update.name = name;
-  if (email !== undefined) update.email = email;
-  if (phone !== undefined) update.phone = phone;
-  if (companyName !== undefined) update.companyName = companyName;
-  if (abn !== undefined) update.abn = abn;
+  // Build $set and $unset payloads from provided fields only
+  const set: Record<string, unknown> = {};
+  const unset: Record<string, string> = {};
+
+  if (name !== undefined) set.name = name;
+  if (email !== undefined) set.email = email;
+  if (phone !== undefined) set.phone = phone;
+  if (companyName !== undefined) set.companyName = companyName;
+  if (abn !== undefined) set.abn = abn;
   if (address) {
-    if (address.streetName !== undefined) update["address.streetName"] = address.streetName;
-    if (address.cityName !== undefined) update["address.cityName"] = address.cityName;
-    if (address.postalZone !== undefined) update["address.postalZone"] = address.postalZone;
-    if (address.country !== undefined) update["address.country"] = address.country;
+    if (address.streetName !== undefined) set["address.streetName"] = address.streetName;
+    if (address.cityName !== undefined) set["address.cityName"] = address.cityName;
+    if (address.postalZone !== undefined) set["address.postalZone"] = address.postalZone;
+    if (address.country !== undefined) set["address.country"] = address.country;
+  }
+  if (avatarUrl !== undefined) {
+    if (avatarUrl === null) unset.avatarUrl = "";
+    else set.avatarUrl = avatarUrl;
   }
 
-  if (Object.keys(update).length === 0) {
+  if (Object.keys(set).length === 0 && Object.keys(unset).length === 0) {
     return NextResponse.json({ error: "No fields to update" }, { status: 400 });
   }
 
-  await db.collection("users").updateOne(
-    { email: session.email },
-    { $set: update }
-  );
+  const writeOps: Record<string, unknown> = {};
+  if (Object.keys(set).length > 0) writeOps.$set = set;
+  if (Object.keys(unset).length > 0) writeOps.$unset = unset;
+
+  await db.collection("users").updateOne({ email: session.email }, writeOps);
 
   const updatedUser = await db.collection<User>("users").findOne({
     email: email || session.email,

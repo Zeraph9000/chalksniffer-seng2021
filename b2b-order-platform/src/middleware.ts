@@ -34,16 +34,9 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL(next, req.url));
   }
 
-  // /profile is a buyer-only account page.
-  if (pathname === "/profile" && !hasBuyer) {
-    const url = new URL("/login", req.url);
-    url.searchParams.set("next", pathname);
-    return NextResponse.redirect(url);
-  }
-
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login", "/dashboard/login", "/profile"],
+  matcher: ["/dashboard/:path*", "/login", "/dashboard/login"],
 };

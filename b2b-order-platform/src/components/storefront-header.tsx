@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getBuyerSessionOrNull } from "@/lib/buyer-session";
 import { Store } from "@/lib/types";
+import { transformedImageUrl } from "@/lib/image-url";
 
 export async function StorefrontHeader({ store }: { store: Store }) {
   const buyer = await getBuyerSessionOrNull();
@@ -17,6 +18,21 @@ export async function StorefrontHeader({ store }: { store: Store }) {
             <>
               <Link href={`/store/${slug}/orders`}>My orders</Link>
               <Link href={`/store/${slug}/recurring`}>Recurring</Link>
+              {buyer.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={transformedImageUrl(buyer.avatarUrl, "avatar")}
+                  alt=""
+                  className="w-8 h-8 rounded-full object-cover"
+                />
+              ) : (
+                <div
+                  aria-hidden="true"
+                  className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-xs font-semibold"
+                >
+                  {buyer.name.charAt(0).toUpperCase()}
+                </div>
+              )}
               <form action="/api/auth/logout" method="post">
                 <button type="submit" className="underline">Sign out</button>
               </form>

@@ -9,6 +9,7 @@ export type SessionData = {
   name: string;
   email: string;
   userId: string;
+  avatarUrl?: string;
 };
 
 export type UserAddress = {
@@ -28,6 +29,7 @@ export type User = {
   abn: string;
   phone: string;
   address: UserAddress;
+  avatarUrl?: string;
   createdAt: Date;
 };
 
@@ -88,7 +90,7 @@ export type Product = {
   name: string;
   description: string;
   category: string;
-  imageUrl: string;
+  imageUrls: string[];
   unitCode: string;
   currency: string;
   available: boolean;
@@ -102,7 +104,7 @@ export type ProductCreateRequest = {
   name: string;
   description: string;
   category: string;
-  imageUrl: string;
+  imageUrls: string[];
   unitCode: string;
   currency: string;
   options?: ProductOption[];

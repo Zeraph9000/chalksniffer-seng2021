@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserRole } from "@/lib/types";
+import { transformedImageUrl } from "@/lib/image-url";
 import {
   LayoutDashboard,
   ShoppingBag,
@@ -21,7 +22,7 @@ type NavItem = {
   icon: React.ReactNode;
 };
 
-export function Sidebar({ role, name }: { role: UserRole | null; name: string }) {
+export function Sidebar({ role, name, avatarUrl }: { role: UserRole | null; name: string; avatarUrl?: string }) {
   const pathname = usePathname();
 
   if (!role) return null;
@@ -97,11 +98,20 @@ export function Sidebar({ role, name }: { role: UserRole | null; name: string })
             href="/profile"
             className="flex items-center gap-2 hover:opacity-80"
           >
-            <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium text-white ${
-              isBuyer ? "bg-accent-buyer" : "bg-accent-seller"
-            }`}>
-              {(name || "U").charAt(0).toUpperCase()}
-            </div>
+            {avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={transformedImageUrl(avatarUrl, "avatar")}
+                alt=""
+                className="h-7 w-7 rounded-full object-cover"
+              />
+            ) : (
+              <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium text-white ${
+                isBuyer ? "bg-accent-buyer" : "bg-accent-seller"
+              }`}>
+                {(name || "U").charAt(0).toUpperCase()}
+              </div>
+            )}
             <span className="text-xs font-medium text-ink-muted">{name || role}</span>
           </Link>
           <button

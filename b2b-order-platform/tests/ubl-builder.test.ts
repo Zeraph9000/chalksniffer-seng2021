@@ -9,7 +9,7 @@ const store: Store = {
 
 const product: Product = {
   productId: "p1", storeId: "s1", name: "Cake", description: "",
-  category: "bakery", imageUrl: "", unitCode: "each", currency: "AUD",
+  category: "bakery", imageUrls: [], unitCode: "each", currency: "AUD",
   available: true,
   options: [{ name: "Size", values: ["S", "M"] }],
   variants: [{ variantId: "v-s", optionValues: { Size: "S" }, price: 10, stock: 10 }],
