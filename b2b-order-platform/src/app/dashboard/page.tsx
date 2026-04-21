@@ -30,11 +30,26 @@ type ChipTone =
   | "invoiced"
   | "cancelled";
 
-const STATIC_BARS = [
-  22, 48, 30, 18, 44, 62, 38, 28, 54, 72,
-  46, 34, 58, 78, 64, 50, 42, 58, 66, 74,
-  60, 48, 68, 82, 70, 56, 72, 88, 94, 68,
-];
+/** Build 30 daily revenue bars (oldest → newest) in dollars from order createdAt + payableAmount. */
+function buildDailyBars(orders: { createdAt: Date | string; payableAmount?: number; status?: string }[]): number[] {
+  const bars = new Array(30).fill(0) as number[];
+  const now = Date.now();
+  const MS_DAY = 24 * 60 * 60 * 1000;
+  // Day 0 = today, bar index 29 = today, bar index 0 = 29 days ago.
+  const startOfToday = new Date(now);
+  startOfToday.setHours(0, 0, 0, 0);
+  const startMs = startOfToday.getTime();
+  for (const o of orders) {
+    if (o.status === "cancelled") continue;
+    const t = new Date(o.createdAt).getTime();
+    const daysAgo = Math.floor((startMs - t) / MS_DAY);
+    // daysAgo 0 = today, 29 = 29 days ago. Negative daysAgo means today (edge case from same-day fractional).
+    const idx = 29 - Math.max(0, daysAgo);
+    if (idx < 0 || idx >= 30) continue;
+    bars[idx] += (o.payableAmount ?? 0) / 100;
+  }
+  return bars;
+}
 
 function monogramFrom(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -240,7 +255,7 @@ export default async function SellerDashboardPage() {
           <RevenueChartCard
             revenue={revenue}
             previousRevenue={previousRevenue}
-            bars={STATIC_BARS}
+            bars={buildDailyBars(orders)}
           />
           <div className="flex flex-col gap-[18px]">
             <KpiTile

@@ -98,17 +98,18 @@ export function RevenueChartCard({
 
       <div className="mt-[18px] h-[160px] flex items-end gap-1 relative">
         {bars.map((h, i) => {
-          const pct = Math.max(3, Math.round((h / maxBar) * 100));
+          // True zero stays zero; tiny-but-nonzero bars get a 3% floor so they remain visible.
+          const pct = h <= 0 ? 0 : Math.max(3, Math.round((h / maxBar) * 100));
           const isLast = i === lastIdx;
           return (
             <div
               key={i}
               className={cn(
-                "flex-1 rounded-t-[3px] bg-accent relative min-h-[3px] transition-colors hover:bg-[color:var(--s-paid-fg)]"
+                "flex-1 rounded-t-[3px] bg-accent relative transition-colors hover:bg-[color:var(--s-paid-fg)]"
               )}
               style={{ height: `${pct}%` }}
             >
-              {isLast ? (
+              {isLast && h > 0 ? (
                 <span
                   aria-hidden
                   className="absolute left-1/2 -translate-x-1/2 -top-[6px] w-2 h-2 rounded-full bg-accent ring-2 ring-paper"
