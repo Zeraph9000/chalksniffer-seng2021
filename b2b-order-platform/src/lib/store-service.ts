@@ -177,6 +177,16 @@ export async function getStoreBySlug(db: Db, slug: string): Promise<Store | null
   return db.collection<Store>("stores").findOne({ slug });
 }
 
+export async function listActiveStores(db: Db, limit = 12): Promise<Store[]> {
+  await ensureSlugIndex(db);
+  return db
+    .collection<Store>("stores")
+    .find({ status: { $ne: "closed" } })
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .toArray();
+}
+
 export async function backfillSlugIfMissing(db: Db, store: Store): Promise<Store> {
   if (store.slug) return store;
   await ensureSlugIndex(db);

@@ -1,4 +1,7 @@
 /* eslint-disable no-console */
+import { loadEnvConfig } from "@next/env";
+loadEnvConfig(process.cwd());
+
 import crypto from "crypto";
 import { MongoClient, ObjectId } from "mongodb";
 import bcrypt from "bcrypt";

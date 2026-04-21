@@ -1,54 +1,103 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCart } from "@/lib/cart-context";
+import { useCart, type CartItem } from "@/lib/cart-context";
+import {
+  CheckoutHeader,
+  CheckoutProgress,
+} from "@/components/ledgr/checkout-chrome";
+import { OrderSummary } from "@/components/ledgr/order-summary";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-export default function Checkout() {
+type Mode = "guest" | "signin" | "register";
+
+function deriveMonogram(name: string | null | undefined): string {
+  if (!name) return "·";
+  const parts = name.trim().split(/\s+/).slice(0, 2);
+  const letters = parts.map((p) => p[0]?.toUpperCase() ?? "").join("");
+  return letters || name.slice(0, 2).toUpperCase();
+}
+
+function itemKey(i: CartItem) {
+  return `${i.productId}-${i.variantId}`;
+}
+
+export default function CheckoutDetailsPage() {
   const cart = useCart();
   const router = useRouter();
-  const [asGuest, setAsGuest] = useState(true);
+  const [mode, setMode] = useState<Mode>("guest");
   const [form, setForm] = useState({
-    email: "", name: "", phone: "",
-    streetName: "", cityName: "", postalZone: "", country: "AU",
+    email: "",
+    firstName: "",
+    lastName: "",
+    phone: "",
+    buildingUnit: "",
+    streetName: "",
+    cityName: "",
+    postalZone: "",
+    country: "AU",
     note: "",
   });
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [recurringEnabled, setRecurringEnabled] = useState(false);
-  const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-  const [frequency, setFrequency] = useState<"Daily" | "Weekly" | "Monthly">("Weekly");
-  const [startDate, setStartDate] = useState<string>(tomorrow);
 
   useEffect(() => {
     if (cart.items.length === 0) router.push("/cart");
   }, [cart.items.length, router]);
 
   useEffect(() => {
-    fetch("/api/buyer/me").then(async (r) => {
-      const profile = await r.json();
-      if (!profile) return;
-      setForm((f) => ({
-        ...f,
-        email: f.email || profile.email || "",
-        name: f.name || profile.name || "",
-        phone: f.phone || profile.phone || "",
-        streetName: f.streetName || profile.address?.streetName || "",
-        cityName: f.cityName || profile.address?.cityName || "",
-        postalZone: f.postalZone || profile.address?.postalZone || "",
-        country: f.country || profile.address?.country || "AU",
-      }));
-      // Buyer is signed in — default asGuest to false so submit attaches buyerId.
-      setAsGuest(false);
-    }).catch(() => { /* ignore */ });
+    fetch("/api/buyer/me")
+      .then(async (r) => {
+        const profile = await r.json();
+        if (!profile) return;
+        const [firstName, ...rest] = (profile.name ?? "").split(" ");
+        setForm((f) => ({
+          ...f,
+          email: f.email || profile.email || "",
+          firstName: f.firstName || firstName || "",
+          lastName: f.lastName || rest.join(" ") || "",
+          phone: f.phone || profile.phone || "",
+          streetName: f.streetName || profile.address?.streetName || "",
+          cityName: f.cityName || profile.address?.cityName || "",
+          postalZone: f.postalZone || profile.address?.postalZone || "",
+          country: f.country || profile.address?.country || "AU",
+        }));
+        setMode("signin");
+      })
+      .catch(() => {
+        /* ignore */
+      });
   }, []);
 
   if (cart.items.length === 0) return null;
 
-  const subtotal = cart.items.reduce((s, i) => s + i.quantity * i.unitPriceSnapshot, 0);
+  const subtotal = cart.items.reduce(
+    (s, i) => s + i.quantity * i.unitPriceSnapshot,
+    0
+  );
+  const currency = cart.items[0]?.currency ?? "AUD";
+  const monogram = deriveMonogram(cart.storeName);
+  const shopName = cart.storeName ?? "Your shop";
 
   async function submit() {
     setBusy(true);
     setErr(null);
+    const fullName = [form.firstName, form.lastName].filter(Boolean).join(" ");
+    const streetName = form.buildingUnit
+      ? `${form.buildingUnit} ${form.streetName}`.trim()
+      : form.streetName;
     const res = await fetch("/api/checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -61,18 +110,17 @@ export default function Checkout() {
         })),
         buyer: {
           email: form.email,
-          name: form.name,
+          name: fullName,
           phone: form.phone,
           address: {
-            streetName: form.streetName,
+            streetName,
             cityName: form.cityName,
             postalZone: form.postalZone,
             country: form.country,
           },
         },
         note: form.note,
-        asGuest,
-        ...(recurringEnabled ? { recurring: { frequency, startDate } } : {}),
+        asGuest: mode === "guest",
       }),
     });
     const data = await res.json();
@@ -91,85 +139,198 @@ export default function Checkout() {
     router.push(`/checkout/payment?${qs.toString()}`);
   }
 
+  const summaryItems = cart.items.map((i) => ({
+    key: itemKey(i),
+    name: i.name,
+    variantLabel: i.variantLabel,
+    quantity: i.quantity,
+    unitPrice: i.unitPriceSnapshot,
+    imageUrl: i.imageUrl,
+  }));
+
   return (
-    <main className="max-w-2xl mx-auto p-8">
-      <h1 className="text-2xl font-bold mb-6">Checkout</h1>
-      <div className="mb-6 flex gap-2">
-        <button type="button" onClick={() => setAsGuest(true)} className={`px-4 py-2 border rounded ${asGuest ? "bg-black text-white" : ""}`}>
-          Continue as guest
-        </button>
-        <button type="button" onClick={() => setAsGuest(false)} className={`px-4 py-2 border rounded ${!asGuest ? "bg-black text-white" : ""}`}>
-          Log in / Create account
-        </button>
-      </div>
+    <main className="min-h-screen bg-paper-2 py-6 px-4">
+      <div className="max-w-[1200px] mx-auto bg-paper border border-line rounded-[12px] overflow-hidden">
+        <CheckoutHeader shop={{ monogram, name: shopName }} />
+        <CheckoutProgress current={2} />
 
-      <div className="space-y-3">
-        {(["email", "name", "phone"] as const).map((f) => (
-          <input
-            key={f}
-            placeholder={f}
-            value={form[f]}
-            onChange={(e) => setForm({ ...form, [f]: e.target.value })}
-            className="w-full border rounded px-3 py-2"
-          />
-        ))}
-        <input placeholder="Street" value={form.streetName} onChange={(e) => setForm({ ...form, streetName: e.target.value })} className="w-full border rounded px-3 py-2" />
-        <div className="grid grid-cols-3 gap-2">
-          <input placeholder="City" value={form.cityName} onChange={(e) => setForm({ ...form, cityName: e.target.value })} className="border rounded px-3 py-2" />
-          <input placeholder="Postal" value={form.postalZone} onChange={(e) => setForm({ ...form, postalZone: e.target.value })} className="border rounded px-3 py-2" />
-          <input placeholder="Country" value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} className="border rounded px-3 py-2" />
-        </div>
-        <textarea
-          placeholder="Note to seller (optional)"
-          value={form.note}
-          onChange={(e) => setForm({ ...form, note: e.target.value })}
-          className="w-full border rounded px-3 py-2"
-        />
-      </div>
+        <div className="grid grid-cols-[1.4fr_1fr] gap-9 px-7 pb-12 pt-3 items-start">
+          <div className="min-w-0">
+            <h1 className="font-display font-semibold text-[26px] tracking-[-.022em] text-ink m-0">
+              Your details
+            </h1>
+            <p className="text-[13px] text-ink-3 mt-[6px] mb-6">
+              Where should {shopName} send the order?
+            </p>
 
-      <div className="border rounded p-4 mb-4">
-        <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={recurringEnabled}
-            onChange={(e) => setRecurringEnabled(e.target.checked)}
-          />
-          <span className="font-semibold">Make this a recurring order</span>
-        </label>
-        {recurringEnabled && (
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            <label className="block">
-              Frequency
-              <select
-                className="block w-full border rounded px-2 py-1"
-                value={frequency}
-                onChange={(e) => setFrequency(e.target.value as "Daily" | "Weekly" | "Monthly")}
-              >
-                <option>Daily</option>
-                <option>Weekly</option>
-                <option>Monthly</option>
-              </select>
-            </label>
-            <label className="block">
-              Start date
-              <input
-                type="date"
-                className="block w-full border rounded px-2 py-1"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+            <Tabs value={mode} onValueChange={(v) => setMode(v as Mode)} className="mb-6">
+              <TabsList>
+                <TabsTrigger value="guest">Checkout as guest</TabsTrigger>
+                <TabsTrigger value="signin">Sign in</TabsTrigger>
+                <TabsTrigger value="register">Register</TabsTrigger>
+              </TabsList>
+            </Tabs>
+
+            {/* Contact */}
+            <section className="border border-line rounded-[10px] p-5 mb-[18px] bg-paper">
+              <div className="font-display font-semibold text-[15px] tracking-[-.01em] mb-[14px]">
+                Contact
+              </div>
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div className="flex flex-col gap-[6px]">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  />
+                </div>
+                <div className="flex flex-col gap-[6px]">
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-[6px]">
+                  <Label htmlFor="firstName">First name</Label>
+                  <Input
+                    id="firstName"
+                    value={form.firstName}
+                    onChange={(e) =>
+                      setForm({ ...form, firstName: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="flex flex-col gap-[6px]">
+                  <Label htmlFor="lastName">Last name</Label>
+                  <Input
+                    id="lastName"
+                    value={form.lastName}
+                    onChange={(e) =>
+                      setForm({ ...form, lastName: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+            </section>
+
+            {/* Delivery address */}
+            <section className="border border-line rounded-[10px] p-5 mb-[18px] bg-paper">
+              <div className="font-display font-semibold text-[15px] tracking-[-.01em] mb-[14px]">
+                Delivery address
+              </div>
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div className="flex flex-col gap-[6px]">
+                  <Label htmlFor="buildingUnit">Building / unit</Label>
+                  <Input
+                    id="buildingUnit"
+                    placeholder="optional"
+                    value={form.buildingUnit}
+                    onChange={(e) =>
+                      setForm({ ...form, buildingUnit: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="flex flex-col gap-[6px]">
+                  <Label htmlFor="streetName">Street address</Label>
+                  <Input
+                    id="streetName"
+                    value={form.streetName}
+                    onChange={(e) =>
+                      setForm({ ...form, streetName: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="flex flex-col gap-[6px]">
+                  <Label htmlFor="cityName">Suburb / city</Label>
+                  <Input
+                    id="cityName"
+                    value={form.cityName}
+                    onChange={(e) =>
+                      setForm({ ...form, cityName: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="flex flex-col gap-[6px]">
+                  <Label htmlFor="postalZone">Postal code</Label>
+                  <Input
+                    id="postalZone"
+                    value={form.postalZone}
+                    onChange={(e) =>
+                      setForm({ ...form, postalZone: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="flex flex-col gap-[6px]">
+                  <Label htmlFor="country">Country</Label>
+                  <Select
+                    value={form.country}
+                    onValueChange={(v) => setForm({ ...form, country: v })}
+                  >
+                    <SelectTrigger id="country">
+                      <SelectValue placeholder="Country" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="AU">Australia</SelectItem>
+                      <SelectItem value="NZ">New Zealand</SelectItem>
+                      <SelectItem value="US">United States</SelectItem>
+                      <SelectItem value="GB">United Kingdom</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </section>
+
+            {/* Note */}
+            <section className="border border-line rounded-[10px] p-5 mb-[18px] bg-paper">
+              <div className="font-display font-semibold text-[15px] tracking-[-.01em] mb-[14px]">
+                Note for the shop{" "}
+                <span className="text-ink-4 font-normal text-[12px]">
+                  (optional)
+                </span>
+              </div>
+              <Textarea
+                placeholder={`Anything ${shopName} should know — gift wrap, buzzer code, etc.`}
+                value={form.note}
+                onChange={(e) => setForm({ ...form, note: e.target.value })}
               />
-            </label>
-          </div>
-        )}
-      </div>
+            </section>
 
-      <div className="mt-6 flex justify-between items-center">
-        <div>Subtotal: <strong>${subtotal.toFixed(2)}</strong></div>
-        <button type="button" disabled={busy} onClick={submit} className="px-6 py-2 bg-black text-white rounded disabled:opacity-50">
-          Continue to payment
-        </button>
+            {err && (
+              <p className="text-danger text-[12.5px] mt-3 mb-3">{err}</p>
+            )}
+
+            <div className="flex justify-between items-center mt-[22px] gap-3">
+              <Link
+                href="/cart"
+                className="text-ink-3 text-[13px] hover:text-ink transition-colors"
+              >
+                ← Back to cart
+              </Link>
+              <Button type="button" size="lg" disabled={busy} onClick={submit}>
+                Continue to payment →
+              </Button>
+            </div>
+          </div>
+
+          <OrderSummary
+            shop={{ monogram, name: shopName }}
+            items={summaryItems}
+            subtotal={subtotal}
+            shippingHint="Calculated at payment"
+            total={subtotal}
+            currency={currency}
+          />
+        </div>
       </div>
-      {err && <p className="text-red-600 mt-4">{err}</p>}
     </main>
   );
 }
