@@ -19,6 +19,25 @@ export default function Checkout() {
     if (cart.items.length === 0) router.push("/cart");
   }, [cart.items.length, router]);
 
+  useEffect(() => {
+    fetch("/api/buyer/me").then(async (r) => {
+      const profile = await r.json();
+      if (!profile) return;
+      setForm((f) => ({
+        ...f,
+        email: f.email || profile.email || "",
+        name: f.name || profile.name || "",
+        phone: f.phone || profile.phone || "",
+        streetName: f.streetName || profile.address?.streetName || "",
+        cityName: f.cityName || profile.address?.cityName || "",
+        postalZone: f.postalZone || profile.address?.postalZone || "",
+        country: f.country || profile.address?.country || "AU",
+      }));
+      // Buyer is signed in — default asGuest to false so submit attaches buyerId.
+      setAsGuest(false);
+    }).catch(() => { /* ignore */ });
+  }, []);
+
   if (cart.items.length === 0) return null;
 
   const subtotal = cart.items.reduce((s, i) => s + i.quantity * i.unitPriceSnapshot, 0);
