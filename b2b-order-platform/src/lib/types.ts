@@ -19,7 +19,7 @@ export type UserAddress = {
 };
 
 export type User = {
-  _id?: string;
+  _id?: import("mongodb").ObjectId;
   name: string;
   email: string;
   password: string;

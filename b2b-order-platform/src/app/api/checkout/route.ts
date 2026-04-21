@@ -8,7 +8,7 @@ import { stripePlaceholder } from "@/lib/stripe-placeholder";
 import { generateGuestToken } from "@/lib/guest-token";
 import { buildUblOrder } from "@/lib/ubl-builder";
 import { Product, Store, User, UserAddress } from "@/lib/types";
-import { Filter, ObjectId } from "mongodb";
+import { ObjectId } from "mongodb";
 
 type CheckoutBody = {
   items: { productId: string; variantId: string; qty: number; unitPriceSnapshot: number }[];
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
   } catch {
     return NextResponse.json({ error: "SELLER_NOT_FOUND", message: "invalid seller reference" }, { status: 500 });
   }
-  const seller = await db.collection<User>("users").findOne({ _id: sellerObjectId } as unknown as Filter<User>);
+  const seller = await db.collection<User>("users").findOne({ _id: sellerObjectId });
   if (!seller) return NextResponse.json({ error: "SELLER_NOT_FOUND", message: "seller missing" }, { status: 500 });
 
   // Reserve stock atomically; if any reservation fails, roll back previously-reserved items.
