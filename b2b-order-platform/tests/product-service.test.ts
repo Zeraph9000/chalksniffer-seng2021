@@ -1,5 +1,10 @@
 import { setupTestDb, TestDbHandle } from "./helpers/test-db";
-import { validateProductPayload, createProduct } from "@/lib/product-service";
+import {
+  validateProductPayload,
+  createProduct,
+  reserveVariantStock,
+  restoreVariantStock,
+} from "@/lib/product-service";
 
 let handle: TestDbHandle;
 beforeAll(async () => {
@@ -117,5 +122,70 @@ describe("createProduct", () => {
     });
     expect("error" in result).toBe(true);
     if ("error" in result) expect(result.status).toBe(403);
+  });
+});
+
+describe("stock atomicity", () => {
+  test("reserve decrements stock when sufficient", async () => {
+    await handle.db.collection("products").insertOne({
+      productId: "p1",
+      storeId: "s1",
+      name: "x",
+      description: "x",
+      category: "c",
+      imageUrl: "u",
+      unitCode: "each",
+      currency: "AUD",
+      available: true,
+      options: [],
+      variants: [{ variantId: "v1", optionValues: {}, price: 1, stock: 5 }],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    expect(await reserveVariantStock(handle.db, "p1", "v1", 3)).toBe(true);
+    const after = await handle.db.collection("products").findOne({ productId: "p1" });
+    expect((after as unknown as { variants: { stock: number }[] }).variants[0].stock).toBe(2);
+  });
+
+  test("reserve fails when insufficient stock (race defense)", async () => {
+    await handle.db.collection("products").insertOne({
+      productId: "p2",
+      storeId: "s1",
+      name: "x",
+      description: "x",
+      category: "c",
+      imageUrl: "u",
+      unitCode: "each",
+      currency: "AUD",
+      available: true,
+      options: [],
+      variants: [{ variantId: "v1", optionValues: {}, price: 1, stock: 2 }],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    expect(await reserveVariantStock(handle.db, "p2", "v1", 3)).toBe(false);
+    const after = await handle.db.collection("products").findOne({ productId: "p2" });
+    expect((after as unknown as { variants: { stock: number }[] }).variants[0].stock).toBe(2);
+  });
+
+  test("restore increments", async () => {
+    await handle.db.collection("products").insertOne({
+      productId: "p3",
+      storeId: "s1",
+      name: "x",
+      description: "x",
+      category: "c",
+      imageUrl: "u",
+      unitCode: "each",
+      currency: "AUD",
+      available: true,
+      options: [],
+      variants: [{ variantId: "v1", optionValues: {}, price: 1, stock: 0 }],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    await restoreVariantStock(handle.db, "p3", "v1", 2);
+    const after = await handle.db.collection("products").findOne({ productId: "p3" });
+    expect((after as unknown as { variants: { stock: number }[] }).variants[0].stock).toBe(2);
   });
 });
