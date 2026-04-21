@@ -36,4 +36,24 @@ export const chalksniffer = {
     if (!res.ok) return null;
     return res.json();
   },
+  async listRecurring(userId: string): Promise<Json[] | null> {
+    const res = await call("GET", `/orders/recurring?userId=${encodeURIComponent(userId)}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return Array.isArray(data) ? data : (data.recurringOrders ?? []);
+  },
+  async getRecurring(id: string): Promise<Json | null> {
+    const res = await call("GET", `/orders/recurring/${encodeURIComponent(id)}`);
+    if (!res.ok) return null;
+    return res.json();
+  },
+  async updateRecurring(id: string, patch: Json): Promise<{ ok: boolean; status: number; body: unknown }> {
+    const res = await call("PATCH", `/orders/recurring/${encodeURIComponent(id)}`, patch);
+    const body = await res.json().catch(() => ({}));
+    return { ok: res.ok, status: res.status, body };
+  },
+  async deleteRecurring(id: string): Promise<{ ok: boolean; status: number }> {
+    const res = await call("DELETE", `/orders/recurring/${encodeURIComponent(id)}`);
+    return { ok: res.ok, status: res.status };
+  },
 };

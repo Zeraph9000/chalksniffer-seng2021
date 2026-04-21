@@ -341,6 +341,11 @@ export type RecurringOrder = {
   updatedAt?: string;
 };
 
+export type RecurringOrderUpdate = {
+  frequency?: Frequency;
+  startDate?: string;
+};
+
 // ============================================
 // Despatch & Order Management API Types
 // ============================================
