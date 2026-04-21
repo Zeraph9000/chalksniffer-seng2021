@@ -10,7 +10,6 @@ export default function Cart() {
     return (
       <main className="p-8 text-center">
         <p className="mb-4">Your cart is empty.</p>
-        <Link className="underline" href="/marketplace">Browse stores</Link>
       </main>
     );
   }

@@ -10,7 +10,6 @@ export default function Landing() {
           Got a link from a bakery? Paste it into your browser. Run your own bakery?{" "}
           <Link href="/register" className="text-blue-600 underline">Create a store</Link>.
         </p>
-        <Link href="/marketplace" className="text-sm text-gray-500 underline">Browse stores on Chalksniffer</Link>
       </section>
     </main>
   );
