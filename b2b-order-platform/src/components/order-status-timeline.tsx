@@ -1,14 +1,27 @@
 "use client";
 
-import { OrderMapping } from "@/lib/types";
+import type { OrderStatus } from "@/lib/types";
 
 const STEPS = ["placed", "despatched", "received", "invoiced", "paid"] as const;
+type TimelineStep = (typeof STEPS)[number];
 const LABELS = ["Order Placed", "Despatched", "Received", "Invoiced", "Paid"];
 const STEP_COLORS = ["bg-accent-buyer", "bg-semantic-info", "bg-semantic-success", "bg-purple-600", "bg-semantic-success"];
 const STEP_RINGS = ["ring-accent-primary-muted", "ring-semantic-info-muted", "ring-semantic-success-muted", "ring-purple-100", "ring-semantic-success-muted"];
 
-export function OrderStatusTimeline({ status }: { status: OrderMapping["status"] }) {
-  const currentIndex = STEPS.indexOf(status);
+export function OrderStatusTimeline({ status }: { status: OrderStatus }) {
+  if (status === "cancelled") {
+    return (
+      <nav className="card p-6" aria-label="Order progress">
+        <div className="flex items-center gap-3">
+          <span className="inline-flex items-center rounded-full bg-semantic-danger-muted px-3 py-1 text-sm font-medium text-semantic-danger">
+            Cancelled
+          </span>
+          <span className="text-sm text-ink-faint">This order was cancelled and is no longer in progress.</span>
+        </div>
+      </nav>
+    );
+  }
+  const currentIndex = STEPS.indexOf(status as TimelineStep);
   return (
     <nav className="card p-6" aria-label="Order progress">
       <ol className="flex items-center">
