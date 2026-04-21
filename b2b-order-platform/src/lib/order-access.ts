@@ -1,5 +1,6 @@
 import { Db } from "mongodb";
-import { getSessionOrNull } from "./session";
+import { getBuyerSessionOrNull } from "./buyer-session";
+import { getSellerSessionOrNull } from "./seller-session";
 import { OrderMapping } from "./types";
 
 export type OrderAuth =
@@ -9,13 +10,11 @@ export type OrderAuth =
   | { error: "NOT_FOUND" | "FORBIDDEN"; status: number };
 
 /**
- * Single source of truth for order-endpoint authorization.
- *
  * Priority:
- *   1. If a valid guest token is presented AND matches the mapping's stored token -> guest access
- *   2. Else if an authenticated session matches buyerId -> buyer access
- *   3. Else if an authenticated seller session matches sellerId -> seller access
- *   4. Else NOT_FOUND (do not leak existence)
+ *   1. Valid guest token → guest
+ *   2. Buyer cookie matching mapping.buyerId → buyer
+ *   3. Seller cookie matching mapping.sellerId → seller
+ *   4. NOT_FOUND (no existence leak)
  */
 export async function authorizeOrderAccess(
   db: Db, orderId: string, token: string | null
@@ -26,14 +25,16 @@ export async function authorizeOrderAccess(
   if (token && mapping.guestAccessToken && token === mapping.guestAccessToken) {
     return { role: "guest", mapping };
   }
-  const session = await getSessionOrNull();
-  if (session) {
-    if (mapping.buyerId && mapping.buyerId === session.userId) {
-      return { role: "buyer", userId: session.userId, mapping };
-    }
-    if (session.role === "seller" && mapping.sellerId === session.userId) {
-      return { role: "seller", userId: session.userId, mapping };
-    }
+
+  const buyerSession = await getBuyerSessionOrNull();
+  if (buyerSession && mapping.buyerId && mapping.buyerId === buyerSession.userId) {
+    return { role: "buyer", userId: buyerSession.userId, mapping };
   }
+
+  const sellerSession = await getSellerSessionOrNull();
+  if (sellerSession && mapping.sellerId === sellerSession.userId) {
+    return { role: "seller", userId: sellerSession.userId, mapping };
+  }
+
   return { error: "NOT_FOUND", status: 404 };
 }
