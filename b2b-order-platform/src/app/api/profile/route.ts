@@ -17,7 +17,7 @@ export async function GET() {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
-  const { password, ...profile } = user;
+  const profile = { ...user, password: undefined };
   return NextResponse.json({ ...profile, _id: user._id!.toString() });
 }
 
@@ -79,6 +79,6 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
-  const { password, ...profile } = updatedUser;
+  const profile = { ...updatedUser, password: undefined };
   return NextResponse.json({ ...profile, _id: updatedUser._id!.toString() });
 }
