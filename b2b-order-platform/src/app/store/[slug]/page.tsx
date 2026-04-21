@@ -187,14 +187,54 @@ export default async function Storefront({ params }: { params: { slug: string } 
             </div>
           </div>
 
+          {/* Size (placeholder — filter wiring ships later) */}
+          <div className="py-4 border-t border-line">
+            <h5 className="text-[11.5px] uppercase tracking-[.12em] text-ink-3 font-medium m-0 mb-[10px]">
+              Size
+            </h5>
+            <div className="grid gap-[10px]">
+              {[
+                { label: "Small <250", count: 0 },
+                { label: "Medium 250–500", count: 0 },
+                { label: "Large 500+", count: 0 },
+                { label: "Bulk 1kg+", count: 0 },
+              ].map((s) => (
+                <label
+                  key={s.label}
+                  className="flex items-center gap-[10px] text-[13px] text-ink-2 cursor-pointer"
+                >
+                  <Checkbox aria-label={s.label} />
+                  <span className="flex-1 whitespace-nowrap">{s.label}</span>
+                  <span className="font-mono text-[11px] text-ink-4">{s.count || ""}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Tags (placeholder — filter wiring ships later) */}
+          <div className="py-4 border-t border-line">
+            <h5 className="text-[11.5px] uppercase tracking-[.12em] text-ink-3 font-medium m-0 mb-[10px]">
+              Tags
+            </h5>
+            <div className="grid gap-[10px]">
+              {["New this season", "Gift boxes", "Refillable", "Certified organic"].map((t) => (
+                <label
+                  key={t}
+                  className="flex items-center gap-[10px] text-[13px] text-ink-2 cursor-pointer whitespace-nowrap"
+                >
+                  <Checkbox aria-label={t} />
+                  <span>{t}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
           {/* In-stock only */}
           <div className="py-4 border-t border-line">
             <label className="flex items-center gap-[10px] text-[13px] text-ink-2 py-1 cursor-pointer">
               <Checkbox defaultChecked aria-label="In stock only" />
               <span>In stock only</span>
-              <span className="ml-auto font-mono text-[11px] text-ink-4">
-                {inStockCount}
-              </span>
+              <span className="ml-auto font-mono text-[11px] text-ink-4">{inStockCount}</span>
             </label>
           </div>
         </aside>
