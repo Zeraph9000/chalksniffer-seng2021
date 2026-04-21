@@ -10,11 +10,23 @@ import {
 
 export type ProductServiceError = { error: string; message: string; status: number };
 export function isProductServiceError(x: unknown): x is ProductServiceError {
-  return typeof x === "object" && x !== null && "error" in x && "status" in x;
+  return (
+    typeof x === "object" && x !== null
+    && "error" in x && typeof (x as { error: unknown }).error === "string"
+    && "status" in x && typeof (x as { status: unknown }).status === "number"
+    && "message" in x && typeof (x as { message: unknown }).message === "string"
+  );
 }
 
 function err(error: string, message: string, status: number): ProductServiceError {
   return { error, message, status };
+}
+
+function sameOptionValues(a: Record<string, string>, b: Record<string, string>): boolean {
+  const aKeys = Object.keys(a);
+  const bKeys = Object.keys(b);
+  if (aKeys.length !== bKeys.length) return false;
+  return aKeys.every((k) => a[k] === b[k]);
 }
 
 export type ValidationResult = { valid: boolean; errors: { field: string; message: string }[] };
@@ -106,6 +118,14 @@ export async function createProduct(
   return product;
 }
 
+/**
+ * Update a product. Variant identity is preserved across edits:
+ *   - If the client sends a variant with a known `variantId`, that ID is honored.
+ *   - Otherwise, the existing variant matching by optionValues keeps its ID.
+ *   - Otherwise, a new variantId is minted.
+ * This prevents breaking external references (carts, orders) when option
+ * values or prices are edited.
+ */
 export async function updateProduct(
   db: Db,
   userId: string,
@@ -126,12 +146,14 @@ export async function updateProduct(
     currency: body.currency ?? product.currency,
     options: body.options ?? product.options,
     variants: (body.variants ?? product.variants).map((v) => ({
+      // Include variantId when present so sameOptionValues-preservation honors client intent
+      ...(("variantId" in v && v.variantId) ? { variantId: v.variantId } : {}),
       optionValues: v.optionValues,
       price: v.price,
       stock: v.stock,
       sku: v.sku,
       imageUrl: v.imageUrl,
-    })),
+    })) as ProductCreateRequest["variants"],
   };
   const validation = validateProductPayload(merged);
   if (!validation.valid) {
@@ -144,13 +166,14 @@ export async function updateProduct(
 
   const now = new Date();
   const nextVariants: ProductVariant[] = merged.variants.map((v) => {
-    const existing = product.variants.find(
-      (ev) =>
-        Object.keys(v.optionValues).every((k) => ev.optionValues[k] === v.optionValues[k]) &&
-        Object.keys(ev.optionValues).length === Object.keys(v.optionValues).length
-    );
+    // Honor client-provided variantId when present (preserves external refs, e.g. carts).
+    // Otherwise match by optionValues to preserve identity across combo renames.
+    const byId = (v as ProductVariant).variantId
+      ? product.variants.find((ev) => ev.variantId === (v as ProductVariant).variantId)
+      : undefined;
+    const matched = byId ?? product.variants.find((ev) => sameOptionValues(ev.optionValues, v.optionValues));
     return {
-      variantId: existing?.variantId ?? crypto.randomUUID(),
+      variantId: matched?.variantId ?? crypto.randomUUID(),
       optionValues: v.optionValues,
       price: v.price,
       stock: v.stock,
@@ -217,7 +240,8 @@ export async function reserveVariantStock(
     { productId, variants: { $elemMatch: { variantId, stock: { $gte: qty } } } },
     { $inc: { "variants.$.stock": -qty } }
   );
-  return !!r;
+  // mongodb v6 default: returns the updated document or null on no-match
+  return r !== null;
 }
 
 /** Restore previously reserved stock. */
