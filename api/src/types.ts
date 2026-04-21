@@ -3,9 +3,9 @@
  */
 
 export type ErrorObject = {
-  error: string;
-  message: string;
-};
+  error: string,
+  message: string
+}
 
 type Period = {
   startDate?: string | null;
@@ -232,60 +232,30 @@ type OrderPaginated = {
   payableAmount: number | string;
   documentCurrencyCode: string;
   createdAt: string;
-};
+}
 
 type OrderFilter = {
-  'userId'?: string | null;
-  'id'?: string;
-  'issueDate'?: string;
-  'documentCurrencyCode'?: string;
-  'createdAt'?: string;
+  userId?: string | null;
+  id?: string;
+  issueDate?: string;
+  documentCurrencyCode?: string;
+  createdAt?: string;
   'buyerCustomerParty.party.partyName'?: string;
   'sellerSupplierParty.party.partyName'?: string;
   'anticipatedMonetaryTotal.payableAmount'?: number;
-};
+}
 
 type OrderList = {
   orders: OrderPaginated[];
   limit: number;
   offset: number;
   totalOrders: number;
-};
+}
 
 type PaginationParams = {
   limit: number;
   offset: number;
   filter?: OrderFilter;
-};
-
-type StoreStatus = 'active' | 'paused' | 'closed';
-
-type store = {
-  storeId: string;
-  userId: string;
-  storeName: string;
-  description: string;
-  logoUrl?: string | undefined;
-  bannerUrl?: string | undefined;
-  location?: string | undefined;
-  category?: string | undefined;
-  status: StoreStatus;
-  createdAt?: string | Date | null | undefined;
-  updatedAt?: string | Date | null | undefined;
-};
-
-type UpdateStoreRequest = {
-  storeName?: string;
-  description?: string;
-  logoUrl?: string;
-  bannerUrl?: string;
-  location?: string;
-  category?: string;
-  status?: StoreStatus;
-};
-
-type storesList = {
-  stores: store[];
 };
 
 export type {
@@ -320,8 +290,4 @@ export type {
   OrderFilter,
   OrderList,
   PaginationParams,
-  StoreStatus,
-  store,
-  storesList,
-  UpdateStoreRequest
 };
