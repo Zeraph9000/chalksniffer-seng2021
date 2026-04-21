@@ -10,11 +10,14 @@ import { buildUblOrder } from "@/lib/ubl-builder";
 import { Product, Store, User, UserAddress } from "@/lib/types";
 import { ObjectId } from "mongodb";
 
+type CartItem = { productId: string; variantId: string; qty: number; unitPriceSnapshot: number };
+
 type CheckoutBody = {
-  items: { productId: string; variantId: string; qty: number; unitPriceSnapshot: number }[];
+  items: CartItem[];
   buyer: { name: string; email: string; phone: string; address: UserAddress; companyName?: string; abn?: string };
   note?: string;
   asGuest?: boolean;
+  recurring?: { frequency: "Daily" | "Weekly" | "Monthly"; startDate: string };
 };
 
 export async function POST(request: NextRequest) {
@@ -88,7 +91,11 @@ export async function POST(request: NextRequest) {
     issueDate: new Date().toISOString().split("T")[0],
   });
 
-  const csRes = await chalksniffer.createOrder(ubl as unknown as Record<string, unknown>);
+  const orderPayload = {
+    ...(ubl as unknown as Record<string, unknown>),
+    ...(body.recurring ? { recurring: body.recurring } : {}),
+  };
+  const csRes = await chalksniffer.createOrder(orderPayload);
   if (!csRes.ok) {
     for (const r of reserved) await restoreVariantStock(db, r.productId, r.variantId, r.qty);
     return NextResponse.json({ error: "CHALKSNIFFER_FAILED", message: "order service unavailable" }, { status: 503 });

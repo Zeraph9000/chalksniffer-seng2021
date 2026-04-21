@@ -14,6 +14,10 @@ export default function Checkout() {
   });
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [recurringEnabled, setRecurringEnabled] = useState(false);
+  const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const [frequency, setFrequency] = useState<"Daily" | "Weekly" | "Monthly">("Weekly");
+  const [startDate, setStartDate] = useState<string>(tomorrow);
 
   useEffect(() => {
     if (cart.items.length === 0) router.push("/cart");
@@ -68,6 +72,7 @@ export default function Checkout() {
         },
         note: form.note,
         asGuest,
+        ...(recurringEnabled ? { recurring: { frequency, startDate } } : {}),
       }),
     });
     const data = await res.json();
@@ -120,6 +125,42 @@ export default function Checkout() {
           onChange={(e) => setForm({ ...form, note: e.target.value })}
           className="w-full border rounded px-3 py-2"
         />
+      </div>
+
+      <div className="border rounded p-4 mb-4">
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={recurringEnabled}
+            onChange={(e) => setRecurringEnabled(e.target.checked)}
+          />
+          <span className="font-semibold">Make this a recurring order</span>
+        </label>
+        {recurringEnabled && (
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <label className="block">
+              Frequency
+              <select
+                className="block w-full border rounded px-2 py-1"
+                value={frequency}
+                onChange={(e) => setFrequency(e.target.value as "Daily" | "Weekly" | "Monthly")}
+              >
+                <option>Daily</option>
+                <option>Weekly</option>
+                <option>Monthly</option>
+              </select>
+            </label>
+            <label className="block">
+              Start date
+              <input
+                type="date"
+                className="block w-full border rounded px-2 py-1"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+              />
+            </label>
+          </div>
+        )}
       </div>
 
       <div className="mt-6 flex justify-between items-center">
