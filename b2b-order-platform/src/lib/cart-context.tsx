@@ -34,6 +34,24 @@ const STORAGE_KEY = "chalksniffer-cart";
 
 type Persisted = { storeId: string | null; storeName: string | null; items: CartItem[] };
 
+function isValidCartItem(x: unknown): x is CartItem {
+  if (typeof x !== "object" || x === null) return false;
+  const c = x as Record<string, unknown>;
+  return (
+    typeof c.productId === "string"
+    && typeof c.variantId === "string"
+    && typeof c.name === "string"
+    && typeof c.variantLabel === "string"
+    && typeof c.unitCode === "string"
+    && typeof c.unitPriceSnapshot === "number"
+    && typeof c.currency === "string"
+    && typeof c.quantity === "number"
+    && typeof c.stock === "number"
+    && typeof c.storeId === "string"
+    && typeof c.storeName === "string"
+  );
+}
+
 export function CartProvider({ children }: { children: ReactNode }) {
   const [storeId, setStoreId] = useState<string | null>(null);
   const [storeName, setStoreName] = useState<string | null>(null);
@@ -43,10 +61,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (!saved) return;
     try {
-      const parsed = JSON.parse(saved) as Persisted;
-      setStoreId(parsed.storeId);
-      setStoreName(parsed.storeName);
-      setItems(parsed.items || []);
+      const parsed = JSON.parse(saved) as Partial<Persisted>;
+      const rawItems = Array.isArray(parsed.items) ? parsed.items : [];
+      const validItems = rawItems.filter(isValidCartItem);
+      // If any items were dropped, we also drop the store binding —
+      // partial carts shouldn't lock the user into a phantom store.
+      if (validItems.length === 0) return;
+      setStoreId(typeof parsed.storeId === "string" ? parsed.storeId : null);
+      setStoreName(typeof parsed.storeName === "string" ? parsed.storeName : null);
+      setItems(validItems);
     } catch {
       // stale/corrupt storage — ignore
     }
