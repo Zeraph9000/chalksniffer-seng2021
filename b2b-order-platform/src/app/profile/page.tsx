@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { ImageUpload } from "@/components/image-upload";
 
 type Tab = "personal" | "business" | "address" | "security";
 
@@ -11,6 +12,7 @@ type ProfileData = {
   role: "buyer" | "seller";
   companyName: string;
   abn: string;
+  avatarUrl?: string;
   address: {
     streetName: string;
     cityName: string;
@@ -48,8 +50,15 @@ export default function ProfilePage() {
 
   useEffect(() => {
     fetch("/api/profile")
-      .then((res) => res.json())
+      .then(async (res) => {
+        if (res.status === 401) {
+          window.location.href = "/login?next=/profile";
+          return null;
+        }
+        return res.json();
+      })
       .then((data) => {
+        if (!data) return;
         setProfile(data);
         setName(data.name);
         setEmail(data.email);
@@ -195,6 +204,35 @@ export default function ProfilePage() {
               }}
               className="space-y-4"
             >
+              <div className="pb-4 border-b border-surface-border mb-2">
+                <label className="input-label mb-2 block">Avatar</label>
+                <ImageUpload
+                  kind="avatar"
+                  value={profile.avatarUrl ?? null}
+                  onChange={async (url) => {
+                    setSaving(true);
+                    try {
+                      const res = await fetch("/api/profile", {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ avatarUrl: url }),
+                      });
+                      const data = await res.json();
+                      if (!res.ok) {
+                        showToast(data.error || "Failed to save avatar", "error");
+                        return;
+                      }
+                      setProfile(data);
+                      showToast(url ? "Avatar updated" : "Avatar removed", "success");
+                    } catch {
+                      showToast("Network error", "error");
+                    } finally {
+                      setSaving(false);
+                    }
+                  }}
+                  label="Avatar"
+                />
+              </div>
               <div>
                 <label className="input-label">Full Name</label>
                 <input type="text" required value={name} onChange={(e) => setName(e.target.value)} className="input" />
