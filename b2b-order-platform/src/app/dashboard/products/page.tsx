@@ -6,7 +6,7 @@ import type { Store, Product } from "@/lib/types";
 
 export default async function DashboardProducts() {
   const session = await getSessionOrNull();
-  if (!session || session.role !== "seller") redirect("/login");
+  if (!session || session.role !== "seller") redirect("/dashboard/login");
 
   const client = await clientPromise;
   const db = client.db();

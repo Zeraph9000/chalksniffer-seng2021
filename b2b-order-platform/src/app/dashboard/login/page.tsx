@@ -8,9 +8,9 @@ function safeNext(next: string | null, fallback: string): string {
   return next;
 }
 
-export default function LoginPage() {
+export default function SellerLoginPage() {
   const params = useSearchParams();
-  const next = safeNext(params.get("next"), "/");
+  const next = safeNext(params.get("next"), "/dashboard");
 
   const [mode, setMode] = useState<"login" | "register">("login");
   const [name, setName] = useState("");
@@ -30,11 +30,11 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    const endpoint = mode === "register" ? "/api/auth/register" : "/api/auth/login";
+    const endpoint = mode === "register" ? "/api/auth/register?role=seller" : "/api/auth/login?role=seller";
     const payload =
       mode === "register"
         ? {
-            name, email, password, role: "buyer",
+            name, email, password, role: "seller",
             companyName, abn, phone,
             address: { streetName, cityName, postalZone, country: "AU" },
           }
@@ -73,7 +73,7 @@ export default function LoginPage() {
           </svg>
           <h1 className="text-3xl font-extrabold tracking-tight text-[#d4531e]">Ledgr</h1>
           <p className="mt-2 text-sm text-ink-muted">
-            {mode === "register" ? "Create your buyer account" : "Welcome back"}
+            {mode === "register" ? "Create your seller account" : "Seller sign in"}
           </p>
         </div>
 
@@ -131,7 +131,7 @@ export default function LoginPage() {
                   </div>
                 </fieldset>
                 <fieldset className="rounded-lg border border-surface-border p-4">
-                  <legend className="text-sm font-medium text-ink px-1">Delivery Address</legend>
+                  <legend className="text-sm font-medium text-ink px-1">Business Address</legend>
                   <div className="mt-2 space-y-3">
                     <div>
                       <label className="input-label">Street Address</label>
@@ -175,7 +175,7 @@ export default function LoginPage() {
           </button>
         </p>
         <p className="mt-6 text-center text-xs text-ink-faint">
-          Selling on Ledgr? <a className="underline" href="/dashboard/login">Seller sign in</a>
+          Shopping? <a className="underline" href="/login">Buyer sign in</a>
         </p>
       </div>
     </div>

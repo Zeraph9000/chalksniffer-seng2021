@@ -6,7 +6,7 @@ import type { OrderMapping, Store } from "@/lib/types";
 
 export default async function SellerInvoicesPage() {
   const session = await getSessionOrNull();
-  if (!session || session.role !== "seller") redirect("/login");
+  if (!session || session.role !== "seller") redirect("/dashboard/login");
 
   const client = await clientPromise;
   const db = client.db();

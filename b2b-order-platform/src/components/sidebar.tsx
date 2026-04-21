@@ -45,8 +45,8 @@ export function Sidebar({ role, name }: { role: UserRole | null; name: string })
   const homeHref = getHomeHref(role);
 
   async function handleLogout() {
-    await fetch("/api/auth/logout", { method: "POST" });
-    window.location.href = "/login";
+    await fetch("/api/auth/logout?role=seller", { method: "POST" });
+    window.location.href = "/dashboard/login";
   }
 
   return (
