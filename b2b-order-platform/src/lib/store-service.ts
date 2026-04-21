@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { Db } from "mongodb";
 import { Store, StoreCreateRequest, StoreStatus, StoreUpdateRequest } from "./types";
+import { generateUniqueSlug, isReservedSlug, isValidSlugFormat, slugify } from "./slug";
 
 export const STORE_STATUSES: StoreStatus[] = ["active", "paused", "closed"];
 
@@ -17,6 +18,13 @@ type ValidationResult = {
 
 function serviceError(error: string, message: string, status: number): StoreServiceError {
   return { error, message, status };
+}
+
+let slugIndexEnsured = false;
+async function ensureSlugIndex(db: Db) {
+  if (slugIndexEnsured) return;
+  await db.collection<Store>("stores").createIndex({ slug: 1 }, { unique: true, sparse: true });
+  slugIndexEnsured = true;
 }
 
 export function isStoreStatus(value: unknown): value is StoreStatus {
@@ -70,10 +78,15 @@ export async function createStore(
     return serviceError("CONFLICT", "Store already exists for this seller", 409);
   }
 
+  await ensureSlugIndex(db);
+  const base = slugify(body.storeName!);
+  const slug = await generateUniqueSlug(base, db);
+
   const now = new Date();
   const store: Store = {
     storeId: crypto.randomUUID(),
     userId,
+    slug,
     storeName: body.storeName!.trim(),
     description: body.description!.trim(),
     logoUrl: body.logoUrl,
@@ -110,13 +123,29 @@ export async function updateStore(
   }
 
   const now = new Date();
-  const updates: StoreUpdateRequest & { updatedAt: Date } = { updatedAt: now };
+  const updates: Partial<Store> & { updatedAt: Date } = { updatedAt: now };
   for (const field of ["storeName", "description", "logoUrl", "bannerUrl", "location", "category"] as const) {
     if (body[field] !== undefined) {
-      updates[field] = body[field].trim();
+      (updates as unknown as Record<string, string>)[field] = body[field]!.trim();
     }
   }
   if (body.status !== undefined) updates.status = body.status;
+
+  if (body.slug !== undefined) {
+    const requested = body.slug.trim();
+    if (!isValidSlugFormat(requested)) {
+      return serviceError("INVALID_SLUG", "Slug must be lowercase with hyphens, 2-64 chars", 400);
+    }
+    if (isReservedSlug(requested)) {
+      return serviceError("INVALID_SLUG", "Slug is reserved", 400);
+    }
+    if (requested !== existingStore.slug) {
+      await ensureSlugIndex(db);
+      const taken = await db.collection<Store>("stores").findOne({ slug: requested });
+      if (taken) return serviceError("CONFLICT", "Slug already in use", 409);
+      updates.slug = requested;
+    }
+  }
 
   await db.collection<Store>("stores").updateOne({ storeId }, { $set: updates });
 
@@ -141,4 +170,17 @@ export async function updateStoreStatus(
 
 export function isStoreServiceError(result: Store | StoreServiceError): result is StoreServiceError {
   return "error" in result && "status" in result;
+}
+
+export async function getStoreBySlug(db: Db, slug: string): Promise<Store | null> {
+  await ensureSlugIndex(db);
+  return db.collection<Store>("stores").findOne({ slug });
+}
+
+export async function backfillSlugIfMissing(db: Db, store: Store): Promise<Store> {
+  if (store.slug) return store;
+  await ensureSlugIndex(db);
+  const slug = await generateUniqueSlug(slugify(store.storeName), db);
+  await db.collection<Store>("stores").updateOne({ storeId: store.storeId }, { $set: { slug } });
+  return { ...store, slug };
 }
