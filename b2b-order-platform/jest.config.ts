@@ -10,7 +10,7 @@ const config: Config = {
     "^@/(.*)$": "<rootDir>/src/$1",
     "\\.(css|less|scss)$": "<rootDir>/tests/__mocks__/style-mock.js",
   },
-  setupFilesAfterEach: ["<rootDir>/tests/jest.setup.ts"],
+  setupFilesAfterEnv: ["<rootDir>/tests/jest.setup.ts"],
   testTimeout: 20000,
   testPathIgnorePatterns: [
     "/node_modules/",
