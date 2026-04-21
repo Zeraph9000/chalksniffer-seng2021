@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/db";
 import { getSessionOrNull } from "@/lib/session";
 import { getProduct, reserveVariantStock, restoreVariantStock } from "@/lib/product-service";
-import { createMapping, setMappingField, isOrderServiceError } from "@/lib/order-service";
+import { createMapping, isOrderServiceError } from "@/lib/order-service";
 import { chalksniffer } from "@/lib/chalksniffer-client";
 import { stripePlaceholder } from "@/lib/stripe-placeholder";
 import { generateGuestToken } from "@/lib/guest-token";
@@ -101,6 +101,9 @@ export async function POST(request: NextRequest) {
   // Per the auth matrix, authed buyers go in as buyerId; guests are null.
   const buyerId = (!session || body.asGuest) ? null : session.userId;
 
+  // Create the Stripe placeholder intent first so the OrderMapping has its ID from the start.
+  const intent = stripePlaceholder.createPaymentIntent(payable, products[0].currency);
+
   const mappingResult = await createMapping(db, {
     orderId, storeId, sellerId: store.userId,
     buyerId,
@@ -108,16 +111,13 @@ export async function POST(request: NextRequest) {
     buyerAddress: body.buyer.address,
     note: body.note,
     payableAmount: payable, documentCurrencyCode: products[0].currency, issueDate: ubl.issueDate,
+    stripePaymentIntentId: intent.id,
     guestAccessToken: guestToken,
   });
   if (isOrderServiceError(mappingResult)) {
     for (const r of reserved) await restoreVariantStock(db, r.productId, r.variantId, r.qty);
     return NextResponse.json({ error: mappingResult.error, message: mappingResult.message }, { status: mappingResult.status });
   }
-
-  // Create Stripe placeholder intent + store on mapping
-  const intent = stripePlaceholder.createPaymentIntent(payable, products[0].currency);
-  await setMappingField(db, orderId, { stripePaymentIntentId: intent.id });
 
   return NextResponse.json({
     orderId,

@@ -30,6 +30,7 @@ export type CreateMappingInput = {
   payableAmount: number;
   documentCurrencyCode: string;
   issueDate: string;
+  stripePaymentIntentId?: string;
   guestAccessToken?: string;
 };
 
@@ -52,6 +53,7 @@ export async function createMapping(
     payableAmount: input.payableAmount,
     documentCurrencyCode: input.documentCurrencyCode,
     issueDate: input.issueDate,
+    stripePaymentIntentId: input.stripePaymentIntentId,
     guestAccessToken: input.guestAccessToken,
     createdAt: now,
     updatedAt: now,
