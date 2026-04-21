@@ -10,8 +10,11 @@ const config: Config = {
     "^@/(.*)$": "<rootDir>/src/$1",
   },
   testTimeout: 20000,
-  // TODO: migrate tests/store-service.test.ts from node:test to jest and remove this ignore
-  testPathIgnorePatterns: ["/node_modules/", "<rootDir>/tests/store-service.test.ts"],
+  testPathIgnorePatterns: [
+    "/node_modules/",
+    // TODO: migrate tests/store-service.test.ts from node:test to Jest, then drop this entry
+    "<rootDir>/tests/store-service.test.ts",
+  ],
 };
 
 export default config;
