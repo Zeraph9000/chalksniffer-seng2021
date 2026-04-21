@@ -1,7 +1,0 @@
-{
-  "version": 2,
-  "framework": "nextjs",
-  "installCommand": "cd b2b-order-platform && npm ci",
-  "buildCommand": "cd b2b-order-platform && npm run build",
-  "outputDirectory": "b2b-order-platform/.next"
-}
