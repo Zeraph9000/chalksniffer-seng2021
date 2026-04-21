@@ -18,7 +18,7 @@ const navLinks = [
 
 export function MarketplaceTopNav({ active = "marketplace", user, cartCount = 0 }: MarketplaceTopNavProps) {
   return (
-    <header className="h-14 flex items-center gap-5 px-6 border-b border-line-2 bg-paper">
+    <header className="h-16 flex items-center gap-5 px-6 border-b border-line-2 bg-paper">
       <BrandLockup size="md" />
       <nav className="flex gap-[2px]" aria-label="Primary">
         {navLinks.map((l) => (
