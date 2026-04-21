@@ -31,23 +31,39 @@ export type User = {
   createdAt: Date;
 };
 
-export type PreDespatchStatus = "needs_review" | "under_review";
+export type OrderStatus =
+  | "placed" | "paid" | "despatched" | "received" | "invoiced" | "cancelled";
+
+export type StatusEvent = {
+  status: OrderStatus;
+  at: Date;
+  byUserId?: string | null;
+  note?: string;
+};
 
 export type OrderMapping = {
+  _id?: string;
   orderId: string;
-  buyerId: string;
+  storeId: string;
   sellerId: string;
-  status: "placed" | "despatched" | "received" | "invoiced" | "paid";
-  buyerStatus: PreDespatchStatus;
-  sellerStatus: PreDespatchStatus;
-  sellerNote?: string;
+  buyerId: string | null;
+  buyerEmail: string;
+  buyerName: string;
+  buyerAddress: UserAddress;
+  buyerPhone: string;
+  note?: string;
+  status: OrderStatus;
+  statusHistory: StatusEvent[];
+  stripePaymentIntentId?: string;
   despatchDocumentId?: string;
   receiptAdviceId?: string;
   invoiceId?: string;
-  payableAmount?: number;
-  documentCurrencyCode?: string;
-  issueDate?: string;
+  guestAccessToken?: string;
+  payableAmount: number;
+  documentCurrencyCode: string;
+  issueDate: string;
   createdAt: Date;
+  updatedAt: Date;
 };
 
 export type ProductOption = {
