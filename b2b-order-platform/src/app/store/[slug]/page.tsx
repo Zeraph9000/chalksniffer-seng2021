@@ -200,12 +200,40 @@ export default async function Storefront({ params }: { params: { slug: string } 
         </aside>
 
         <div>
-          <div className="flex items-center justify-between pb-[14px] mb-[18px] border-b border-line">
+          <div className="flex items-center justify-between pb-[14px] mb-[18px] border-b border-line gap-4 flex-wrap">
             <div className="flex items-baseline gap-[10px]">
               <div className="font-display text-[20px] font-semibold tracking-[-.015em]">
                 All products
               </div>
               <span className="text-[12.5px] text-ink-3">{products.length} products</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <label className="inline-flex items-center gap-[6px] text-[12.5px] text-ink-3">
+                Sort
+                <select className="h-[30px] border border-line rounded-[4px] px-[10px] pr-6 text-[12.5px] bg-transparent text-ink">
+                  <option>Featured</option>
+                  <option>Highest rated</option>
+                  <option>Price: low → high</option>
+                  <option>Price: high → low</option>
+                  <option>Newest</option>
+                </select>
+              </label>
+              <div className="flex border border-line rounded-[6px] overflow-hidden">
+                <button
+                  type="button"
+                  aria-label="Grid view"
+                  className="w-[30px] h-[30px] grid place-items-center bg-paper-2 text-ink"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg>
+                </button>
+                <button
+                  type="button"
+                  aria-label="List view"
+                  className="w-[30px] h-[30px] grid place-items-center border-l border-line bg-transparent text-ink-3"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+                </button>
+              </div>
             </div>
           </div>
           {products.length === 0 ? (
@@ -224,6 +252,44 @@ export default async function Storefront({ params }: { params: { slug: string } 
               ))}
             </div>
           )}
+        </div>
+      </section>
+
+      {/* About the shop */}
+      <section className="mx-auto max-w-[1360px] px-6 pt-16 pb-6 grid grid-cols-[1.5fr_1fr] gap-12 items-start border-t border-line-2 mt-12">
+        <div>
+          <div className="font-sans text-[11px] font-medium uppercase tracking-[.12em] text-ink-3">
+            About the shop
+          </div>
+          {store.description ? (
+            <p className="font-display text-[22px] leading-[1.35] tracking-[-.01em] text-ink font-medium m-0 mt-[10px] mb-5 max-w-[640px]">
+              {store.description}
+            </p>
+          ) : (
+            <p className="font-display text-[22px] leading-[1.35] tracking-[-.01em] text-ink-3 m-0 mt-[10px] mb-5 max-w-[640px]">
+              {store.storeName} hasn't written a description yet.
+            </p>
+          )}
+        </div>
+        <div className="flex flex-col gap-6">
+          {store.location && (
+            <div>
+              <div className="font-display text-[22px] font-semibold tracking-[-.02em]">
+                {store.location}
+              </div>
+              <div className="text-[11px] text-ink-3 uppercase tracking-[.1em] mt-[10px] font-sans">
+                Based in
+              </div>
+            </div>
+          )}
+          <div>
+            <div className="font-display text-[22px] font-semibold tracking-[-.02em]">
+              {products.length}
+            </div>
+            <div className="text-[11px] text-ink-3 uppercase tracking-[.1em] mt-[10px] font-sans">
+              Products
+            </div>
+          </div>
         </div>
       </section>
 
