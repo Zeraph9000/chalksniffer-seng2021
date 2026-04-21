@@ -1,7 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { ArrowLeft, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { BrandLockup } from "@/components/brand/brand-lockup";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 function safeNext(next: string | null, fallback: string): string {
   if (!next || !next.startsWith("/") || next.startsWith("//")) return fallback;
@@ -12,16 +18,9 @@ export default function LoginPage() {
   const params = useSearchParams();
   const next = safeNext(params.get("next"), "/");
 
-  const [mode, setMode] = useState<"login" | "register">("login");
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [companyName, setCompanyName] = useState("");
-  const [abn, setAbn] = useState("");
-  const [streetName, setStreetName] = useState("");
-  const [cityName, setCityName] = useState("");
-  const [postalZone, setPostalZone] = useState("");
+  const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -29,22 +28,11 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
     setLoading(true);
-
-    const endpoint = mode === "register" ? "/api/auth/register" : "/api/auth/login";
-    const payload =
-      mode === "register"
-        ? {
-            name, email, password, role: "buyer",
-            companyName, abn, phone,
-            address: { streetName, cityName, postalZone, country: "AU" },
-          }
-        : { email, password };
-
     try {
-      const res = await fetch(endpoint, {
+      const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -60,123 +48,142 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-surface px-4">
-      <div className="w-full max-w-md">
-        <div className="mb-8 flex flex-col items-center text-center">
-          <svg className="mb-3 h-12 w-12" viewBox="0 0 40 40" fill="none">
-            <path d="M4 36V12l10-8v32H4z" fill="#d4531e" />
-            <rect x="7" y="20" width="4" height="16" fill="white" />
-            <path d="M18 36V8l10-4v32H18z" fill="#d4531e" />
-            <rect x="21" y="16" width="4" height="6" fill="white" />
-            <rect x="21" y="26" width="4" height="10" fill="white" />
-            <path d="M28 36V14l8 4v18H28z" fill="#d4531e" />
-          </svg>
-          <h1 className="text-3xl font-extrabold tracking-tight text-[#d4531e]">Ledgr</h1>
-          <p className="mt-2 text-sm text-ink-muted">
-            {mode === "register" ? "Create your buyer account" : "Welcome back"}
-          </p>
-        </div>
+    <div className="relative min-h-screen bg-paper">
+      {/* Return to marketplace ribbon */}
+      <Link
+        href="/"
+        className="absolute top-4 right-4 z-20 inline-flex items-center gap-1.5 rounded-[6px] border border-line bg-paper px-3 py-1.5 text-[12.5px] text-ink-3 hover:text-ink"
+      >
+        <ArrowLeft className="h-[13px] w-[13px]" />
+        Back to Marketplace
+      </Link>
 
-        <div className="card p-6">
-          <div className="mb-6 flex rounded-lg bg-surface p-1">
-            {(["login", "register"] as const).map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => setMode(m)}
-                className={`flex-1 rounded-md py-2 text-sm font-medium ${
-                  mode === m ? "bg-white text-ink" : "text-ink-muted hover:text-ink"
-                }`}
-              >
-                {m === "register" ? "Register" : "Login"}
-              </button>
-            ))}
+      <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[1fr_1.1fr]">
+        {/* Left editorial panel */}
+        <div
+          className="relative hidden flex-col justify-between gap-8 overflow-hidden bg-ink px-[52px] py-[44px] text-[#e7e9ec] lg:flex"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 15% 20%, rgba(224,90,43,.14) 0 180px, transparent 200px), radial-gradient(rgba(255,255,255,.04) 1px, transparent 1.5px)",
+            backgroundSize: "auto, 16px 16px",
+          }}
+        >
+          <div className="relative">
+            <BrandLockup variant="light" size="md" />
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {mode === "register" && (
-              <>
-                <div>
-                  <label className="input-label">Full Name</label>
-                  <input type="text" required value={name} onChange={(e) => setName(e.target.value)} className="input" autoComplete="name" />
-                </div>
-                <div>
-                  <label className="input-label">Phone</label>
-                  <input type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} className="input" autoComplete="tel" />
-                </div>
-              </>
-            )}
-            <div>
-              <label className="input-label">Email</label>
-              <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="input" autoComplete="email" />
+          <div className="relative">
+            <div className="inline-flex items-center gap-[10px] text-[11.5px] font-medium uppercase tracking-[.14em] text-hot">
+              <span className="inline-block h-px w-[18px] bg-hot" />
+              Welcome back
             </div>
-            <div>
-              <label className="input-label">Password</label>
-              <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="input" autoComplete={mode === "register" ? "new-password" : "current-password"} />
-            </div>
+            <h2 className="mt-[18px] mb-[18px] max-w-[400px] font-display text-[44px] font-bold leading-[1] tracking-[-.028em] text-paper">
+              Pick up where you left off.
+            </h2>
+            <p className="m-0 max-w-[380px] text-[14.5px] leading-[1.6] text-[#9aa0a9]">
+              Your orders, recurring deliveries, and the shops you&apos;ve visited — all in one
+              account, across every store on Ledgr.
+            </p>
+          </div>
 
-            {mode === "register" && (
-              <>
-                <fieldset className="rounded-lg border border-surface-border p-4">
-                  <legend className="text-sm font-medium text-ink px-1">Business Details</legend>
-                  <div className="mt-2 space-y-3">
-                    <div>
-                      <label className="input-label">Company Name</label>
-                      <input type="text" required value={companyName} onChange={(e) => setCompanyName(e.target.value)} className="input mt-1" autoComplete="organization" />
-                    </div>
-                    <div>
-                      <label className="input-label">ABN</label>
-                      <input type="text" required value={abn} onChange={(e) => setAbn(e.target.value)} className="input mt-1" placeholder="11 digit ABN" />
-                    </div>
-                  </div>
-                </fieldset>
-                <fieldset className="rounded-lg border border-surface-border p-4">
-                  <legend className="text-sm font-medium text-ink px-1">Delivery Address</legend>
-                  <div className="mt-2 space-y-3">
-                    <div>
-                      <label className="input-label">Street Address</label>
-                      <input type="text" required value={streetName} onChange={(e) => setStreetName(e.target.value)} className="input mt-1" autoComplete="street-address" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="input-label">City</label>
-                        <input type="text" required value={cityName} onChange={(e) => setCityName(e.target.value)} className="input mt-1" autoComplete="address-level2" />
-                      </div>
-                      <div>
-                        <label className="input-label">Postal Code</label>
-                        <input type="text" required value={postalZone} onChange={(e) => setPostalZone(e.target.value)} className="input mt-1" autoComplete="postal-code" />
-                      </div>
-                    </div>
-                  </div>
-                </fieldset>
-              </>
-            )}
-
-            {error && (
-              <p className="rounded-lg bg-semantic-danger-muted border border-red-200 px-3 py-2 text-sm text-semantic-danger">
-                {error}
-              </p>
-            )}
-
-            <button type="submit" disabled={loading} className="w-full btn-primary disabled:opacity-50">
-              {loading ? "Please wait..." : mode === "register" ? "Create Account" : "Sign In"}
-            </button>
-          </form>
+          <div />
         </div>
 
-        <p className="mt-4 text-center text-xs text-ink-faint">
-          {mode === "register" ? "Already have an account? " : "New here? "}
-          <button
-            type="button"
-            onClick={() => setMode(mode === "register" ? "login" : "register")}
-            className="text-accent-primary hover:underline"
-          >
-            {mode === "register" ? "Sign in" : "Create one"}
-          </button>
-        </p>
-        <p className="mt-6 text-center text-xs text-ink-faint">
-          Selling on Ledgr? <a className="underline" href="/dashboard/login">Seller sign in</a>
-        </p>
+        {/* Right form panel */}
+        <div className="flex items-center justify-center bg-paper-2 px-6 py-12 sm:px-[48px] sm:py-[48px]">
+          <div className="w-full max-w-[400px]">
+            <div className="text-[11px] font-medium uppercase tracking-[.12em] text-ink-3">
+              Sign in
+            </div>
+            <h1 className="mt-2 mb-1.5 font-display text-[28px] font-semibold tracking-[-.022em] text-ink">
+              Sign in to Ledgr
+            </h1>
+            <p className="mb-[26px] text-[13px] leading-[1.55] text-ink-3">
+              Use the same email whether you&apos;re shopping or running a store.
+            </p>
+
+            <form onSubmit={handleSubmit} className="space-y-[14px]">
+              <div>
+                <Label htmlFor="login-email" className="mb-[7px]">
+                  Email
+                </Label>
+                <Input
+                  id="login-email"
+                  type="email"
+                  required
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <div className="mb-[7px] flex items-center justify-between">
+                  <Label htmlFor="login-password" className="mb-0">
+                    Password
+                  </Label>
+                  <Link
+                    href="/login/forgot"
+                    className="text-[11.5px] font-medium text-ink-3 hover:text-hot"
+                  >
+                    Forgot?
+                  </Link>
+                </div>
+                <div className="relative">
+                  <Input
+                    id="login-password"
+                    type={showPw ? "text" : "password"}
+                    required
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className={showPw ? "" : "font-mono tracking-[.1em]"}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPw((v) => !v)}
+                    aria-label={showPw ? "Hide password" : "Show password"}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-ink-3 hover:text-ink"
+                  >
+                    {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {error && (
+                <p className="rounded-md border border-danger/40 bg-danger-soft px-3 py-2 text-[12.5px] text-danger">
+                  {error}
+                </p>
+              )}
+
+              <Button
+                type="submit"
+                disabled={loading}
+                size="lg"
+                className="mt-2 h-[46px] w-full"
+              >
+                {loading ? "Signing in…" : "Sign in"}
+                {!loading && <ArrowRight className="h-4 w-4" />}
+              </Button>
+            </form>
+
+            <div className="my-[22px] mb-[18px] flex items-center gap-[14px] text-[12px] text-ink-4">
+              <span className="h-px flex-1 bg-line" />
+              or
+              <span className="h-px flex-1 bg-line" />
+            </div>
+
+            <p className="text-center text-[13px] text-ink-3">
+              Don&apos;t have an account?{" "}
+              <Link
+                href="/register"
+                className="font-medium text-ink underline underline-offset-[3px] hover:text-hot"
+              >
+                Register →
+              </Link>
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
