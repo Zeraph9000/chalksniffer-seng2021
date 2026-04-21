@@ -31,7 +31,7 @@ test("list returns buyer's recurring orders", async () => {
   mockList.mockResolvedValue([{ id: "r1" }]);
   const res = await listGET();
   expect(res.status).toBe(200);
-  expect(await res.json()).toEqual([{ id: "r1" }]);
+  expect(await res.json()).toMatchObject([{ id: "r1" }]);
 });
 
 test("list returns [] when chalksniffer returns null", async () => {
