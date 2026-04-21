@@ -50,17 +50,51 @@ export type OrderMapping = {
   createdAt: Date;
 };
 
+export type ProductOption = {
+  name: string;
+  values: string[];
+};
+
+export type ProductVariant = {
+  variantId: string;
+  optionValues: Record<string, string>;
+  price: number;
+  stock: number;
+  sku?: string;
+  imageUrl?: string;
+};
+
 export type Product = {
   _id?: string;
-  sellerEmail: string;
+  productId: string;
+  storeId: string;
   name: string;
   description: string;
   category: string;
+  imageUrl: string;
   unitCode: string;
-  unitPrice: number;
   currency: string;
-  stock: number;
+  available: boolean;
+  options: ProductOption[];
+  variants: ProductVariant[];
   createdAt: Date;
+  updatedAt: Date;
+};
+
+export type ProductCreateRequest = {
+  name: string;
+  description: string;
+  category: string;
+  imageUrl: string;
+  unitCode: string;
+  currency: string;
+  options?: ProductOption[];
+  variants: Omit<ProductVariant, "variantId">[];
+};
+
+export type ProductUpdateRequest = Partial<Omit<ProductCreateRequest, "variants">> & {
+  available?: boolean;
+  variants?: ProductVariant[];
 };
 
 export type StoreStatus = "active" | "paused" | "closed";
