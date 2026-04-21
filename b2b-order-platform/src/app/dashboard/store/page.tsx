@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import type { Store } from "@/lib/types";
+import { ImageUpload } from "@/components/image-upload";
 
 export default function StoreEditor() {
   const [store, setStore] = useState<Partial<Store>>({ status: "active" });
@@ -73,8 +74,24 @@ export default function StoreEditor() {
         </div>
         <input placeholder="Category (e.g. bakery)" value={store.category ?? ""} onChange={(e) => setStore({ ...store, category: e.target.value })} className="w-full border rounded px-3 py-2" />
         <input placeholder="Location" value={store.location ?? ""} onChange={(e) => setStore({ ...store, location: e.target.value })} className="w-full border rounded px-3 py-2" />
-        <input placeholder="Logo URL" value={store.logoUrl ?? ""} onChange={(e) => setStore({ ...store, logoUrl: e.target.value })} className="w-full border rounded px-3 py-2" />
-        <input placeholder="Banner URL" value={store.bannerUrl ?? ""} onChange={(e) => setStore({ ...store, bannerUrl: e.target.value })} className="w-full border rounded px-3 py-2" />
+        <div>
+          <label className="text-sm font-medium block mb-1">Store logo</label>
+          <ImageUpload
+            kind="logo"
+            value={store.logoUrl ?? null}
+            onChange={(url) => setStore({ ...store, logoUrl: url ?? undefined })}
+            label="Logo"
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium block mb-1">Store banner</label>
+          <ImageUpload
+            kind="banner"
+            value={store.bannerUrl ?? null}
+            onChange={(url) => setStore({ ...store, bannerUrl: url ?? undefined })}
+            label="Banner"
+          />
+        </div>
         <select
           value={store.status ?? "active"}
           onChange={(e) => setStore({ ...store, status: e.target.value as Store["status"] })}
