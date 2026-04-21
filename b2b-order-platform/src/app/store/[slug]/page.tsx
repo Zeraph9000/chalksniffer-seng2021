@@ -310,7 +310,7 @@ export default async function Storefront({ params }: { params: { slug: string } 
             </p>
           )}
         </div>
-        <div className="flex flex-col gap-6">
+        <div className="flex gap-10 flex-wrap">
           {store.location && (
             <div>
               <div className="font-display text-[22px] font-semibold tracking-[-.02em]">
