@@ -6,6 +6,14 @@ import type { OrderMapping, OrderStatus, Store } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { EmptyState } from "@/components/ui/empty-state";
+import { DashboardShell } from "@/components/ledgr/dashboard-shell";
+
+function monogramFrom(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "–";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
 
 export default async function DashboardOrders() {
   const session = await getSessionOrNull();
@@ -15,8 +23,13 @@ export default async function DashboardOrders() {
   const db = client.db();
   const store = await db.collection<Store>("stores").findOne({ userId: session.userId });
   if (!store) {
+    const placeholderStore = { monogram: "--", name: "No store yet", status: "closed" as const };
     return (
-      <main>
+      <DashboardShell
+        store={placeholderStore}
+        user={{ name: session.name, initials: monogramFrom(session.name) }}
+        active="orders"
+      >
         <div className="sticky top-0 z-[2] flex flex-wrap items-end justify-between gap-4 border-b border-line bg-paper px-8 py-6">
           <div>
             <h1 className="m-0 font-display text-[24px] font-semibold tracking-[-.02em]">Orders</h1>
@@ -35,7 +48,7 @@ export default async function DashboardOrders() {
             </Link>
           </p>
         </div>
-      </main>
+      </DashboardShell>
     );
   }
 
@@ -75,7 +88,17 @@ export default async function DashboardOrders() {
   }
 
   return (
-    <main>
+    <DashboardShell
+      store={{
+        monogram: monogramFrom(store.storeName),
+        name: store.storeName,
+        status: store.status,
+        slug: store.slug,
+      }}
+      user={{ name: session.name, initials: monogramFrom(session.name) }}
+      active="orders"
+      ordersBadge={awaitingDespatch}
+    >
       <div className="sticky top-0 z-[2] flex flex-wrap items-end justify-between gap-4 border-b border-line bg-paper px-8 py-6">
         <div>
           <h1 className="m-0 font-display text-[24px] font-semibold tracking-[-.02em]">Orders</h1>
@@ -191,6 +214,6 @@ export default async function DashboardOrders() {
           </div>
         )}
       </div>
-    </main>
+    </DashboardShell>
   );
 }
