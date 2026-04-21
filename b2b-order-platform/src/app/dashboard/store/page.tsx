@@ -21,7 +21,8 @@ export default function StoreEditor() {
   useEffect(() => {
     if (!existing) return setShareUrl(null);
     if (typeof window === "undefined") return;
-    setShareUrl(`${window.location.origin}/store/${existing.storeId}`);
+    const path = existing.slug ?? existing.storeId;
+    setShareUrl(`${window.location.origin}/store/${path}`);
   }, [existing]);
 
   async function save() {
@@ -56,6 +57,20 @@ export default function StoreEditor() {
       <div className="space-y-3">
         <input placeholder="Store name" value={store.storeName ?? ""} onChange={(e) => setStore({ ...store, storeName: e.target.value })} className="w-full border rounded px-3 py-2" />
         <textarea placeholder="Description" value={store.description ?? ""} onChange={(e) => setStore({ ...store, description: e.target.value })} className="w-full border rounded px-3 py-2" />
+        <div>
+          <input
+            placeholder="store-slug (e.g. acme-bakery)"
+            value={store.slug ?? ""}
+            onChange={(e) => setStore({ ...store, slug: e.target.value })}
+            pattern="^[a-z0-9]+(-[a-z0-9]+)*$"
+            minLength={2}
+            maxLength={64}
+            className="w-full border rounded px-3 py-2"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Your storefront will be at /store/&lt;slug&gt;. Lowercase, numbers, and hyphens only.
+          </p>
+        </div>
         <input placeholder="Category (e.g. bakery)" value={store.category ?? ""} onChange={(e) => setStore({ ...store, category: e.target.value })} className="w-full border rounded px-3 py-2" />
         <input placeholder="Location" value={store.location ?? ""} onChange={(e) => setStore({ ...store, location: e.target.value })} className="w-full border rounded px-3 py-2" />
         <input placeholder="Logo URL" value={store.logoUrl ?? ""} onChange={(e) => setStore({ ...store, logoUrl: e.target.value })} className="w-full border rounded px-3 py-2" />

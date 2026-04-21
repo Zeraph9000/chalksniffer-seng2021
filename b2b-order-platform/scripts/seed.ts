@@ -44,6 +44,7 @@ async function main() {
   await db.collection("stores").insertOne({
     storeId,
     userId: seller._id.toString(),
+    slug: "acme-bakery",
     storeName: "Acme Bakery",
     description: "Freshly baked goods daily",
     logoUrl: "https://placehold.co/200x200",
@@ -104,7 +105,7 @@ async function main() {
   console.log("Seeded:");
   console.log(`  seller: ${seller.email} / password123`);
   console.log(`  buyer:  ${buyer.email}  / password123`);
-  console.log(`  store:  /store/${storeId}`);
+  console.log(`  store:  /store/acme-bakery`);
 
   await client.close();
 }
