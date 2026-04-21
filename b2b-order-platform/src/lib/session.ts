@@ -1,23 +1,15 @@
-import { auth } from "@/auth";
-import clientPromise from "@/lib/db";
-import { SessionData, User } from "./types";
+import { getBuyerSessionOrNull } from "./buyer-session";
+import { getSellerSessionOrNull } from "./seller-session";
+import { SessionData } from "./types";
 
+/**
+ * Returns whichever session cookie is present — seller first, then buyer.
+ * Prefer `getBuyerSessionOrNull` or `getSellerSessionOrNull` directly when
+ * you know which role you expect. This helper exists for endpoints that
+ * intentionally accept either role (e.g., cross-role account pages).
+ */
 export async function getSessionOrNull(): Promise<SessionData | null> {
-  const session = await auth();
-  if (!session?.user?.email) return null;
-
-  const client = await clientPromise;
-  const db = client.db();
-  const user = await db.collection<User>("users").findOne({
-    email: session.user.email,
-  });
-
-  if (!user) return null;
-
-  return {
-    role: user.role,
-    name: user.name,
-    email: user.email,
-    userId: user._id!.toString(),
-  };
+  const seller = await getSellerSessionOrNull();
+  if (seller) return seller;
+  return getBuyerSessionOrNull();
 }
