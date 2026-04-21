@@ -30,6 +30,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     deliveryCustomerParty: { party: { name: auth.mapping.buyerName, postalAddress: { ...auth.mapping.buyerAddress, countryIdentificationCode: auth.mapping.buyerAddress.country } } },
     despatchSupplierParty: { party: { name: auth.mapping.sellerId, postalAddress: { streetName: "", cityName: "", postalZone: "", countryIdentificationCode: "AU" } } },
     shipment: { id: params.id, consignmentId: params.id, delivery: { actualDeliveryDate: new Date().toISOString().split("T")[0] } },
+    // TODO(devex-integration): populate receiptLines from the original order.
     receiptLines: [],
   };
   const rr = await despatch.createReceiptAdvice(receipt as unknown as Record<string, unknown>);
@@ -46,6 +47,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     issue_date: new Date().toISOString().split("T")[0],
     currency: auth.mapping.documentCurrencyCode,
     customer: { name: auth.mapping.buyerName, identifier: auth.mapping.buyerEmail },
+    // TODO(invoice-integration): populate items from the original Chalksniffer order lines.
     items: [],
   };
   const inv = await invoiceApi.createInvoice(invoice as unknown as Record<string, unknown>);
