@@ -281,7 +281,7 @@ export default async function Storefront({ params }: { params: { slug: string } 
               <div className="mt-2 text-[13px]">Check back soon.</div>
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-[14px]">
+            <div className="grid grid-cols-5 gap-[10px]">
               {products.map((p) => (
                 <ProductCard
                   key={p.productId}
