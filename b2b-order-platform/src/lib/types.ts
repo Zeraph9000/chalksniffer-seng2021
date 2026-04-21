@@ -119,6 +119,7 @@ export type Store = {
   _id?: string;
   storeId: string;
   userId: string;
+  slug?: string;
   storeName: string;
   description: string;
   logoUrl?: string;
@@ -133,6 +134,7 @@ export type Store = {
 export type StoreCreateRequest = {
   storeName?: string;
   description?: string;
+  slug?: string;
   logoUrl?: string;
   bannerUrl?: string;
   location?: string;
