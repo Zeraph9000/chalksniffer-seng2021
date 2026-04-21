@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
 import clientPromise from "@/lib/db";
 import { authorizeOrderAccess } from "@/lib/order-access";
-import { despatch } from "@/lib/despatch-client";
 import { invoiceApi } from "@/lib/invoice-client";
+import { chalksniffer } from "@/lib/chalksniffer-client";
+import { buildInvoiceItems, UblLineForInvoice } from "@/lib/invoice-builder";
 import { transitionStatus, setMappingField, isOrderServiceError } from "@/lib/order-service";
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
@@ -18,43 +20,37 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     return NextResponse.json({ error: "INVALID_STATE", message: `cannot receive from ${auth.mapping.status}` }, { status: 400 });
   }
 
-  // Receipt advice
-  const receipt = {
-    documentID: `${params.id}-r`,
-    senderId: auth.mapping.buyerEmail,
-    receiverId: auth.mapping.sellerId,
-    copyIndicator: false,
-    documentStatusCode: "Completed",
-    orderReference: { id: params.id, issueDate: auth.mapping.issueDate },
-    despatchDocumentReference: auth.mapping.despatchDocumentId ? { id: auth.mapping.despatchDocumentId } : undefined,
-    deliveryCustomerParty: { party: { name: auth.mapping.buyerName, postalAddress: { ...auth.mapping.buyerAddress, countryIdentificationCode: auth.mapping.buyerAddress.country } } },
-    despatchSupplierParty: { party: { name: auth.mapping.sellerId, postalAddress: { streetName: "", cityName: "", postalZone: "", countryIdentificationCode: "AU" } } },
-    shipment: { id: params.id, consignmentId: params.id, delivery: { actualDeliveryDate: new Date().toISOString().split("T")[0] } },
-    // TODO(devex-integration): populate receiptLines from the original order.
-    receiptLines: [],
-  };
-  const rr = await despatch.createReceiptAdvice(receipt as unknown as Record<string, unknown>);
-  if (!rr.ok) return NextResponse.json({ error: "RECEIPT_API_FAILED", status: rr.status }, { status: 503 });
+  // Receipt advice is internal: DespatchV2 does not expose a receipt-advice endpoint.
+  // Record a synthetic receipt ID so the OrderMapping retains a stable reference.
+  const receiptAdviceId = `internal-${crypto.randomBytes(8).toString("hex")}`;
+  await setMappingField(db, params.id, { receiptAdviceId });
 
-  await setMappingField(db, params.id, { receiptAdviceId: rr.uuid });
-  const t1 = await transitionStatus(db, params.id, "received", auth.mapping.buyerId, `receipt ${rr.uuid}`);
+  const t1 = await transitionStatus(db, params.id, "received", auth.mapping.buyerId, `receipt ${receiptAdviceId}`);
   if (isOrderServiceError(t1)) return NextResponse.json({ error: t1.error, message: t1.message }, { status: t1.status });
 
-  // Auto-generate invoice on received. Non-blocking if invoice API fails — order stays at received.
-  const invoice = {
-    order_reference: params.id,
-    customer_id: auth.mapping.buyerEmail,
-    issue_date: new Date().toISOString().split("T")[0],
-    currency: auth.mapping.documentCurrencyCode,
-    customer: { name: auth.mapping.buyerName, identifier: auth.mapping.buyerEmail },
-    // TODO(invoice-integration): populate items from the original Chalksniffer order lines.
-    items: [],
-  };
-  const inv = await invoiceApi.createInvoice(invoice as unknown as Record<string, unknown>);
-  if (inv.ok) {
-    await setMappingField(db, params.id, { invoiceId: inv.invoiceId });
-    await transitionStatus(db, params.id, "invoiced", null, `invoice ${inv.invoiceId}`);
+  // Auto-generate invoice with REAL items from the UBL order. Non-blocking if invoice API fails.
+  const ubl = await chalksniffer.getOrder(params.id);
+  let invoiceId: string | null = null;
+  let invoicedOk = false;
+  if (ubl && typeof ubl === "object" && "orderLines" in ubl) {
+    const lines = (ubl as unknown as { orderLines: UblLineForInvoice[] }).orderLines;
+    const items = buildInvoiceItems(lines);
+    const invoice = {
+      order_reference: params.id,
+      customer_id: auth.mapping.buyerEmail,
+      issue_date: new Date().toISOString().split("T")[0],
+      currency: auth.mapping.documentCurrencyCode,
+      customer: { name: auth.mapping.buyerName, identifier: auth.mapping.buyerEmail },
+      items,
+    };
+    const inv = await invoiceApi.createInvoice(invoice as unknown as Record<string, unknown>);
+    if (inv.ok) {
+      invoiceId = inv.invoiceId;
+      invoicedOk = true;
+      await setMappingField(db, params.id, { invoiceId });
+      await transitionStatus(db, params.id, "invoiced", null, `invoice ${invoiceId}`);
+    }
   }
 
-  return NextResponse.json({ status: "received", invoiced: inv.ok, invoiceId: inv.ok ? inv.invoiceId : null });
+  return NextResponse.json({ status: "received", invoiced: invoicedOk, invoiceId });
 }
