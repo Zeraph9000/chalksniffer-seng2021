@@ -9,6 +9,7 @@ export type SessionData = {
   name: string;
   email: string;
   userId: string;
+  avatarUrl?: string;
 };
 
 export type UserAddress = {

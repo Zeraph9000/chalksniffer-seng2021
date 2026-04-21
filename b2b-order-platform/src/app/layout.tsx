@@ -35,7 +35,7 @@ export default async function RootLayout({
           </Suspense>
           {isSeller ? (
             <div className="flex h-screen">
-              <Sidebar role={session?.role ?? null} name={session?.name ?? ""} />
+              <Sidebar role={session?.role ?? null} name={session?.name ?? ""} avatarUrl={session?.avatarUrl} />
               <main className="flex-1 overflow-y-auto px-8 py-8">{children}</main>
             </div>
           ) : (

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import clientPromise from "@/lib/db";
 import { getSessionOrNull } from "@/lib/session";
 import type { Store, Product } from "@/lib/types";
+import { transformedImageUrl } from "@/lib/image-url";
 
 export default async function DashboardProducts() {
   const session = await getSessionOrNull();
@@ -38,7 +39,7 @@ export default async function DashboardProducts() {
             <Link key={p.productId} href={`/dashboard/products/${p.productId}/edit`} className="flex gap-4 p-4 hover:bg-gray-50">
               {p.imageUrls[0] && (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={p.imageUrls[0]} className="w-16 h-16 object-cover rounded" alt="" />
+                <img src={transformedImageUrl(p.imageUrls[0], "product")} className="w-16 h-16 object-cover rounded" alt="" />
               )}
               <div className="flex-1">
                 <div className="font-medium">
