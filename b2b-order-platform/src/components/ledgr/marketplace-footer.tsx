@@ -3,8 +3,8 @@ import Link from "next/link";
 import { BrandLockup } from "@/components/brand/brand-lockup";
 
 const columns = [
-  { title: "Shop", items: [["All stores", "/"], ["New this week", "/"], ["Gift cards", "/"]] },
-  { title: "Sell", items: [["Start a store", "/register?role=seller"], ["Seller guide", "/"], ["API", "/"]] },
+  { title: "Shop", items: [["All stores", "/"], ["New this week", "/"], ["Near you", "/"], ["Gift cards", "/"]] },
+  { title: "Sell", items: [["Start a store", "/register?role=seller"], ["Seller pricing", "/"], ["Seller guide", "/"], ["API", "/"]] },
   { title: "Company", items: [["About", "/"], ["Careers", "/"], ["Press", "/"], ["Blog", "/"]] },
   { title: "Support", items: [["Help center", "/"], ["Contact", "/"], ["Returns", "/"], ["Shipping", "/"]] },
 ];
