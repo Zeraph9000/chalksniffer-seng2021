@@ -5,18 +5,17 @@ import { BrandLockup } from "@/components/brand/brand-lockup";
 import { cn } from "@/lib/utils";
 
 export interface MarketplaceTopNavProps {
-  active?: "marketplace" | "how" | "sell" | "profile";
+  active?: "how" | "sell" | "profile";
   user?: { name: string; avatar?: string | null };
   cartCount?: number;
 }
 
 const navLinks = [
-  { id: "marketplace", label: "Marketplace", href: "/" },
   { id: "how", label: "How it works", href: "/#how" },
   { id: "sell", label: "Sell on Ledgr", href: "/dashboard" },
 ];
 
-export function MarketplaceTopNav({ active = "marketplace", user, cartCount = 0 }: MarketplaceTopNavProps) {
+export function MarketplaceTopNav({ active, user, cartCount = 0 }: MarketplaceTopNavProps) {
   return (
     <header className="h-16 flex items-center gap-5 px-6 border-b border-line-2 bg-paper">
       <BrandLockup size="md" />
