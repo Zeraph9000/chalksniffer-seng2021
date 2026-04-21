@@ -3,9 +3,9 @@
  */
 
 export type ErrorObject = {
-  error: string,
-  message: string
-}
+  error: string;
+  message: string;
+};
 
 type Period = {
   startDate?: string | null;
