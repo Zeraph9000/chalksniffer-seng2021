@@ -97,6 +97,18 @@ export function RevenueChartCard({
       </div>
 
       <div className="mt-[18px] h-[160px] flex items-end gap-1 relative">
+        {/* Horizontal gridlines — always visible so the chart frame reads as a chart even with zero bars */}
+        <div aria-hidden className="pointer-events-none absolute inset-0 flex flex-col justify-between">
+          {[0, 1, 2, 3, 4].map((i) => (
+            <span
+              key={i}
+              className={cn(
+                "block w-full border-t border-dashed border-line",
+                i === 4 && "border-solid border-line-2"
+              )}
+            />
+          ))}
+        </div>
         {bars.map((h, i) => {
           // True zero stays zero; tiny-but-nonzero bars get a 3% floor so they remain visible.
           const pct = h <= 0 ? 0 : Math.max(3, Math.round((h / maxBar) * 100));
