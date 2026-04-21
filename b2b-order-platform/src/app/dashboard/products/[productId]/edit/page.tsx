@@ -39,7 +39,7 @@ export default function EditProduct() {
         name: product.name,
         description: product.description,
         category: product.category,
-        imageUrl: product.imageUrl,
+        imageUrls: product.imageUrls,
         unitCode: product.unitCode,
         currency: product.currency,
         options: product.options,
@@ -72,7 +72,13 @@ export default function EditProduct() {
         <input value={product.name} onChange={(e) => setProduct({ ...product, name: e.target.value })} className="w-full border rounded px-3 py-2" />
         <textarea value={product.description} onChange={(e) => setProduct({ ...product, description: e.target.value })} className="w-full border rounded px-3 py-2" />
         <input value={product.category} onChange={(e) => setProduct({ ...product, category: e.target.value })} className="w-full border rounded px-3 py-2" />
-        <input value={product.imageUrl} onChange={(e) => setProduct({ ...product, imageUrl: e.target.value })} className="w-full border rounded px-3 py-2" />
+        <textarea
+          placeholder="Image URLs (one per line)"
+          value={product.imageUrls.join("\n")}
+          onChange={(e) => setProduct({ ...product, imageUrls: e.target.value.split("\n").map((s) => s.trim()).filter(Boolean) })}
+          rows={3}
+          className="w-full border rounded px-3 py-2"
+        />
         <label className="flex items-center gap-2">
           <input type="checkbox" checked={product.available} onChange={(e) => setProduct({ ...product, available: e.target.checked })} />
           Available

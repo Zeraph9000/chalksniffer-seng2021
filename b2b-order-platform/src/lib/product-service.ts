@@ -44,7 +44,13 @@ export function validateProductPayload(body: ProductCreateRequest, partial = fal
   req("name");
   req("description");
   req("category");
-  req("imageUrl");
+  if (!body.imageUrls || !Array.isArray(body.imageUrls) || body.imageUrls.length === 0) {
+    errors.push({ field: "imageUrls", message: "at least one image required" });
+  } else if (body.imageUrls.length > 8) {
+    errors.push({ field: "imageUrls", message: "at most 8 images allowed" });
+  } else if (body.imageUrls.some((u) => typeof u !== "string" || u.trim() === "")) {
+    errors.push({ field: "imageUrls", message: "all images must be non-empty strings" });
+  }
   req("unitCode");
   req("currency");
 
@@ -101,7 +107,7 @@ export async function createProduct(
     name: body.name,
     description: body.description,
     category: body.category,
-    imageUrl: body.imageUrl,
+    imageUrls: body.imageUrls,
     unitCode: body.unitCode,
     currency: body.currency,
     available: true,
@@ -145,7 +151,7 @@ export async function updateProduct(
     name: body.name ?? product.name,
     description: body.description ?? product.description,
     category: body.category ?? product.category,
-    imageUrl: body.imageUrl ?? product.imageUrl,
+    imageUrls: body.imageUrls ?? product.imageUrls,
     unitCode: body.unitCode ?? product.unitCode,
     currency: body.currency ?? product.currency,
     options: body.options ?? product.options,
@@ -192,7 +198,7 @@ export async function updateProduct(
     name: merged.name,
     description: merged.description,
     category: merged.category,
-    imageUrl: merged.imageUrl,
+    imageUrls: merged.imageUrls,
     unitCode: merged.unitCode,
     currency: merged.currency,
     options: merged.options ?? [],

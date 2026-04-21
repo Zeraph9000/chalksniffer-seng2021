@@ -20,9 +20,9 @@ export function ProductCard({ product, storeSlug }: { product: Product; storeSlu
       className="block border rounded-lg overflow-hidden hover:shadow-md relative"
     >
       <div className="aspect-square bg-gray-100 relative">
-        {product.imageUrl && (
+        {product.imageUrls[0] && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+          <img src={product.imageUrls[0]} alt={product.name} className="w-full h-full object-cover" />
         )}
         {onSale && (
           <div className="absolute top-2 left-2 bg-red-600 text-white text-xs font-semibold px-2 py-0.5 rounded">

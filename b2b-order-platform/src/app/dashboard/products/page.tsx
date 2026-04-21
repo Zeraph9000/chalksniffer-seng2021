@@ -36,9 +36,9 @@ export default async function DashboardProducts() {
           const stock = p.variants.reduce((s, v) => s + v.stock, 0);
           return (
             <Link key={p.productId} href={`/dashboard/products/${p.productId}/edit`} className="flex gap-4 p-4 hover:bg-gray-50">
-              {p.imageUrl && (
+              {p.imageUrls[0] && (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={p.imageUrl} className="w-16 h-16 object-cover rounded" alt="" />
+                <img src={p.imageUrls[0]} className="w-16 h-16 object-cover rounded" alt="" />
               )}
               <div className="flex-1">
                 <div className="font-medium">

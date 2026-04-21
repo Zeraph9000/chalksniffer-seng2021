@@ -88,7 +88,7 @@ export type Product = {
   name: string;
   description: string;
   category: string;
-  imageUrl: string;
+  imageUrls: string[];
   unitCode: string;
   currency: string;
   available: boolean;
@@ -102,7 +102,7 @@ export type ProductCreateRequest = {
   name: string;
   description: string;
   category: string;
-  imageUrl: string;
+  imageUrls: string[];
   unitCode: string;
   currency: string;
   options?: ProductOption[];
