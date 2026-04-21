@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { VariantGridEditor } from "@/components/variant-grid-editor";
+import { ImageUploadMulti } from "@/components/image-upload-multi";
 import type { Product, ProductVariant, ProductOption } from "@/lib/types";
 
 type EditorVariant = Omit<ProductVariant, "variantId"> & { variantId?: string };
@@ -72,13 +73,14 @@ export default function EditProduct() {
         <input value={product.name} onChange={(e) => setProduct({ ...product, name: e.target.value })} className="w-full border rounded px-3 py-2" />
         <textarea value={product.description} onChange={(e) => setProduct({ ...product, description: e.target.value })} className="w-full border rounded px-3 py-2" />
         <input value={product.category} onChange={(e) => setProduct({ ...product, category: e.target.value })} className="w-full border rounded px-3 py-2" />
-        <textarea
-          placeholder="Image URLs (one per line)"
-          value={product.imageUrls.join("\n")}
-          onChange={(e) => setProduct({ ...product, imageUrls: e.target.value.split("\n").map((s) => s.trim()).filter(Boolean) })}
-          rows={3}
-          className="w-full border rounded px-3 py-2"
-        />
+        <div>
+          <label className="text-sm font-medium block mb-1">Product images (1–8)</label>
+          <ImageUploadMulti
+            value={product.imageUrls}
+            onChange={(imageUrls) => setProduct({ ...product, imageUrls })}
+            max={8}
+          />
+        </div>
         <label className="flex items-center gap-2">
           <input type="checkbox" checked={product.available} onChange={(e) => setProduct({ ...product, available: e.target.checked })} />
           Available

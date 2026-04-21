@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { VariantGridEditor } from "@/components/variant-grid-editor";
+import { ImageUploadMulti } from "@/components/image-upload-multi";
 import type { ProductOption, ProductVariant } from "@/lib/types";
 
 type EditorVariant = Omit<ProductVariant, "variantId">;
@@ -48,13 +49,14 @@ export default function NewProduct() {
         <input placeholder="Name" value={basics.name} onChange={(e) => setBasics({ ...basics, name: e.target.value })} className="w-full border rounded px-3 py-2" />
         <textarea placeholder="Description" value={basics.description} onChange={(e) => setBasics({ ...basics, description: e.target.value })} className="w-full border rounded px-3 py-2" />
         <input placeholder="Category" value={basics.category} onChange={(e) => setBasics({ ...basics, category: e.target.value })} className="w-full border rounded px-3 py-2" />
-        <textarea
-          placeholder="Image URLs (one per line)"
-          value={basics.imageUrls.join("\n")}
-          onChange={(e) => setBasics({ ...basics, imageUrls: e.target.value.split("\n").map((s) => s.trim()).filter(Boolean) })}
-          rows={3}
-          className="w-full border rounded px-3 py-2"
-        />
+        <div>
+          <label className="text-sm font-medium block mb-1">Product images (1–8)</label>
+          <ImageUploadMulti
+            value={basics.imageUrls}
+            onChange={(imageUrls) => setBasics({ ...basics, imageUrls })}
+            max={8}
+          />
+        </div>
         <div className="grid grid-cols-2 gap-2">
           <input placeholder="Unit (each/kg)" value={basics.unitCode} onChange={(e) => setBasics({ ...basics, unitCode: e.target.value })} className="border rounded px-3 py-2" />
           <input placeholder="Currency" value={basics.currency} onChange={(e) => setBasics({ ...basics, currency: e.target.value })} className="border rounded px-3 py-2" />
