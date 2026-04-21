@@ -18,8 +18,8 @@ type Store = {
   location?: string;
   category?: string;
   status: StoreStatus;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string; // ISO 8601 timestamp
+  updatedAt: string; // ISO 8601 timestamp
 };
 ```
 
