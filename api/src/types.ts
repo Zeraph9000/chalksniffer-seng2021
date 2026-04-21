@@ -235,11 +235,11 @@ type OrderPaginated = {
 };
 
 type OrderFilter = {
-  'userId'?: string | null;
-  'id'?: string;
-  'issueDate'?: string;
-  'documentCurrencyCode'?: string;
-  'createdAt'?: string;
+  userId?: string | null;
+  id?: string;
+  issueDate?: string;
+  documentCurrencyCode?: string;
+  createdAt?: string;
   'buyerCustomerParty.party.partyName'?: string;
   'sellerSupplierParty.party.partyName'?: string;
   'anticipatedMonetaryTotal.payableAmount'?: number;
@@ -256,36 +256,6 @@ type PaginationParams = {
   limit: number;
   offset: number;
   filter?: OrderFilter;
-};
-
-type StoreStatus = 'active' | 'paused' | 'closed';
-
-type store = {
-  storeId: string;
-  userId: string;
-  storeName: string;
-  description: string;
-  logoUrl?: string | undefined;
-  bannerUrl?: string | undefined;
-  location?: string | undefined;
-  category?: string | undefined;
-  status: StoreStatus;
-  createdAt?: string | Date | null | undefined;
-  updatedAt?: string | Date | null | undefined;
-};
-
-type UpdateStoreRequest = {
-  storeName?: string;
-  description?: string;
-  logoUrl?: string;
-  bannerUrl?: string;
-  location?: string;
-  category?: string;
-  status?: StoreStatus;
-};
-
-type storesList = {
-  stores: store[];
 };
 
 export type {
@@ -320,8 +290,4 @@ export type {
   OrderFilter,
   OrderList,
   PaginationParams,
-  StoreStatus,
-  store,
-  storesList,
-  UpdateStoreRequest
 };

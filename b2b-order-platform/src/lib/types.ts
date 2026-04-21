@@ -63,6 +63,35 @@ export type Product = {
   createdAt: Date;
 };
 
+export type StoreStatus = "active" | "paused" | "closed";
+
+export type Store = {
+  _id?: string;
+  storeId: string;
+  userId: string;
+  storeName: string;
+  description: string;
+  logoUrl?: string;
+  bannerUrl?: string;
+  location?: string;
+  category?: string;
+  status: StoreStatus;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type StoreCreateRequest = {
+  storeName?: string;
+  description?: string;
+  logoUrl?: string;
+  bannerUrl?: string;
+  location?: string;
+  category?: string;
+  status?: StoreStatus;
+};
+
+export type StoreUpdateRequest = Partial<StoreCreateRequest>;
+
 // ============================================
 // Chalksniffer API Types
 // ============================================

@@ -5,7 +5,6 @@ import app from '../../src/app';
 import OrderModel from '../../src/models/order';
 import OrderXml from '../../src/models/orderXml';
 import RecurringOrderModel from '../../src/models/recurringOrder';
-import StoreModel from '../../src/models/store';
 import { UserMap } from '../../src/models/userMap';
 import type { Order } from '../../src/types';
 
@@ -74,7 +73,6 @@ export async function clearOrderTestData(): Promise<void> {
     OrderXml.deleteMany({}),
     UserMap.deleteMany({}),
     RecurringOrderModel.deleteMany({}),
-    StoreModel.deleteMany({}),
   ]);
 }
 
