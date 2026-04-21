@@ -17,6 +17,10 @@ export async function PUT(request: NextRequest, { params }: StoreStatusRouteCont
   const client = await clientPromise;
   const db = client.db();
   const body = await request.json();
+
+  if (!body || typeof body !== "object" || Array.isArray(body) || !("status" in body)) {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
   const result = await updateStoreStatus(db, session.userId, params.storeId, body.status);
 
   if (isStoreServiceError(result)) {
