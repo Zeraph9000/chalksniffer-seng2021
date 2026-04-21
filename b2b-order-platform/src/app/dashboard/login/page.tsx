@@ -179,12 +179,6 @@ export default function SellerLoginPage() {
                 Create a store →
               </Link>
             </p>
-            <p className="mt-3 text-center text-[12px] text-ink-4">
-              Shopping?{" "}
-              <Link href="/login" className="underline underline-offset-[3px] hover:text-hot">
-                Buyer sign in
-              </Link>
-            </p>
           </div>
         </div>
       </div>
