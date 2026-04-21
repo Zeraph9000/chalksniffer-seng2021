@@ -66,6 +66,7 @@ export function ProductDetailClient({ store, product }: { store: Store; product:
   }
 
   const fromPrice = Math.min(...product.variants.map((v) => v.price));
+  const variantOnSale = !!variant?.compareAtPrice && variant.compareAtPrice > variant.price;
 
   return (
     <div className="max-w-4xl mx-auto py-4 grid md:grid-cols-2 gap-8">
@@ -76,8 +77,15 @@ export function ProductDetailClient({ store, product }: { store: Store; product:
       <div>
         <div className="text-sm text-gray-500 uppercase">{product.category}</div>
         <h1 className="text-3xl font-bold">{product.name}</h1>
-        <div className="text-2xl mt-2">
-          {variant ? `$${variant.price.toFixed(2)}` : `from $${fromPrice.toFixed(2)}`}
+        <div className="text-2xl mt-2 flex items-baseline gap-3">
+          <span className={variantOnSale ? "text-red-600 font-semibold" : ""}>
+            {variant ? `$${variant.price.toFixed(2)}` : `from $${fromPrice.toFixed(2)}`}
+          </span>
+          {variantOnSale && (
+            <span className="text-base text-gray-400 line-through">
+              ${variant!.compareAtPrice!.toFixed(2)}
+            </span>
+          )}
         </div>
 
         <div className="my-6">
