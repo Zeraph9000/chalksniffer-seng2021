@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcrypt";
 import clientPromise from "@/lib/db";
 import { signIn } from "@/auth";
-import { UserRole } from "@/lib/types";
+import { OrderMapping, UserRole } from "@/lib/types";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -35,11 +35,40 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "An account with this email already exists" }, { status: 409 });
     }
     const hashedPassword = await bcrypt.hash(password, 10);
-    await db.collection("users").insertOne({
+    const inserted = await db.collection("users").insertOne({
       name, email, password: hashedPassword, role, companyName, abn, phone, address, createdAt: new Date(),
     });
+
+    // --- GUEST ORDER CLAIM ---
+    // If this new user has placed guest orders with the same email, attach them to the account.
+    // $push with a dynamic value per-doc needs per-doc updates, not updateMany.
+    const newUserId = inserted.insertedId.toString();
+    const orphans = await db
+      .collection<OrderMapping>("orderMappings")
+      .find({ buyerEmail: email, buyerId: null })
+      .toArray();
+
+    let claimedCount = 0;
+    for (const o of orphans) {
+      await db.collection<OrderMapping>("orderMappings").updateOne(
+        { _id: o._id },
+        {
+          $set: { buyerId: newUserId, updatedAt: new Date() },
+          $push: {
+            statusHistory: {
+              status: o.status,
+              at: new Date(),
+              byUserId: newUserId,
+              note: "claimed by registration",
+            },
+          },
+        }
+      );
+      claimedCount++;
+    }
+
     await signIn("credentials", { email, password, redirect: false });
-    return NextResponse.json({ success: true, role });
+    return NextResponse.json({ success: true, role, claimedCount });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Registration failed";
     return NextResponse.json({ error: message }, { status: 500 });
