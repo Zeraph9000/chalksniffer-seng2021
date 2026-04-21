@@ -62,8 +62,8 @@ export function MarketplaceTopNav({ active, user, cartCount = 0 }: MarketplaceTo
             <span className="pr-1">{user.name.split(" ")[0]}</span>
           </Link>
         ) : (
-          <Link href="/login" className="px-[10px] py-[6px] text-[13px] text-ink-2 hover:text-ink">
-            Sign in
+          <Link href="/dashboard/login" className="px-[10px] py-[6px] text-[13px] text-ink-2 hover:text-ink">
+            Seller sign in
           </Link>
         )}
         <Link
