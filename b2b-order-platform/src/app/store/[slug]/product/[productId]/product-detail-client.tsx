@@ -68,7 +68,7 @@ export function ProductDetailClient({ store, product }: { store: Store; product:
   const fromPrice = Math.min(...product.variants.map((v) => v.price));
 
   return (
-    <main className="max-w-6xl mx-auto p-8 grid md:grid-cols-2 gap-8">
+    <div className="max-w-4xl mx-auto py-4 grid md:grid-cols-2 gap-8">
       <div>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={variant?.imageUrl ?? product.imageUrl} alt={product.name} className="w-full aspect-square object-cover rounded-lg" />
@@ -126,6 +126,6 @@ export function ProductDetailClient({ store, product }: { store: Store; product:
         onCancel={() => setModal({ open: false, incoming: "" })}
         onReplace={replaceCart}
       />
-    </main>
+    </div>
   );
 }

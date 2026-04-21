@@ -23,7 +23,7 @@ export default async function Storefront({ params }: { params: { slug: string } 
     .toArray();
 
   return (
-    <main>
+    <>
       <section className="relative">
         {store.bannerUrl && (
           // eslint-disable-next-line @next/next/no-img-element
@@ -59,6 +59,6 @@ export default async function Storefront({ params }: { params: { slug: string } 
           ))}
         </div>
       </section>
-    </main>
+    </>
   );
 }
