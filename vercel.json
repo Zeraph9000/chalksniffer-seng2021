@@ -1,24 +1,7 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/src/index.ts",
-      "use": "@vercel/node",
-      "config": {
-        "includeFiles": ["api/endpoints.yaml"]
-      }
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "api/src/index.ts"
-    }
-  ],
-  "crons": [
-    {
-      "path": "/orders/recurring",
-      "schedule": "0 0 * * *"
-    }
-  ]
+  "framework": "nextjs",
+  "installCommand": "cd b2b-order-platform && npm ci",
+  "buildCommand": "cd b2b-order-platform && npm run build",
+  "outputDirectory": "b2b-order-platform/.next"
 }
