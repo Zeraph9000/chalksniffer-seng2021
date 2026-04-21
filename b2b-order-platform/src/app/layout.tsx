@@ -7,8 +7,8 @@ import { Suspense } from "react";
 import { CartProvider } from "@/lib/cart-context";
 
 export const metadata: Metadata = {
-  title: "Ledgr — Construction Supply Management",
-  description: "Order, track, and invoice construction materials",
+  title: "Ledgr — Independent shops, one checkout",
+  description: "A marketplace of independent shops. One cart per shop, one checkout per order.",
 };
 
 export default async function RootLayout({
@@ -28,7 +28,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <body className="bg-surface font-sans text-ink antialiased">
+      <body className="bg-paper-2 font-sans text-ink antialiased">
         <CartProvider>
           <Suspense>
             <Toast />
