@@ -24,7 +24,7 @@ const statusCopy: Record<StoreHeaderProps["shop"]["status"], string> = {
 
 export function StoreHeader({ shop }: StoreHeaderProps) {
   return (
-    <section className="border-b border-line bg-paper px-9 py-11 flex items-center gap-14 flex-wrap">
+    <section className="border-b border-line bg-paper px-6 py-11 flex items-center gap-14 flex-wrap">
       <div className="flex items-center gap-6 min-w-0 flex-1">
         <div className="w-20 h-20 rounded-[16px] bg-brand-surface text-brand-contrast grid place-items-center font-display font-bold text-[36px] tracking-[-.025em] shrink-0">
           {shop.monogram}
