@@ -232,7 +232,7 @@ type OrderPaginated = {
   payableAmount: number | string;
   documentCurrencyCode: string;
   createdAt: string;
-}
+};
 
 type OrderFilter = {
   userId?: string | null;
@@ -243,14 +243,14 @@ type OrderFilter = {
   'buyerCustomerParty.party.partyName'?: string;
   'sellerSupplierParty.party.partyName'?: string;
   'anticipatedMonetaryTotal.payableAmount'?: number;
-}
+};
 
 type OrderList = {
   orders: OrderPaginated[];
   limit: number;
   offset: number;
   totalOrders: number;
-}
+};
 
 type PaginationParams = {
   limit: number;
