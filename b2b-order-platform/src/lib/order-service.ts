@@ -33,7 +33,9 @@ export type CreateMappingInput = {
   guestAccessToken?: string;
 };
 
-export async function createMapping(db: Db, input: CreateMappingInput): Promise<OrderMapping> {
+export async function createMapping(
+  db: Db, input: CreateMappingInput,
+): Promise<OrderMapping | OrderServiceError> {
   const now = new Date();
   const mapping: OrderMapping = {
     orderId: input.orderId,
@@ -54,8 +56,17 @@ export async function createMapping(db: Db, input: CreateMappingInput): Promise<
     createdAt: now,
     updatedAt: now,
   };
-  await db.collection<OrderMapping>("orderMappings").insertOne(mapping);
-  return mapping;
+  try {
+    await db.collection<OrderMapping>("orderMappings").insertOne(mapping);
+    return mapping;
+  } catch (e: unknown) {
+    // Mongo error code 11000 = duplicate key — occurs if a unique index on orderId
+    // is defined and the caller retried with the same id.
+    if (typeof e === "object" && e !== null && (e as { code?: number }).code === 11000) {
+      return err("DUPLICATE_ORDER", `order ${input.orderId} already exists`, 409);
+    }
+    throw e;
+  }
 }
 
 export async function getMapping(db: Db, orderId: string): Promise<OrderMapping | null> {
@@ -64,7 +75,8 @@ export async function getMapping(db: Db, orderId: string): Promise<OrderMapping 
 
 /**
  * Transition a mapping to a new status, guarded by the state machine and
- * a DB-level race check (only the mapping still in `from` will be updated).
+ * a DB-level CAS (only the mapping still in `from` is updated; concurrent
+ * changes raise CONCURRENT_MODIFICATION).
  */
 export async function transitionStatus(
   db: Db, orderId: string, to: OrderStatus,
@@ -76,16 +88,25 @@ export async function transitionStatus(
     return err("INVALID_TRANSITION", `cannot go ${mapping.status} → ${to}`, 400);
   }
   const event: StatusEvent = { status: to, at: new Date(), byUserId, note };
-  await db.collection<OrderMapping>("orderMappings").updateOne(
-    { orderId, status: mapping.status },    // guard against races
+  const updated = await db.collection<OrderMapping>("orderMappings").findOneAndUpdate(
+    { orderId, status: mapping.status },
     { $set: { status: to, updatedAt: new Date() }, $push: { statusHistory: event } },
+    { returnDocument: "after" },
   );
-  return { ...mapping, status: to, statusHistory: [...mapping.statusHistory, event] };
+  if (updated === null) {
+    return err("CONCURRENT_MODIFICATION", "order status changed concurrently; retry", 409);
+  }
+  return updated;
 }
 
-/** Patch specific fields on a mapping (e.g. despatchDocumentId, invoiceId). */
+/**
+ * Patch external-document IDs or the stripe intent on a mapping.
+ * Narrowly typed to prevent callers from bypassing the state machine.
+ */
 export async function setMappingField(
-  db: Db, orderId: string, fields: Partial<OrderMapping>,
+  db: Db, orderId: string,
+  fields: Partial<Pick<OrderMapping,
+    "despatchDocumentId" | "receiptAdviceId" | "invoiceId" | "stripePaymentIntentId" | "guestAccessToken">>,
 ): Promise<void> {
   await db.collection<OrderMapping>("orderMappings").updateOne(
     { orderId },
