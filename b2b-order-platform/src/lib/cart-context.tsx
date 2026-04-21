@@ -13,11 +13,13 @@ export type CartItem = {
   quantity: number;
   stock: number;                // snapshot for client-side max qty
   storeId: string;
+  storeSlug: string;
   storeName: string;
 };
 
 type CartContextType = {
   storeId: string | null;
+  storeSlug: string | null;
   storeName: string | null;
   items: CartItem[];
   totalItems: number;
@@ -32,7 +34,7 @@ const CartContext = createContext<CartContextType | null>(null);
 
 const STORAGE_KEY = "chalksniffer-cart";
 
-type Persisted = { storeId: string | null; storeName: string | null; items: CartItem[] };
+type Persisted = { storeId: string | null; storeSlug: string | null; storeName: string | null; items: CartItem[] };
 
 function isValidCartItem(x: unknown): x is CartItem {
   if (typeof x !== "object" || x === null) return false;
@@ -48,12 +50,14 @@ function isValidCartItem(x: unknown): x is CartItem {
     && typeof c.quantity === "number"
     && typeof c.stock === "number"
     && typeof c.storeId === "string"
+    && typeof c.storeSlug === "string"
     && typeof c.storeName === "string"
   );
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [storeId, setStoreId] = useState<string | null>(null);
+  const [storeSlug, setStoreSlug] = useState<string | null>(null);
   const [storeName, setStoreName] = useState<string | null>(null);
   const [items, setItems] = useState<CartItem[]>([]);
 
@@ -68,6 +72,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       // partial carts shouldn't lock the user into a phantom store.
       if (validItems.length === 0) return;
       setStoreId(typeof parsed.storeId === "string" ? parsed.storeId : null);
+      setStoreSlug(typeof parsed.storeSlug === "string" ? parsed.storeSlug : null);
       setStoreName(typeof parsed.storeName === "string" ? parsed.storeName : null);
       setItems(validItems);
     } catch {
@@ -76,8 +81,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ storeId, storeName, items }));
-  }, [storeId, storeName, items]);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ storeId, storeSlug, storeName, items }));
+  }, [storeId, storeSlug, storeName, items]);
 
   const addItem: CartContextType["addItem"] = useCallback((item) => {
     if (storeId && item.storeId !== storeId) {
@@ -90,6 +95,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
     if (!storeId) {
       setStoreId(item.storeId);
+      setStoreSlug(item.storeSlug);
       setStoreName(item.storeName);
     }
     setItems((prev) => {
@@ -108,6 +114,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const forceReplaceWith = useCallback((item: CartItem) => {
     setStoreId(item.storeId);
+    setStoreSlug(item.storeSlug);
     setStoreName(item.storeName);
     setItems([item]);
   }, []);
@@ -117,6 +124,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const next = prev.filter((i) => !(i.productId === productId && i.variantId === variantId));
       if (next.length === 0) {
         setStoreId(null);
+        setStoreSlug(null);
         setStoreName(null);
       }
       return next;
@@ -139,6 +147,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clearCart = useCallback(() => {
     setStoreId(null);
+    setStoreSlug(null);
     setStoreName(null);
     setItems([]);
   }, []);
@@ -146,7 +155,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
 
   return (
-    <CartContext.Provider value={{ storeId, storeName, items, totalItems, addItem, forceReplaceWith, removeItem, updateQuantity, clearCart }}>
+    <CartContext.Provider value={{ storeId, storeSlug, storeName, items, totalItems, addItem, forceReplaceWith, removeItem, updateQuantity, clearCart }}>
       {children}
     </CartContext.Provider>
   );

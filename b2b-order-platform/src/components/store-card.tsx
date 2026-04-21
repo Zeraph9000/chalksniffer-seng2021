@@ -3,7 +3,7 @@ import type { Store } from "@/lib/types";
 
 export function StoreCard({ store }: { store: Store }) {
   return (
-    <Link href={`/store/${store.storeId}`} className="block border rounded-lg overflow-hidden hover:shadow-md">
+    <Link href={`/store/${store.slug ?? store.storeId}`} className="block border rounded-lg overflow-hidden hover:shadow-md">
       <div className="aspect-[3/1] bg-gray-100 relative">
         {store.bannerUrl && (
           // eslint-disable-next-line @next/next/no-img-element

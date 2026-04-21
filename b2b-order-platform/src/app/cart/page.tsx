@@ -46,7 +46,7 @@ export default function Cart() {
       </div>
 
       <div className="mt-6 flex justify-between items-center">
-        <Link href={`/store/${cart.storeId}`} className="underline text-sm">← Continue shopping at {cart.storeName}</Link>
+        <Link href={`/store/${cart.storeSlug ?? cart.storeId}`} className="underline text-sm">← Continue shopping at {cart.storeName}</Link>
         <div className="text-right">
           <div>Subtotal: <strong>${subtotal.toFixed(2)}</strong></div>
           <Link href="/checkout" className="inline-block mt-2 px-6 py-2 bg-black text-white rounded">Proceed to checkout</Link>

@@ -1,17 +1,25 @@
 import clientPromise from "@/lib/db";
 import type { Store, Product } from "@/lib/types";
 import { ProductCard } from "@/components/product-card";
+import { getStoreBySlug, backfillSlugIfMissing } from "@/lib/store-service";
 import { notFound } from "next/navigation";
 
-export default async function Storefront({ params }: { params: { storeId: string } }) {
+export default async function Storefront({ params }: { params: { slug: string } }) {
   const client = await clientPromise;
   const db = client.db();
-  const store = await db.collection<Store>("stores").findOne({ storeId: params.storeId });
-  if (!store || store.status === "closed") return notFound();
+  let store = await getStoreBySlug(db, params.slug);
+  if (!store) {
+    // Legacy fallback: treat the URL segment as a storeId and backfill a slug.
+    const byId = await db.collection<Store>("stores").findOne({ storeId: params.slug });
+    if (!byId) return notFound();
+    store = await backfillSlugIfMissing(db, byId);
+    if (store.slug !== params.slug) return notFound();
+  }
+  if (store.status === "closed") return notFound();
 
   const products = await db
     .collection<Product>("products")
-    .find({ storeId: params.storeId, available: true })
+    .find({ storeId: store.storeId, available: true })
     .toArray();
 
   return (
@@ -47,7 +55,7 @@ export default async function Storefront({ params }: { params: { storeId: string
         <h2 className="text-xl font-semibold mb-6">Products</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {products.map((p) => (
-            <ProductCard key={p.productId} product={p} />
+            <ProductCard key={p.productId} product={p} storeSlug={store.slug ?? store.storeId} />
           ))}
         </div>
       </section>

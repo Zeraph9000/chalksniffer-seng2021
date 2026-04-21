@@ -1,36 +1,27 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useCallback, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart-context";
 import { VariantPicker } from "@/components/variant-picker";
 import { ReplaceCartModal } from "@/components/replace-cart-modal";
 import type { Product, ProductVariant, Store } from "@/lib/types";
 
-export default function ProductDetail() {
-  const { storeId, productId } = useParams<{ storeId: string; productId: string }>();
-  const [product, setProduct] = useState<Product | null>(null);
-  const [store, setStore] = useState<Store | null>(null);
+export function ProductDetailClient({ store, product }: { store: Store; product: Product }) {
   const [variant, setVariant] = useState<ProductVariant | null>(null);
   const [qty, setQty] = useState(1);
   const [modal, setModal] = useState<{ open: boolean; incoming: string }>({ open: false, incoming: "" });
   const cart = useCart();
   const router = useRouter();
-
-  useEffect(() => {
-    fetch(`/api/products/${productId}`).then((r) => r.json()).then(setProduct);
-    fetch(`/api/stores/${storeId}`).then((r) => r.json()).then(setStore);
-  }, [productId, storeId]);
+  const storeSlug = store.slug ?? store.storeId;
 
   const handleVariantChange = useCallback((v: ProductVariant | null) => setVariant(v), []);
-
-  if (!product || !store) return <div className="p-8">Loading…</div>;
 
   const variantLabel = product.options.length === 0
     ? product.name
     : (product.options.map((o) => variant?.optionValues[o.name]).filter(Boolean).join(" / ") || "Select options");
 
   function addToCart() {
-    if (!variant || !product || !store) return;
+    if (!variant) return;
     const res = cart.addItem({
       productId: product.productId,
       variantId: variant.variantId,
@@ -43,6 +34,7 @@ export default function ProductDetail() {
       quantity: qty,
       stock: variant.stock,
       storeId: store.storeId,
+      storeSlug,
       storeName: store.storeName,
     });
     if (!res.ok && res.reason === "DIFFERENT_STORE") {
@@ -53,7 +45,7 @@ export default function ProductDetail() {
   }
 
   function replaceCart() {
-    if (!variant || !product || !store) return;
+    if (!variant) return;
     cart.forceReplaceWith({
       productId: product.productId,
       variantId: variant.variantId,
@@ -66,6 +58,7 @@ export default function ProductDetail() {
       quantity: qty,
       stock: variant.stock,
       storeId: store.storeId,
+      storeSlug,
       storeName: store.storeName,
     });
     setModal({ open: false, incoming: "" });

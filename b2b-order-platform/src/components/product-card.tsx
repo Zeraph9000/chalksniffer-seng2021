@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Product } from "@/lib/types";
 
-export function ProductCard({ product }: { product: Product }) {
+export function ProductCard({ product, storeSlug }: { product: Product; storeSlug: string }) {
   const prices = product.variants.map((v) => v.price);
   const min = Math.min(...prices);
   const max = Math.max(...prices);
@@ -10,7 +10,7 @@ export function ProductCard({ product }: { product: Product }) {
 
   return (
     <Link
-      href={`/store/${product.storeId}/product/${product.productId}`}
+      href={`/store/${storeSlug}/product/${product.productId}`}
       className="block border rounded-lg overflow-hidden hover:shadow-md relative"
     >
       <div className="aspect-square bg-gray-100 relative">
