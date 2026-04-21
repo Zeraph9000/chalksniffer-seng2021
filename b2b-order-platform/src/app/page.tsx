@@ -105,54 +105,6 @@ export default async function Landing() {
         <HardcodedFeaturedPanel />
       </section>
 
-      {/* Shops grid */}
-      <section id="shops" className="px-10 py-10 border-t border-line-2 mx-auto max-w-[1360px]">
-        <div className="flex items-end justify-between mb-6">
-          <div>
-            <div className="text-[12px] font-medium uppercase tracking-[.1em] text-ink-3">
-              Featured this week
-            </div>
-            <h2 className="font-display font-semibold text-[32px] leading-[1.05] tracking-[-.02em] m-0 mt-2">
-              Shops worth your time.
-            </h2>
-          </div>
-        </div>
-        {stores.length === 0 ? (
-          <div className="rounded-[10px] border border-dashed border-line p-10 text-center text-ink-3">
-            No shops yet. Be the first —{" "}
-            <Link href="/register?role=seller" className="underline text-ink">
-              open a shop
-            </Link>
-            .
-          </div>
-        ) : (
-          <div className="grid grid-cols-3 gap-5">
-            {stores.map((s) => (
-              <Link
-                key={s.storeId}
-                href={s.slug ? `/store/${s.slug}` : "#"}
-                className="border border-line rounded-[12px] overflow-hidden bg-paper hover:border-ink-3 transition-colors"
-              >
-                <div className="aspect-[16/9] bg-brand-soft grid place-items-center">
-                  <span className="font-display font-bold text-[48px] text-brand-ink tracking-[-.02em]">
-                    {monogramFor(s.storeName)}
-                  </span>
-                </div>
-                <div className="p-4">
-                  <div className="text-[10.5px] uppercase tracking-[.12em] text-ink-3 font-medium">
-                    {s.category ?? "Shop"}
-                  </div>
-                  <div className="mt-1 font-display font-semibold text-[17px] tracking-[-.01em]">
-                    {s.storeName}
-                  </div>
-                  {s.location && <div className="text-[12px] text-ink-3 mt-2">{s.location}</div>}
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
-      </section>
-
       {/* How it works */}
       <section id="how" className="px-10 py-14 border-t border-line-2 mx-auto max-w-[1360px]">
         <div className="mb-8">
