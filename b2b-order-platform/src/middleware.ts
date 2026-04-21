@@ -1,64 +1,31 @@
-import NextAuth from "next-auth";
-import { NextResponse } from "next/server";
-import authConfig from "./auth.config";
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/auth";
 
-const { auth } = NextAuth(authConfig);
-
-const buyerOnlyRoutes = [
-  "/marketplace",
-  "/cart",
-  "/checkout",
-  "/orders/*/receive",
-  "/orders/*/cancel",
-  "/orders/*/edit",
-];
-
-const sellerOnlyRoutes = [
-  "/catalogue",
-  "/despatch/create",
-  "/invoices/create",
-];
-
-const publicRoutes = ["/login"];
-
-function matchesPattern(pathname: string, patterns: string[]): boolean {
-  return patterns.some((pattern) => {
-    const regex = new RegExp(
-      "^" + pattern.replace(/\*/g, "[^/]+") + "$"
-    );
-    return regex.test(pathname);
-  });
-}
-
-export default auth((req) => {
+/**
+ * Route-level auth gates. Role-specific checks beyond "has session" are
+ * performed inside each route handler (middleware can't read the full
+ * session role reliably via @auth/mongodb-adapter without extra work).
+ */
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  const session = await auth();
 
-  if (publicRoutes.includes(pathname) || pathname.startsWith("/api/")) {
-    return NextResponse.next();
+  if (pathname.startsWith("/dashboard")) {
+    if (!session?.user) return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  const user = req.auth?.user as { role?: string } | undefined;
-  if (!user?.role) {
-    return NextResponse.redirect(new URL("/login", req.url));
-  }
-
-  const role = user.role;
-
-  if (role === "seller" && matchesPattern(pathname, buyerOnlyRoutes)) {
-    const url = new URL("/dashboard", req.url);
-    url.searchParams.set("error", "unauthorized");
-    return NextResponse.redirect(url);
-  }
-
-  if (role === "buyer" && matchesPattern(pathname, sellerOnlyRoutes)) {
-    const url = new URL("/dashboard", req.url);
-    url.searchParams.set("error", "unauthorized");
-    return NextResponse.redirect(url);
+  if (
+    pathname === "/orders"
+    || pathname.startsWith("/orders/recurring")
+    || pathname === "/recommendations"
+    || pathname === "/profile"
+  ) {
+    if (!session?.user) return NextResponse.redirect(new URL("/login", req.url));
   }
 
   return NextResponse.next();
-});
+}
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/dashboard/:path*", "/orders", "/orders/recurring/:path*", "/recommendations", "/profile"],
 };
