@@ -18,8 +18,8 @@ export const invoiceApi = {
       body: JSON.stringify(invoice),
     });
     if (!res.ok) return { ok: false, status: res.status };
-    const data = await res.json().catch(() => ({}));
-    const invoiceId = (data as { invoice_id?: string }).invoice_id;
+    const data = (await res.json().catch(() => ({}))) as { invoice?: { invoice_id?: string }; invoice_id?: string };
+    const invoiceId = data.invoice?.invoice_id ?? data.invoice_id;
     if (!invoiceId) return { ok: false, status: 502 };
     return { ok: true, invoiceId };
   },
