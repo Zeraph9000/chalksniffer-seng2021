@@ -68,12 +68,15 @@ test("wrong buyer cookie → NOT_FOUND (no leak)", async () => {
   expect(r).toMatchObject({ error: "NOT_FOUND" });
 });
 
-test("buyer priority over seller when both present", async () => {
+test("seller priority over buyer when both cookies match the mapping", async () => {
+  // Real-world trigger: same browser holds chalk.buyer and chalk.seller after
+  // test-buying from your own store. Dashboard actions (despatch, cancel)
+  // require seller role, so seller-of-the-order wins.
   await handle.db.collection("orderMappings").insertOne(mapping);
   mockBuyer.mockResolvedValue({ userId: "buyer-1", role: "buyer", name: "A", email: "a@x" });
   mockSeller.mockResolvedValue({ userId: "seller-1", role: "seller", name: "S", email: "s@x" });
   const r = await authorizeOrderAccess(handle.db, "ord-1", null);
-  expect(r).toMatchObject({ role: "buyer" });
+  expect(r).toMatchObject({ role: "seller" });
 });
 
 test("non-existent order → NOT_FOUND without calling session", async () => {

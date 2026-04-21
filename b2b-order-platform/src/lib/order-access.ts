@@ -12,8 +12,10 @@ export type OrderAuth =
 /**
  * Priority:
  *   1. Valid guest token → guest
- *   2. Buyer cookie matching mapping.buyerId → buyer
- *   3. Seller cookie matching mapping.sellerId → seller
+ *   2. Seller cookie matching mapping.sellerId → seller (dashboard context wins
+ *      when the same browser holds both cookies — common when a seller
+ *      test-buys from their own store)
+ *   3. Buyer cookie matching mapping.buyerId → buyer
  *   4. NOT_FOUND (no existence leak)
  */
 export async function authorizeOrderAccess(
@@ -26,14 +28,14 @@ export async function authorizeOrderAccess(
     return { role: "guest", mapping };
   }
 
-  const buyerSession = await getBuyerSessionOrNull();
-  if (buyerSession && mapping.buyerId && mapping.buyerId === buyerSession.userId) {
-    return { role: "buyer", userId: buyerSession.userId, mapping };
-  }
-
   const sellerSession = await getSellerSessionOrNull();
   if (sellerSession && mapping.sellerId === sellerSession.userId) {
     return { role: "seller", userId: sellerSession.userId, mapping };
+  }
+
+  const buyerSession = await getBuyerSessionOrNull();
+  if (buyerSession && mapping.buyerId && mapping.buyerId === buyerSession.userId) {
+    return { role: "buyer", userId: buyerSession.userId, mapping };
   }
 
   return { error: "NOT_FOUND", status: 404 };

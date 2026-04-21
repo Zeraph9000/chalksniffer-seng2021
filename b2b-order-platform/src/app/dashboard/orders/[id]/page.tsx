@@ -21,12 +21,20 @@ export default function SellerOrderDetail() {
 
   useEffect(() => { load(); }, [load]);
 
+  async function describeFailure(res: Response, fallback: string): Promise<string> {
+    const body = await res.json().catch(() => null);
+    if (!body) return `${fallback} (HTTP ${res.status})`;
+    const detail = body.message ?? body.error ?? fallback;
+    const status = body.status ? ` [upstream ${body.status}]` : "";
+    return `${detail}${status}`;
+  }
+
   async function despatch() {
     setBusy(true);
     const res = await fetch(`/api/orders/${orderId}/despatch`, { method: "POST" });
     setBusy(false);
     if (res.ok) load();
-    else alert("Despatch failed. Try again.");
+    else alert(await describeFailure(res, "Despatch failed"));
   }
 
   async function cancel() {
@@ -40,7 +48,7 @@ export default function SellerOrderDetail() {
     });
     setBusy(false);
     if (res.ok) load();
-    else alert("Cancel failed.");
+    else alert(await describeFailure(res, "Cancel failed"));
   }
 
   if (!mapping) return <main className="p-8">Loading…</main>;
