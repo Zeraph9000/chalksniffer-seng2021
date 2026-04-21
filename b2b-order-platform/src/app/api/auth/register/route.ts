@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcrypt";
 import clientPromise from "@/lib/db";
-import { signIn } from "@/auth";
+import { signIn as buyerSignIn } from "@/auth.buyer";
+import { signIn as sellerSignIn } from "@/auth.seller";
 import { OrderMapping, UserRole } from "@/lib/types";
 
 export async function POST(request: NextRequest) {
+  const queryRole = request.nextUrl.searchParams.get("role") === "seller" ? "seller" : "buyer";
+  const signIn = queryRole === "seller" ? sellerSignIn : buyerSignIn;
+
   const body = await request.json();
   const { name, email, password, role, companyName, abn, phone, address } = body as {
     name: string;
@@ -17,10 +21,18 @@ export async function POST(request: NextRequest) {
     address: { streetName: string; cityName: string; postalZone: string; country: string };
   };
 
-  if (!name || !email || !password || !role || !companyName || !abn || !phone) {
+  // If the body includes a role, it must match the query-param role.
+  if (role && role !== queryRole) {
+    return NextResponse.json({ error: "Role mismatch" }, { status: 400 });
+  }
+
+  // Resolve the effective role (body wins if present and valid, else query param).
+  const effectiveRole: UserRole = (role || queryRole) as UserRole;
+
+  if (!name || !email || !password || !effectiveRole || !companyName || !abn || !phone) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
-  if (!["buyer", "seller"].includes(role)) {
+  if (!["buyer", "seller"].includes(effectiveRole)) {
     return NextResponse.json({ error: "Invalid role" }, { status: 400 });
   }
   if (!address?.streetName || !address?.cityName || !address?.postalZone || !address?.country) {
@@ -39,7 +51,7 @@ export async function POST(request: NextRequest) {
     let inserted;
     try {
       inserted = await db.collection("users").insertOne({
-        name, email, password: hashedPassword, role, companyName, abn, phone, address, createdAt: new Date(),
+        name, email, password: hashedPassword, role: effectiveRole, companyName, abn, phone, address, createdAt: new Date(),
       });
     } catch (e: unknown) {
       if (typeof e === "object" && e !== null && (e as { code?: number }).code === 11000) {
@@ -83,7 +95,7 @@ export async function POST(request: NextRequest) {
     }
 
     await signIn("credentials", { email, password, redirect: false });
-    return NextResponse.json({ success: true, role, claimedCount });
+    return NextResponse.json({ success: true, role: effectiveRole, claimedCount });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Registration failed";
     return NextResponse.json({ error: message }, { status: 500 });
