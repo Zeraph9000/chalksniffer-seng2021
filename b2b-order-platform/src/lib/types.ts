@@ -28,6 +28,7 @@ export type User = {
   abn: string;
   phone: string;
   address: UserAddress;
+  avatarUrl?: string;
   createdAt: Date;
 };
 
