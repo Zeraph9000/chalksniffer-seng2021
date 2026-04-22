@@ -1,4 +1,4 @@
-const BASE_URL = process.env.CHALKSNIFFER_BASE_URL || "https://www.chalksniffer.com";
+const BASE_URL = (process.env.CHALKSNIFFER_BASE_URL || "https://www.chalksniffer.com").replace(/\/+$/, "");
 const API_KEY = process.env.CHALKSNIFFER_API_KEY || "";
 
 type Json = Record<string, unknown>;

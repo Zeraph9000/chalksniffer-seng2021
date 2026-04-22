@@ -1,6 +1,6 @@
 import crypto from "crypto";
 
-const BASE_URL = process.env.INVOICE_BASE_URL || "https://lastminutepush.one";
+const BASE_URL = (process.env.INVOICE_BASE_URL || "https://lastminutepush.one").replace(/\/+$/, "");
 const API_KEY = process.env.INVOICE_API_KEY || "";
 
 type Json = Record<string, unknown>;

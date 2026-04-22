@@ -9,7 +9,7 @@ import crypto from "crypto";
  *
  * V2 has no receipt-advice endpoint — receipt handling is internal to this app.
  */
-const BASE_URL = process.env.DESPATCH_BASE_URL || "https://devex.cloud.tcore.network";
+const BASE_URL = (process.env.DESPATCH_BASE_URL || "https://devex.cloud.tcore.network").replace(/\/+$/, "");
 const API_KEY = process.env.DESPATCH_API_KEY || "";
 
 function mockUuid(prefix: string): string {
