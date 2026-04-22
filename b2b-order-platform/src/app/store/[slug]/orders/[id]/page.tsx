@@ -15,7 +15,8 @@ import clientPromise from "@/lib/db";
 import { authorizeOrderAccess } from "@/lib/order-access";
 import { getBuyerSessionOrNull } from "@/lib/buyer-session";
 import { getStoreBySlug, backfillSlugIfMissing } from "@/lib/store-service";
-import type { OrderMapping, OrderStatus, Store } from "@/lib/types";
+import { chalksniffer } from "@/lib/chalksniffer-client";
+import type { OrderMapping, OrderStatus, Store, Order as UblOrder } from "@/lib/types";
 import { StoreTopNav } from "@/components/ledgr/store-top-nav";
 import { Chip } from "@/components/ui/chip";
 import { Button } from "@/components/ui/button";
@@ -150,6 +151,59 @@ export default async function StoreBuyerOrderDetail({
   const showRecurringCta =
     !!buyer && !isCancelled && mapping.status !== "placed";
 
+  // Prefer the snapshot captured on the mapping at checkout time. Fall back to
+  // fetching the UBL order from chalksniffer for legacy mappings without lines.
+  let lineItems: {
+    id: string;
+    name: string;
+    description: string | null;
+    unitCode: string;
+    qty: number;
+    unitPrice: number;
+    lineTotal: number;
+  }[] = [];
+
+  if (mapping.lines && mapping.lines.length > 0) {
+    lineItems = mapping.lines.map((l, i) => ({
+      id: `${l.productId}-${l.variantId}-${i}`,
+      name: l.name,
+      description: l.variantLabel || null,
+      unitCode: "",
+      qty: l.qty,
+      unitPrice: l.unitPrice,
+      lineTotal: l.lineTotal,
+    }));
+  } else {
+    let ublOrder: UblOrder | null = null;
+    try {
+      const res = await chalksniffer.getOrder(mapping.orderId);
+      if (res && typeof res === "object" && "orderLines" in res) {
+        ublOrder = res as unknown as UblOrder;
+      }
+    } catch {
+      ublOrder = null;
+    }
+    lineItems =
+      ublOrder?.orderLines?.map((l, i) => {
+        const li = l.lineItem;
+        const qty = li.quantity ?? 0;
+        const unit = li.price?.priceAmount ?? 0;
+        return {
+          id: li.id ?? String(i),
+          name: li.item?.name ?? "Item",
+          description: li.item?.description ?? null,
+          unitCode: li.unitCode ?? "",
+          qty,
+          unitPrice: unit,
+          lineTotal: li.lineExtensionAmount ?? unit * qty,
+        };
+      }) ?? [];
+  }
+
+  const itemCount = lineItems.reduce((s, it) => s + it.qty, 0);
+  const subtotal = lineItems.reduce((s, it) => s + it.lineTotal, 0) || mapping.payableAmount;
+  const despatchedAt = mapping.statusHistory.find((e) => e.status === "despatched")?.at;
+
   return (
     <>
       <StoreTopNav
@@ -233,34 +287,65 @@ export default async function StoreBuyerOrderDetail({
                   Items
                 </span>
                 <span className="text-[12px] text-ink-3">
-                  Order from {formatDate(mapping.createdAt)}
+                  {lineItems.length > 0 ? `${itemCount} · ` : ""}
+                  {despatchedAt
+                    ? `despatched ${formatDate(despatchedAt)}`
+                    : `placed ${formatDate(mapping.createdAt)}`}
                 </span>
               </div>
               <div className="px-5 py-1">
-                {/* OrderMapping currently doesn't carry line items; show a
-                    single summary row. A later pass will hydrate line items
-                    from the UBL Order document. */}
-                <div className="grid grid-cols-[52px_1fr_auto] gap-4 py-3.5 items-center">
-                  <div className="w-[52px] h-[52px] rounded-lg bg-paper-2 border border-line flex items-center justify-center text-ink-4">
-                    <FileText className="h-5 w-5" aria-hidden />
+                {lineItems.length === 0 ? (
+                  <div className="grid grid-cols-[52px_1fr_auto] gap-4 py-3.5 items-center">
+                    <div className="w-[52px] h-[52px] rounded-lg bg-paper-2 border border-line flex items-center justify-center text-ink-4">
+                      <FileText className="h-5 w-5" aria-hidden />
+                    </div>
+                    <div>
+                      <div className="text-[13.5px] font-medium tracking-[-.005em]">
+                        Order contents
+                      </div>
+                      <div className="text-[11.5px] text-ink-3 mt-0.5">
+                        Line items temporarily unavailable.
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-mono text-[13px] font-medium">
+                        {totalText}
+                      </div>
+                      <div className="font-mono text-[11.5px] text-ink-3 mt-0.5">
+                        {mapping.documentCurrencyCode}
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="text-[13.5px] font-medium tracking-[-.005em]">
-                      Order contents
+                ) : (
+                  lineItems.map((it, i) => (
+                    <div
+                      key={it.id ?? i}
+                      className={`grid grid-cols-[52px_1fr_auto] items-center gap-4 py-3.5 ${
+                        i === 0 ? "" : "border-t border-line-2"
+                      }`}
+                    >
+                      <div className="h-[52px] w-[52px] rounded-[8px] bg-paper-2 border border-line" />
+                      <div>
+                        <div className="text-[13.5px] font-medium tracking-[-.005em]">
+                          {it.name}
+                        </div>
+                        <div className="mt-[3px] text-[11.5px] text-ink-3">
+                          {it.description
+                            ? `${it.description}${it.unitCode ? ` · ${it.unitCode}` : ""}`
+                            : it.unitCode || "—"}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-mono text-[13px] font-medium">
+                          ${it.lineTotal.toFixed(2)}
+                        </div>
+                        <div className="mt-[2px] font-mono text-[11.5px] text-ink-3">
+                          {it.qty} × ${it.unitPrice.toFixed(2)}
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-[11.5px] text-ink-3 mt-0.5">
-                      See the full UBL order for line-by-line detail.
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-mono text-[13px] font-medium">
-                      {totalText}
-                    </div>
-                    <div className="font-mono text-[11.5px] text-ink-3 mt-0.5">
-                      {mapping.documentCurrencyCode}
-                    </div>
-                  </div>
-                </div>
+                  ))
+                )}
               </div>
             </div>
 
@@ -302,7 +387,7 @@ export default async function StoreBuyerOrderDetail({
             <div className="border border-line rounded-[12px] bg-paper px-5 py-4">
               <div className="flex justify-between items-baseline text-[13px] py-1.5">
                 <span className="text-ink-3">Subtotal</span>
-                <span className="font-mono font-medium">{totalText}</span>
+                <span className="font-mono font-medium">${subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-baseline text-[13px] py-1.5">
                 <span className="text-ink-3">Shipping</span>

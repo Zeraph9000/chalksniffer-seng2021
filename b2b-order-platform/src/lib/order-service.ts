@@ -1,5 +1,5 @@
 import { Db } from "mongodb";
-import { OrderMapping, OrderStatus, StatusEvent, UserAddress } from "./types";
+import { OrderLineSnapshot, OrderMapping, OrderStatus, StatusEvent, UserAddress } from "./types";
 import { canTransition } from "./state-machine";
 
 export type OrderServiceError = { error: string; message: string; status: number };
@@ -32,6 +32,7 @@ export type CreateMappingInput = {
   issueDate: string;
   stripePaymentIntentId?: string;
   guestAccessToken?: string;
+  lines?: OrderLineSnapshot[];
 };
 
 export async function createMapping(
@@ -53,6 +54,7 @@ export async function createMapping(
     payableAmount: input.payableAmount,
     documentCurrencyCode: input.documentCurrencyCode,
     issueDate: input.issueDate,
+    lines: input.lines,
     stripePaymentIntentId: input.stripePaymentIntentId,
     guestAccessToken: input.guestAccessToken,
     createdAt: now,

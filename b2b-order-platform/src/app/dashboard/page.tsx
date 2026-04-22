@@ -46,7 +46,7 @@ function buildDailyBars(orders: { createdAt: Date | string; payableAmount?: numb
     // daysAgo 0 = today, 29 = 29 days ago. Negative daysAgo means today (edge case from same-day fractional).
     const idx = 29 - Math.max(0, daysAgo);
     if (idx < 0 || idx >= 30) continue;
-    bars[idx] += (o.payableAmount ?? 0) / 100;
+    bars[idx] += o.payableAmount ?? 0;
   }
   return bars;
 }
@@ -160,22 +160,19 @@ export default async function SellerDashboardPage() {
   const windowStart = now - MS_30D;
   const windowStartPrev = now - 2 * MS_30D;
 
-  const revenueCents = orders
+  const revenue = orders
     .filter((o) => {
       const t = new Date(o.createdAt).getTime();
       return t >= windowStart && o.status !== "cancelled";
     })
     .reduce((acc, o) => acc + (o.payableAmount ?? 0), 0);
 
-  const previousRevenueCents = orders
+  const previousRevenue = orders
     .filter((o) => {
       const t = new Date(o.createdAt).getTime();
       return t >= windowStartPrev && t < windowStart && o.status !== "cancelled";
     })
     .reduce((acc, o) => acc + (o.payableAmount ?? 0), 0);
-
-  const revenue = revenueCents / 100;
-  const previousRevenue = previousRevenueCents / 100;
 
   const orders30d = orders.filter((o) => {
     const t = new Date(o.createdAt).getTime();
@@ -330,7 +327,7 @@ export default async function SellerDashboardPage() {
                     </div>
                   </div>
                   <div className="font-mono text-[12.5px] font-medium text-ink">
-                    {formatMoney((o.payableAmount ?? 0) / 100)}
+                    {formatMoney(o.payableAmount ?? 0)}
                   </div>
                   <Button asChild size="sm" variant="primary">
                     <Link href={`/dashboard/orders/${o.orderId}`}>
@@ -384,7 +381,7 @@ export default async function SellerDashboardPage() {
                     <div className="text-[11px] text-ink-3 mt-0.5 truncate">
                       {product.variants?.length ?? 0} variant
                       {(product.variants?.length ?? 0) === 1 ? "" : "s"} ·{" "}
-                      {formatMoney(minPrice / 100)}
+                      {formatMoney(minPrice)}
                     </div>
                   </div>
                   <div
@@ -455,7 +452,7 @@ export default async function SellerDashboardPage() {
                     </Chip>
                   </div>
                   <div className="font-mono font-medium text-right">
-                    {formatMoney((o.payableAmount ?? 0) / 100)}
+                    {formatMoney(o.payableAmount ?? 0)}
                   </div>
                   <div className="text-ink-4 text-right">→</div>
                 </Link>

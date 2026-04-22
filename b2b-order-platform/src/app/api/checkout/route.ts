@@ -110,6 +110,26 @@ export async function POST(request: NextRequest) {
   // Create the Stripe placeholder intent first so the OrderMapping has its ID from the start.
   const intent = stripePlaceholder.createPaymentIntent(payable, products[0].currency);
 
+  const lines = body.items.map((it, i) => {
+    const product = products[i];
+    const variant = product.variants.find((v) => v.variantId === it.variantId);
+    const variantLabel =
+      variant && variant.optionValues
+        ? Object.values(variant.optionValues).join(" · ")
+        : "";
+    return {
+      productId: product.productId,
+      variantId: it.variantId,
+      name: product.name,
+      variantLabel,
+      qty: it.qty,
+      unitPrice: it.unitPriceSnapshot,
+      lineTotal: Math.round(it.unitPriceSnapshot * it.qty * 100) / 100,
+      imageUrl: variant?.imageUrl ?? product.imageUrls[0] ?? null,
+      category: product.category,
+    };
+  });
+
   const mappingResult = await createMapping(db, {
     orderId, storeId, sellerId: store.userId,
     buyerId,
@@ -119,6 +139,7 @@ export async function POST(request: NextRequest) {
     payableAmount: payable, documentCurrencyCode: products[0].currency, issueDate: ubl.issueDate,
     stripePaymentIntentId: intent.id,
     guestAccessToken: guestToken,
+    lines,
   });
   if (isOrderServiceError(mappingResult)) {
     for (const r of reserved) await restoreVariantStock(db, r.productId, r.variantId, r.qty);
