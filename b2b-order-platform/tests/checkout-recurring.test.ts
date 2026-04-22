@@ -69,6 +69,8 @@ beforeEach(() => {
     productId: "p1",
     storeId: "store-1",
     name: "Item",
+    category: "misc",
+    imageUrls: ["https://example.com/x.jpg"],
     currency: "AUD",
     variants: [{ variantId: "v1", price: 10, stock: 100, optionValues: {} }],
     options: [],

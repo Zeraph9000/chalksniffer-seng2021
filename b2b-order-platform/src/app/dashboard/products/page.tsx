@@ -6,8 +6,16 @@ import type { Store, Product } from "@/lib/types";
 import { transformedImageUrl } from "@/lib/image-url";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { DashboardShell } from "@/components/ledgr/dashboard-shell";
 
 type StockFilter = "all" | "in" | "low" | "out";
+
+function monogramFrom(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "–";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
 
 function initials(name: string) {
   return name
@@ -52,8 +60,13 @@ export default async function DashboardProducts({
     .findOne({ userId: session.userId });
 
   if (!store) {
+    const placeholderStore = { monogram: "--", name: "No store yet", status: "closed" as const };
     return (
-      <main className="min-h-screen bg-paper-2">
+      <DashboardShell
+        store={placeholderStore}
+        user={{ name: session.name, initials: monogramFrom(session.name) }}
+        active="products"
+      >
         <div className="sticky top-0 z-20 bg-paper px-8 py-6 border-b border-line">
           <h1 className="font-display text-[24px] font-semibold tracking-[-.02em] m-0">
             Products
@@ -69,7 +82,7 @@ export default async function DashboardProducts({
             .
           </div>
         </div>
-      </main>
+      </DashboardShell>
     );
   }
 
@@ -106,7 +119,16 @@ export default async function DashboardProducts({
   });
 
   return (
-    <main className="min-h-screen bg-paper-2">
+    <DashboardShell
+      store={{
+        monogram: monogramFrom(store.storeName),
+        name: store.storeName,
+        status: store.status,
+        slug: store.slug,
+      }}
+      user={{ name: session.name, initials: monogramFrom(session.name) }}
+      active="products"
+    >
       {/* Sticky header */}
       <div className="sticky top-0 z-20 bg-paper px-8 py-6 border-b border-line flex justify-between items-end gap-4">
         <div>
@@ -312,6 +334,6 @@ export default async function DashboardProducts({
           })}
         </div>
       </div>
-    </main>
+    </DashboardShell>
   );
 }

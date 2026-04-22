@@ -43,6 +43,18 @@ export type StatusEvent = {
   note?: string;
 };
 
+export type OrderLineSnapshot = {
+  productId: string;
+  variantId: string;
+  name: string;
+  variantLabel: string;
+  qty: number;
+  unitPrice: number;
+  lineTotal: number;
+  imageUrl?: string | null;
+  category?: string | null;
+};
+
 export type OrderMapping = {
   _id?: string;
   orderId: string;
@@ -64,6 +76,7 @@ export type OrderMapping = {
   payableAmount: number;
   documentCurrencyCode: string;
   issueDate: string;
+  lines?: OrderLineSnapshot[];
   createdAt: Date;
   updatedAt: Date;
 };

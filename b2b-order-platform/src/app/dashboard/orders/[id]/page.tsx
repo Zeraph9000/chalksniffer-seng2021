@@ -5,9 +5,17 @@ import { getSessionOrNull } from "@/lib/session";
 import { chalksniffer } from "@/lib/chalksniffer-client";
 import type { OrderMapping, OrderStatus, Order as UblOrder, Store } from "@/lib/types";
 import { Chip } from "@/components/ui/chip";
+import { DashboardShell } from "@/components/ledgr/dashboard-shell";
 import { OrderActions } from "./order-actions";
 
 export const dynamic = "force-dynamic";
+
+function monogramFrom(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "–";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
 
 function formatPlaced(d: Date): string {
   return d.toLocaleString("en-AU", {
@@ -60,33 +68,62 @@ export default async function SellerOrderDetailPage({ params }: { params: { id: 
   const store = await db.collection<Store>("stores").findOne({ userId: session.userId });
   if (!store || store.storeId !== mapping.storeId) notFound();
 
-  // Fetch UBL order (for items). Best-effort — if chalksniffer is down we still render the page.
-  let ublOrder: UblOrder | null = null;
-  try {
-    const res = await chalksniffer.getOrder(params.id);
-    if (res && typeof res === "object" && "orderLines" in res) {
-      ublOrder = res as unknown as UblOrder;
-    }
-  } catch {
-    ublOrder = null;
-  }
+  // Sidebar badge — orders paid but not yet despatched.
+  const awaitingDespatch = await db
+    .collection<OrderMapping>("orderMappings")
+    .countDocuments({ storeId: store.storeId, status: "paid" });
 
-  const items =
-    ublOrder?.orderLines?.map((l) => {
-      const li = l.lineItem;
-      const qty = li.quantity ?? 0;
-      const unit = li.price?.priceAmount ?? 0;
-      return {
-        id: li.id,
-        name: li.item?.name ?? "Item",
-        description: li.item?.description ?? null,
-        sku: li.item?.sellersItemIdentification ?? null,
-        unitCode: li.unitCode ?? "EA",
-        qty,
-        unitPrice: unit,
-        lineTotal: li.lineExtensionAmount ?? unit * qty,
-      };
-    }) ?? [];
+  // Prefer the snapshot captured on the mapping at checkout time; fall back to
+  // chalksniffer UBL for legacy rows without lines.
+  let items: {
+    id: string;
+    name: string;
+    description: string | null;
+    sku: string | null;
+    unitCode: string;
+    qty: number;
+    unitPrice: number;
+    lineTotal: number;
+  }[] = [];
+
+  if (mapping.lines && mapping.lines.length > 0) {
+    items = mapping.lines.map((l, i) => ({
+      id: `${l.productId}-${l.variantId}-${i}`,
+      name: l.name,
+      description: l.variantLabel || null,
+      sku: null,
+      unitCode: "",
+      qty: l.qty,
+      unitPrice: l.unitPrice,
+      lineTotal: l.lineTotal,
+    }));
+  } else {
+    let ublOrder: UblOrder | null = null;
+    try {
+      const res = await chalksniffer.getOrder(params.id);
+      if (res && typeof res === "object" && "orderLines" in res) {
+        ublOrder = res as unknown as UblOrder;
+      }
+    } catch {
+      ublOrder = null;
+    }
+    items =
+      ublOrder?.orderLines?.map((l, i) => {
+        const li = l.lineItem;
+        const qty = li.quantity ?? 0;
+        const unit = li.price?.priceAmount ?? 0;
+        return {
+          id: li.id ?? String(i),
+          name: li.item?.name ?? "Item",
+          description: li.item?.description ?? null,
+          sku: li.item?.sellersItemIdentification ?? null,
+          unitCode: li.unitCode ?? "EA",
+          qty,
+          unitPrice: unit,
+          lineTotal: li.lineExtensionAmount ?? unit * qty,
+        };
+      }) ?? [];
+  }
 
   const totalPacked = items.reduce((s, it) => s + it.qty, 0);
 
@@ -126,7 +163,17 @@ export default async function SellerOrderDetailPage({ params }: { params: { id: 
   const taxInvoiceReady = mapping.status === "received" || mapping.status === "invoiced";
 
   return (
-    <main>
+    <DashboardShell
+      store={{
+        monogram: monogramFrom(store.storeName),
+        name: store.storeName,
+        status: store.status,
+        slug: store.slug,
+      }}
+      user={{ name: session.name, initials: monogramFrom(session.name) }}
+      active="orders"
+      ordersBadge={awaitingDespatch}
+    >
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 bg-paper px-8 py-[14px] text-[12.5px] text-ink-3">
         <Link href="/dashboard/orders" className="hover:text-ink">
@@ -202,11 +249,10 @@ export default async function SellerOrderDetailPage({ params }: { params: { id: 
                   items.map((it, i) => (
                     <div
                       key={it.id ?? i}
-                      className={`grid grid-cols-[52px_1fr_auto] items-center gap-4 py-3.5 ${
+                      className={`grid grid-cols-[1fr_auto] items-center gap-4 py-3.5 ${
                         i === 0 ? "" : "border-t border-line-2"
                       }`}
                     >
-                      <div className="h-[52px] w-[52px] rounded-[8px] bg-paper-2" />
                       <div>
                         <div className="text-[13.5px] font-medium tracking-[-.005em]">{it.name}</div>
                         <div className="mt-[3px] text-[11.5px] text-ink-3">
@@ -360,7 +406,7 @@ export default async function SellerOrderDetailPage({ params }: { params: { id: 
           </div>
         </div>
       </div>
-    </main>
+    </DashboardShell>
   );
 }
 

@@ -81,10 +81,12 @@ export default async function Storefront({ params }: { params: { slug: string } 
           location: store.location ?? null,
           status: store.status === "active" ? "open" : store.status === "paused" ? "paused" : "closed",
           productsCount: products.length,
+          logoUrl: store.logoUrl ?? null,
+          bannerUrl: store.bannerUrl ?? null,
         }}
       />
 
-      <section className="px-6 pt-8 pb-0 grid grid-cols-[230px_1fr] gap-8 items-start mx-auto max-w-[1360px]">
+      <section className="px-6 pt-7 pb-0 grid grid-cols-[230px_1fr] gap-8 items-start">
         <aside className="sticky top-4">
           <div className="flex justify-between items-center mb-[10px]">
             <h4 className="text-[11.5px] uppercase tracking-[.12em] text-ink-3 font-medium m-0">
@@ -252,7 +254,6 @@ export default async function Storefront({ params }: { params: { slug: string } 
                 Sort
                 <select className="h-[30px] border border-line rounded-[4px] px-[10px] pr-6 text-[12.5px] bg-transparent text-ink">
                   <option>Featured</option>
-                  <option>Highest rated</option>
                   <option>Price: low → high</option>
                   <option>Price: high → low</option>
                   <option>Newest</option>
@@ -296,7 +297,7 @@ export default async function Storefront({ params }: { params: { slug: string } 
       </section>
 
       {/* About the shop */}
-      <section className="mx-auto max-w-[1360px] px-6 pt-16 pb-6 grid grid-cols-[1.5fr_1fr] gap-12 items-start border-t border-line-2 mt-12">
+      <section className="px-6 pt-[72px] pb-6 grid grid-cols-[1.5fr_1fr] gap-12 items-start border-t border-line-2 mt-12">
         <div>
           <div className="font-sans text-[11px] font-medium uppercase tracking-[.12em] text-ink-3">
             About the shop
@@ -311,7 +312,7 @@ export default async function Storefront({ params }: { params: { slug: string } 
             </p>
           )}
         </div>
-        <div className="flex flex-col gap-6">
+        <div className="flex gap-10 flex-wrap">
           {store.location && (
             <div>
               <div className="font-display text-[22px] font-semibold tracking-[-.02em]">

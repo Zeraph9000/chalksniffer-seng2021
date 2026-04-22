@@ -1,8 +1,16 @@
 import { redirect } from "next/navigation";
 import clientPromise from "@/lib/db";
 import { getSessionOrNull } from "@/lib/session";
-import type { Store } from "@/lib/types";
+import type { Store, OrderMapping } from "@/lib/types";
 import { ProductFormClient } from "../product-form-client";
+import { DashboardShell } from "@/components/ledgr/dashboard-shell";
+
+function monogramFrom(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "–";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
 
 export default async function NewProductPage() {
   const session = await getSessionOrNull();
@@ -16,5 +24,23 @@ export default async function NewProductPage() {
 
   if (!store) redirect("/dashboard/store");
 
-  return <ProductFormClient storeSlug={store.slug} />;
+  const awaitingDespatch = await db
+    .collection<OrderMapping>("orderMappings")
+    .countDocuments({ storeId: store.storeId, status: "paid" });
+
+  return (
+    <DashboardShell
+      store={{
+        monogram: monogramFrom(store.storeName),
+        name: store.storeName,
+        status: store.status,
+        slug: store.slug,
+      }}
+      user={{ name: session.name, initials: monogramFrom(session.name) }}
+      active="products"
+      ordersBadge={awaitingDespatch}
+    >
+      <ProductFormClient storeSlug={store.slug} />
+    </DashboardShell>
+  );
 }
