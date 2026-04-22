@@ -81,6 +81,8 @@ export default async function Storefront({ params }: { params: { slug: string } 
           location: store.location ?? null,
           status: store.status === "active" ? "open" : store.status === "paused" ? "paused" : "closed",
           productsCount: products.length,
+          logoUrl: store.logoUrl ?? null,
+          bannerUrl: store.bannerUrl ?? null,
         }}
       />
 
