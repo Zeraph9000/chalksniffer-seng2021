@@ -4,6 +4,47 @@ import { MarketplaceTopNav } from "@/components/ledgr/marketplace-top-nav";
 import { MarketplaceFooter } from "@/components/ledgr/marketplace-footer";
 import { Button } from "@/components/ui/button";
 import { getSessionOrNull } from "@/lib/session";
+import clientPromise from "@/lib/db";
+import type { Product, Store } from "@/lib/types";
+import { transformedImageUrl } from "@/lib/image-url";
+
+function monogramFor(name: string) {
+  return name
+    .split(/\s+/)
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+}
+
+async function loadFeatured() {
+  try {
+    const db = (await clientPromise).db();
+    const candidates = await db
+      .collection<Product>("products")
+      .find({ available: true, imageUrls: { $exists: true, $ne: [] } })
+      .sort({ createdAt: -1 })
+      .limit(40)
+      .toArray();
+    if (candidates.length === 0) return null;
+
+    const byStore = new Map<string, Product[]>();
+    for (const p of candidates) {
+      if (!p.imageUrls?.[0]) continue;
+      const arr = byStore.get(p.storeId) ?? [];
+      arr.push(p);
+      byStore.set(p.storeId, arr);
+    }
+    const pair = Array.from(byStore.entries()).find(([, ps]) => ps.length >= 2);
+    if (!pair) return null;
+    const [storeId, ps] = pair;
+    const store = await db.collection<Store>("stores").findOne({ storeId });
+    if (!store) return null;
+    return { store, products: ps.slice(0, 2) };
+  } catch {
+    return null;
+  }
+}
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +77,7 @@ const CATEGORIES: Array<{ label: string; key: keyof typeof CATEGORY_DOTS | "all"
 
 export default async function Landing() {
   const session = await getSessionOrNull().catch(() => null);
+  const featured = await loadFeatured();
 
   return (
     <>
@@ -87,8 +129,12 @@ export default async function Landing() {
           </div>
         </div>
 
-        {/* Hardcoded featured shop panel — Honey House Provisions */}
-        <HardcodedFeaturedPanel />
+        {/* Featured shop panel — real store if available, otherwise fallback */}
+        {featured ? (
+          <FeaturedPanel store={featured.store} products={featured.products} />
+        ) : (
+          <HardcodedFeaturedPanel />
+        )}
       </section>
 
       {/* How it works */}
@@ -178,7 +224,96 @@ export default async function Landing() {
   );
 }
 
-/* Hardcoded featured shop panel — Honey House Provisions mock */
+/* Data-driven featured shop panel — uses real product images when available */
+function FeaturedPanel({ store, products }: { store: Store; products: Product[] }) {
+  const slug = store.slug ?? store.storeId;
+  const mono = monogramFor(store.storeName);
+  const locLabel = [store.category, store.location].filter(Boolean).join(" · ");
+  const totalProducts = products.length;
+  return (
+    <div className="border border-line rounded-[10px] bg-paper overflow-hidden flex flex-col">
+      <div className="px-[18px] py-4 flex items-center gap-3 bg-brand text-brand-ink">
+        <div className="w-10 h-10 rounded-lg bg-brand-surface text-brand-contrast grid place-items-center font-display font-bold text-[15px] tracking-[-.015em] overflow-hidden">
+          {store.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={transformedImageUrl(store.logoUrl, "logo")}
+              alt={store.storeName}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            mono
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="font-display font-semibold text-[15px] tracking-[-.01em] text-brand-ink truncate">
+            {store.storeName}
+          </div>
+          {locLabel && (
+            <div className="text-[11.5px] text-brand-ink/80 mt-[1px] truncate">
+              {locLabel}
+            </div>
+          )}
+        </div>
+        <span className="font-mono text-[10px] tracking-[.14em] uppercase text-paper bg-ink px-[9px] py-1 rounded-[4px]">
+          Featured
+        </span>
+      </div>
+      <div className="p-[14px] grid grid-cols-2 gap-[10px]">
+        {products.map((p) => {
+          const price = Math.min(...p.variants.map((v) => v.price));
+          const sizes =
+            p.variants.length > 1
+              ? `${p.variants.length} sizes`
+              : Object.values(p.variants[0]?.optionValues ?? {}).join(" · ") || "Single";
+          return (
+            <Link
+              key={p.productId}
+              href={`/store/${slug}/product/${p.productId}`}
+              className="border border-line rounded-lg overflow-hidden flex flex-col hover:border-ink-3 transition-colors"
+            >
+              <div className="aspect-[4/3] bg-paper-2">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={transformedImageUrl(p.imageUrls[0], "product")}
+                  alt={p.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="px-[10px] pt-2 pb-[10px]">
+                <div className="text-[12px] font-medium text-ink leading-[1.3] tracking-[-.005em] line-clamp-1">
+                  {p.name}
+                </div>
+                <div className="flex justify-between items-baseline mt-1">
+                  <span className="font-mono text-[12px] font-medium text-ink">
+                    ${price.toFixed(0)}
+                  </span>
+                  <span className="text-[10.5px] text-ink-3 truncate ml-2">{sizes}</span>
+                </div>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+      <div className="px-[18px] py-3 border-t border-line-2 flex justify-between items-center text-[12.5px]">
+        <span className="text-ink-3 inline-flex items-center gap-[6px]">
+          <span
+            className={`inline-block w-[6px] h-[6px] rounded-full ${
+              store.status === "active" ? "bg-accent" : "bg-ink-4"
+            }`}
+          />
+          {store.status === "active" ? "Open" : store.status === "paused" ? "Paused" : "Closed"}
+          {totalProducts > 0 && ` · ${totalProducts} products`}
+        </span>
+        <Link href={`/store/${slug}`} className="text-ink font-medium">
+          Visit shop →
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+/* Hardcoded featured shop panel — fallback when DB has no products with images */
 function HardcodedFeaturedPanel() {
   const products = [
     { name: "Stringybark Raw Honey", sizes: "2 sizes", price: "$18", bg: "#e8c265" },
