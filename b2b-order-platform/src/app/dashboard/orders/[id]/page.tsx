@@ -5,9 +5,17 @@ import { getSessionOrNull } from "@/lib/session";
 import { chalksniffer } from "@/lib/chalksniffer-client";
 import type { OrderMapping, OrderStatus, Order as UblOrder, Store } from "@/lib/types";
 import { Chip } from "@/components/ui/chip";
+import { DashboardShell } from "@/components/ledgr/dashboard-shell";
 import { OrderActions } from "./order-actions";
 
 export const dynamic = "force-dynamic";
+
+function monogramFrom(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "–";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
 
 function formatPlaced(d: Date): string {
   return d.toLocaleString("en-AU", {
@@ -59,6 +67,11 @@ export default async function SellerOrderDetailPage({ params }: { params: { id: 
   // Access control: this seller must own the store associated with this order.
   const store = await db.collection<Store>("stores").findOne({ userId: session.userId });
   if (!store || store.storeId !== mapping.storeId) notFound();
+
+  // Sidebar badge — orders paid but not yet despatched.
+  const awaitingDespatch = await db
+    .collection<OrderMapping>("orderMappings")
+    .countDocuments({ storeId: store.storeId, status: "paid" });
 
   // Fetch UBL order (for items). Best-effort — if chalksniffer is down we still render the page.
   let ublOrder: UblOrder | null = null;
@@ -126,7 +139,17 @@ export default async function SellerOrderDetailPage({ params }: { params: { id: 
   const taxInvoiceReady = mapping.status === "received" || mapping.status === "invoiced";
 
   return (
-    <main>
+    <DashboardShell
+      store={{
+        monogram: monogramFrom(store.storeName),
+        name: store.storeName,
+        status: store.status,
+        slug: store.slug,
+      }}
+      user={{ name: session.name, initials: monogramFrom(session.name) }}
+      active="orders"
+      ordersBadge={awaitingDespatch}
+    >
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 bg-paper px-8 py-[14px] text-[12.5px] text-ink-3">
         <Link href="/dashboard/orders" className="hover:text-ink">
@@ -360,7 +383,7 @@ export default async function SellerOrderDetailPage({ params }: { params: { id: 
           </div>
         </div>
       </div>
-    </main>
+    </DashboardShell>
   );
 }
 
