@@ -1,3 +1,4 @@
+"use client";
 import * as React from "react";
 import Link from "next/link";
 import { ShoppingCart, Search } from "lucide-react";
@@ -16,8 +17,27 @@ const navLinks = [
 ];
 
 export function MarketplaceTopNav({ active, user, cartCount = 0 }: MarketplaceTopNavProps) {
+  const searchRef = React.useRef<HTMLInputElement | null>(null);
+
+  // ⌘K / Ctrl+K / "/" focuses the search — the kbd hint isn't just decorative.
+  React.useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const isMod = e.metaKey || e.ctrlKey;
+      const isSlash = e.key === "/" && !isMod;
+      const isK = isMod && e.key.toLowerCase() === "k";
+      if (!isK && !isSlash) return;
+      const tag = (e.target as HTMLElement | null)?.tagName?.toLowerCase();
+      // Don't hijack while the user is typing in another input/textarea
+      if (tag === "input" || tag === "textarea") return;
+      e.preventDefault();
+      searchRef.current?.focus();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   return (
-    <header className="h-16 flex items-center gap-5 px-6 border-b border-line-2 bg-paper">
+    <header className="h-14 flex items-center gap-5 px-6 border-b border-line-2 bg-paper">
       <BrandLockup size="md" />
       <nav className="flex gap-[2px]" aria-label="Primary">
         {navLinks.map((l) => (
@@ -33,14 +53,15 @@ export function MarketplaceTopNav({ active, user, cartCount = 0 }: MarketplaceTo
           </Link>
         ))}
       </nav>
-      <label className="flex-1 max-w-[360px] h-8 flex items-center gap-2 px-3 border border-line rounded-[4px] bg-paper-2 text-ink-4 text-[12.5px]">
-        <Search className="h-[13px] w-[13px]" />
+      <label className="flex-1 max-w-[360px] h-8 flex items-center gap-2 px-3 border border-line rounded-[4px] bg-paper-2 text-ink-4 text-[12.5px] focus-within:border-ink-3 transition-colors">
+        <Search className="h-[14px] w-[14px] shrink-0" aria-hidden />
         <input
+          ref={searchRef}
           placeholder="Search stores, products, categories…"
           className="flex-1 bg-transparent outline-none text-ink placeholder:text-ink-4"
           aria-label="Search"
         />
-        <span className="font-mono text-[10px] text-ink-4 border border-line rounded-[3px] px-[5px]">⌘K</span>
+        <span className="font-mono text-[10px] text-ink-4 border border-line rounded-[3px] px-[5px] py-[1px] leading-none shrink-0">⌘K</span>
       </label>
       <div className="ml-auto flex items-center gap-[6px]">
         {user ? (
