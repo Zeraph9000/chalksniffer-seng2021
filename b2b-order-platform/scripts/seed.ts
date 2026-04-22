@@ -4,7 +4,7 @@ loadEnvConfig(process.cwd());
 
 import crypto from "crypto";
 import { MongoClient, ObjectId } from "mongodb";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 
 const URI = process.env.MONGODB_URI || "mongodb://localhost:27017/chalksniffer-b2b";
 

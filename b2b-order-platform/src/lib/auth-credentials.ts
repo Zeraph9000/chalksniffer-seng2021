@@ -1,5 +1,5 @@
 import Credentials from "next-auth/providers/credentials";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import clientPromise from "@/lib/db";
 import { User } from "@/lib/types";
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import { encode } from "@auth/core/jwt";
 import clientPromise from "@/lib/db";
 import { User } from "@/lib/types";

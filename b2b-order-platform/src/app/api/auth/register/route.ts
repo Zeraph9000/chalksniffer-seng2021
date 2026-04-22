@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import clientPromise from "@/lib/db";
 import { signIn as buyerSignIn } from "@/auth.buyer";
 import { signIn as sellerSignIn } from "@/auth.seller";
