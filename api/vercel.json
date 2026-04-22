@@ -2,17 +2,17 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/src/index.ts",
+      "src": "src/index.ts",
       "use": "@vercel/node",
       "config": {
-        "includeFiles": ["api/endpoints.yaml"]
+        "includeFiles": ["endpoints.yaml"]
       }
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "api/src/index.ts"
+      "dest": "src/index.ts"
     }
   ],
   "crons": [
