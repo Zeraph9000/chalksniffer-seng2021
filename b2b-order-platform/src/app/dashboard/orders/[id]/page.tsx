@@ -73,33 +73,57 @@ export default async function SellerOrderDetailPage({ params }: { params: { id: 
     .collection<OrderMapping>("orderMappings")
     .countDocuments({ storeId: store.storeId, status: "paid" });
 
-  // Fetch UBL order (for items). Best-effort — if chalksniffer is down we still render the page.
-  let ublOrder: UblOrder | null = null;
-  try {
-    const res = await chalksniffer.getOrder(params.id);
-    if (res && typeof res === "object" && "orderLines" in res) {
-      ublOrder = res as unknown as UblOrder;
-    }
-  } catch {
-    ublOrder = null;
-  }
+  // Prefer the snapshot captured on the mapping at checkout time; fall back to
+  // chalksniffer UBL for legacy rows without lines.
+  let items: {
+    id: string;
+    name: string;
+    description: string | null;
+    sku: string | null;
+    unitCode: string;
+    qty: number;
+    unitPrice: number;
+    lineTotal: number;
+  }[] = [];
 
-  const items =
-    ublOrder?.orderLines?.map((l) => {
-      const li = l.lineItem;
-      const qty = li.quantity ?? 0;
-      const unit = li.price?.priceAmount ?? 0;
-      return {
-        id: li.id,
-        name: li.item?.name ?? "Item",
-        description: li.item?.description ?? null,
-        sku: li.item?.sellersItemIdentification ?? null,
-        unitCode: li.unitCode ?? "EA",
-        qty,
-        unitPrice: unit,
-        lineTotal: li.lineExtensionAmount ?? unit * qty,
-      };
-    }) ?? [];
+  if (mapping.lines && mapping.lines.length > 0) {
+    items = mapping.lines.map((l, i) => ({
+      id: `${l.productId}-${l.variantId}-${i}`,
+      name: l.name,
+      description: l.variantLabel || null,
+      sku: null,
+      unitCode: "",
+      qty: l.qty,
+      unitPrice: l.unitPrice,
+      lineTotal: l.lineTotal,
+    }));
+  } else {
+    let ublOrder: UblOrder | null = null;
+    try {
+      const res = await chalksniffer.getOrder(params.id);
+      if (res && typeof res === "object" && "orderLines" in res) {
+        ublOrder = res as unknown as UblOrder;
+      }
+    } catch {
+      ublOrder = null;
+    }
+    items =
+      ublOrder?.orderLines?.map((l, i) => {
+        const li = l.lineItem;
+        const qty = li.quantity ?? 0;
+        const unit = li.price?.priceAmount ?? 0;
+        return {
+          id: li.id ?? String(i),
+          name: li.item?.name ?? "Item",
+          description: li.item?.description ?? null,
+          sku: li.item?.sellersItemIdentification ?? null,
+          unitCode: li.unitCode ?? "EA",
+          qty,
+          unitPrice: unit,
+          lineTotal: li.lineExtensionAmount ?? unit * qty,
+        };
+      }) ?? [];
+  }
 
   const totalPacked = items.reduce((s, it) => s + it.qty, 0);
 
@@ -225,11 +249,10 @@ export default async function SellerOrderDetailPage({ params }: { params: { id: 
                   items.map((it, i) => (
                     <div
                       key={it.id ?? i}
-                      className={`grid grid-cols-[52px_1fr_auto] items-center gap-4 py-3.5 ${
+                      className={`grid grid-cols-[1fr_auto] items-center gap-4 py-3.5 ${
                         i === 0 ? "" : "border-t border-line-2"
                       }`}
                     >
-                      <div className="h-[52px] w-[52px] rounded-[8px] bg-paper-2" />
                       <div>
                         <div className="text-[13.5px] font-medium tracking-[-.005em]">{it.name}</div>
                         <div className="mt-[3px] text-[11.5px] text-ink-3">
