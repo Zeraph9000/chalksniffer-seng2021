@@ -187,7 +187,7 @@ function HardcodedFeaturedPanel() {
       price: "$18",
       bg: "#e8c265",
       image:
-        "https://images.unsplash.com/photo-1587049352846-4a222e784d38?auto=format&fit=crop&w=600&q=80",
+        "https://images.unsplash.com/photo-1587049352851-8d4e89133924?auto=format&fit=crop&w=600&q=80",
     },
     {
       name: "First-Press Olive Oil",
