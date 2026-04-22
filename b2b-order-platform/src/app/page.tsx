@@ -284,10 +284,53 @@ function HowStepCard({ n, title, body, preview }: { n: string; title: string; bo
 
 /* Step 1 preview — three stacked mini-store tiles */
 function HowStepBrowse() {
-  const tiles: Array<{ art: string; textColor: string; cat: string; name: string; mark: string; top: string; left: string; opacity: string; z: string }> = [
-    { art: "#b97e29", textColor: "#1a1208", cat: "Pantry · NSW", name: "Honey House", mark: "HH", top: "top-6", left: "left-6", opacity: "opacity-100", z: "z-30" },
-    { art: "#4a6e4b", textColor: "#f3f5ec", cat: "Stationery · VIC", name: "The Good Press", mark: "GP", top: "top-[60px]", left: "left-[76px]", opacity: "opacity-85", z: "z-20" },
-    { art: "#3d5a6c", textColor: "#eaf1f6", cat: "Coffee · NSW", name: "Lowtide Coffee", mark: "LT", top: "top-[96px]", left: "left-[128px]", opacity: "opacity-65", z: "z-10" },
+  const tiles: Array<{
+    art: string;
+    cat: string;
+    name: string;
+    key: string;
+    image: string;
+    top: string;
+    left: string;
+    opacity: string;
+    z: string;
+  }> = [
+    {
+      art: "#b97e29",
+      cat: "Pantry · NSW",
+      name: "Honey House",
+      key: "HH",
+      image:
+        "https://images.unsplash.com/photo-1615897570582-285ffe259530?auto=format&fit=crop&w=400&q=80",
+      top: "top-6",
+      left: "left-6",
+      opacity: "opacity-100",
+      z: "z-30",
+    },
+    {
+      art: "#4a6e4b",
+      cat: "Stationery · VIC",
+      name: "The Good Press",
+      key: "GP",
+      image:
+        "https://images.unsplash.com/photo-1519520104014-df63821cb6f9?auto=format&fit=crop&w=400&q=80",
+      top: "top-[60px]",
+      left: "left-[76px]",
+      opacity: "opacity-85",
+      z: "z-20",
+    },
+    {
+      art: "#3d5a6c",
+      cat: "Coffee · NSW",
+      name: "Lowtide Coffee",
+      key: "LT",
+      image:
+        "https://images.unsplash.com/photo-1561336635-c0e118ad72a0?auto=format&fit=crop&w=400&q=80",
+      top: "top-[96px]",
+      left: "left-[128px]",
+      opacity: "opacity-65",
+      z: "z-10",
+    },
   ];
   return (
     <HowStepCard
@@ -298,14 +341,19 @@ function HowStepBrowse() {
         <>
           {tiles.map((t) => (
             <div
-              key={t.mark}
-              className={`absolute ${t.top} ${t.left} ${t.opacity} ${t.z} w-[140px] bg-paper border border-line rounded-[8px] shadow-[0_4px_20px_rgba(0,0,0,0.04)]`}
+              key={t.key}
+              className={`absolute ${t.top} ${t.left} ${t.opacity} ${t.z} w-[140px] bg-paper border border-line rounded-[8px] shadow-[0_4px_20px_rgba(0,0,0,0.04)] overflow-hidden`}
             >
               <div
-                className="h-[60px] rounded-t-[7px] grid place-items-center font-display font-bold text-[15px] tracking-[-.015em]"
-                style={{ background: t.art, color: t.textColor }}
+                className="h-[60px] overflow-hidden"
+                style={{ background: t.art }}
               >
-                {t.mark}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={t.image}
+                  alt={t.name}
+                  className="w-full h-full object-cover"
+                />
               </div>
               <div className="px-[10px] pt-2 pb-[10px]">
                 <div className="font-mono text-[8.5px] tracking-[.1em] uppercase text-ink-3">
