@@ -6,7 +6,6 @@ import {
   FileDown,
   MessageSquare,
   Flag,
-  FileText,
   RefreshCw,
   ArrowRight,
   Circle,
@@ -295,10 +294,7 @@ export default async function StoreBuyerOrderDetail({
               </div>
               <div className="px-5 py-1">
                 {lineItems.length === 0 ? (
-                  <div className="grid grid-cols-[52px_1fr_auto] gap-4 py-3.5 items-center">
-                    <div className="w-[52px] h-[52px] rounded-lg bg-paper-2 border border-line flex items-center justify-center text-ink-4">
-                      <FileText className="h-5 w-5" aria-hidden />
-                    </div>
+                  <div className="grid grid-cols-[1fr_auto] gap-4 py-3.5 items-center">
                     <div>
                       <div className="text-[13.5px] font-medium tracking-[-.005em]">
                         Order contents
@@ -320,11 +316,10 @@ export default async function StoreBuyerOrderDetail({
                   lineItems.map((it, i) => (
                     <div
                       key={it.id ?? i}
-                      className={`grid grid-cols-[52px_1fr_auto] items-center gap-4 py-3.5 ${
+                      className={`grid grid-cols-[1fr_auto] items-center gap-4 py-3.5 ${
                         i === 0 ? "" : "border-t border-line-2"
                       }`}
                     >
-                      <div className="h-[52px] w-[52px] rounded-[8px] bg-paper-2 border border-line" />
                       <div>
                         <div className="text-[13.5px] font-medium tracking-[-.005em]">
                           {it.name}
